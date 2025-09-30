@@ -3,9 +3,35 @@ from .exceptions.database_insert_exception import DatabaseInsertException
 from contextlib import closing
 
 class Customer(BaseModel):
+	"""
+	The Customer class is used to represent customers in the database.
+	It is also used to execute customer related database queries.
+
+	Parameters:
+		DB_TABLE (str): The name of the customers database table .
+		customer_id (id): The ID of the customer. Set automatically.
+		first_name (str): Customer's first name.
+        last_name (str): Customer's last name.
+        email (str): Customer's email address.
+        phone_number (str): Customer's phone number.
+        rewards_points (int): Customer's reward points balance.
+	"""
+
 	DB_TABLE = "Customers"
 	
 	def __init__(self, first_name, last_name, email, phone_number):
+		"""
+        Constructor for a new Customer.
+        
+        Args:
+            first_name (str): The customer's first name.
+            last_name (str): The customer's last name.
+            email (str): The customer's email address.
+            phone_number (str): The customer's phone number.
+        
+        Returns:
+            None
+        """
 		super().__init__(Customer.DB_TABLE)
 		self.customer_id = None
 		self.first_name = first_name
@@ -17,6 +43,16 @@ class Customer(BaseModel):
 
 	@staticmethod
 	def insertCustomer(customer):
+		"""
+        Insert a new customer into the database.
+        
+        Args:
+            customer (Customer): The Customer to insert into the database.
+        
+        Raises:
+            DatabaseInsertException: If an error occurs during database insertion.
+        """
+
 		# Define the insert statement and values
 		sql = """INSERT INTO Customers(first_name, last_name, email, phone_number, rewards_points)
 			VALUES (:first_name, :last_name, :email, :phone_number, :rewards_points);

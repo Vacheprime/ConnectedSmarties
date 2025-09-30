@@ -8,6 +8,7 @@ class BaseModel:
 	It contains general methods for connecting to the database.
 	
 	Parameters:
+		PROJECT_ROOT (str): Static variable for the absolute path to the project folder.
 		DB_NAME (str): Static variable for the DB Name.
 		db_table (str): The name of the model's table. 
 	"""
