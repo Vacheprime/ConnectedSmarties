@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 
 class BaseModel:
@@ -10,10 +11,10 @@ class BaseModel:
 		DB_NAME (str): Static variable for the DB Name.
 		db_table (str): The name of the model's table. 
 	"""
-	
-	DB_NAME = "ConnectedSmarties.db"
+	PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	DB_NAME = os.path.join(PROJECT_ROOT, "db", "ConnectedSmarties.db")
 		
-		
+
 	def __init__(self, db_table):
 		self.db_table = db_table
 		
