@@ -2,7 +2,7 @@
 from flask import Flask, render_template, request, g
 import sqlite3
 import os
-from .leds import success, fail
+#from .leds import success, fail
 
 app = Flask(__name__)
 
@@ -45,7 +45,7 @@ def register_customer():
         cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (first_name, last_name, email, phone_number, rewards_points))
         conn.commit()
         conn.close()
-        success()
+        #success()
         return f'Customer added'
     else:
         # Note: by default, Flask looks for HTML files inside folder named templates

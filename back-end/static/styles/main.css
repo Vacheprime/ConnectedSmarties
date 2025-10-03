@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css?family=Inter');
+@import url("reset.css");
+
+:root {
+  font-family: "Inter", Arial, sans-serif;
+  /* Define global background colors */
+  --color-background-blue: hsl(195, 100%, 95%);
+  --color-background-light: hsl(0, 100%, 100%);
+
+  /* Color for buttons or input */
+  --color-button-normal: hsl(0, 0%, 85%);
+  --color-button-dark: hsl(0, 0%, 75%);
+  --color-button-darker: hsl(0, 0%, 65%);
+  
+  /* Define global text colors */
+  --color-text-normal: hsl(0, 0%, 10%);
+  --color-text-muted: hsl(0, 0%, 25%);
+
+  /* Define global effects/filters */
+  --full-drop-shadow: drop-shadow(2px 0px 4px rgba(0, 0, 0, 10%)) drop-shadow(-2px 0px 4px rgba(0, 0, 0, 10%)) drop-shadow(0px 2px 4px rgba(0, 0, 0, 10%));
+  --bottom-drop-shadow: drop-shadow(0px 2px 4px rgba(0, 0, 0, 15%));
+  --bottom-right-drop-shadow: drop-shadow(2px 2px 4px rgba(0, 0, 0, 10%));
+}
+
+
+.container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background-color: var(--color-background-blue);
+}
+
+main {
+  align-self: center;
+  justify-self: center;
+  background-color: var(--color-background-light);
+  border-radius: 5px;
+  padding: 15px;
+  filter: var(--full-drop-shadow);
+}
+
+.form-group {
+  margin-top: 10px;
+}
+
+.form-actions {
+  margin-top: 15px;
+}
+
+button {
+    font-size: var(--font-size-p);
+    border-radius: 10px;
+    border-style: none;
+    font-weight: bold;
+    filter: var(--bottom-right-drop-shadow);
+    background-color: var(--color-button-normal);
+    padding: 5px 10px;
+}
