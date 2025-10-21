@@ -1,0 +1,75 @@
+:root {
+  --humidity-1: 0;
+  --humidity-2: 0;
+}
+
+.humidity-gauge-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.humidity-gauge {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #e0e0e0 0%,
+    #e0e0e0 calc(var(--humidity) * 1%),
+    var(--color-primary) calc(var(--humidity) * 1%),
+    var(--color-primary) 100%
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.humidity-gauge::after {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+.humidity-gauge-label {
+  position: relative;
+  z-index: 1;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.humidity-gauge-label .humidity-value {
+  font-size: 2.5rem;
+}
+
+.humidity-gauge-label .humidity-unit {
+  font-size: 1.5rem;
+}
+
+/* Individual gauge styling */
+#humidity-gauge-1 {
+  background: conic-gradient(
+    #e0e0e0 0%,
+    #e0e0e0 calc(var(--humidity-1) * 1%),
+    var(--color-primary) calc(var(--humidity-1) * 1%),
+    var(--color-primary) 100%
+  );
+}
+
+#humidity-gauge-2 {
+  background: conic-gradient(
+    #e0e0e0 0%,
+    #e0e0e0 calc(var(--humidity-2) * 1%),
+    var(--color-primary) calc(var(--humidity-2) * 1%),
+    var(--color-primary) 100%
+  );
+}

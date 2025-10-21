@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="../static/styles/main.css">
     <link rel="stylesheet" href="../static/styles/home.css">
     <link rel="stylesheet" href="../static/styles/thermometer.css">
+    <!-- Added humidity gauge styles -->
+    <link rel="stylesheet" href="../static/styles/humidity-gauge.css">
 </head>
 <body>
     <div class="container">
@@ -28,76 +30,86 @@
                 <p class="subtitle">Monitor sensors and control devices</p>
             </div>
 
-            <div class="control-grid">
-                <!-- Renamed to Frig1 Temperature and removed manual controls -->
-                <div class="sensor-card" id="thermometer-card">
-                    <h2>Frig1 Temperature (DHT11)</h2>
-                    <div id="thermometer-wrapper">
-                        <div id="termometer">
-                            <div id="temperature" style="height:0" data-value="0°C"></div>
-                            <div id="graduations"></div>
+            <div class="fridges-container">
+                <!-- Fridge 1 -->
+                <div class="fridge-section">
+                    <h2 class="fridge-title">Fridge 1 (DHT11)</h2>
+                    <div class="fridge-monitors">
+                        <!-- Thermometer -->
+                        <div class="monitor-card">
+                            <h3>Temperature</h3>
+                            <div id="thermometer-wrapper-1">
+                                <div id="termometer-1" class="termometer">
+                                    <div id="temperature-1" class="temperature" style="height:0" data-value="0°C"></div>
+                                    <div class="graduations"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor1-temp-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="sensor-status" id="sensor1-status">
-                        <span class="status-dot"></span>
-                        <span>Reading...</span>
-                    </div>
-                </div>
 
-                <!--Frig1 Humidity gauge -->
-                <div class="sensor-card">
-                    <h2>Frig1 Humidity (DHT11)</h2>
-                    <div class="sensor-readings">
-                        <div class="reading">
-                            <span class="reading-icon">💧</span>
-                            <div class="reading-info">
-                                <span class="reading-label">Humidity</span>
-                                <span class="reading-value" id="sensor1-humidity">--</span>
+                        <!-- Humidity Gauge -->
+                        <div class="monitor-card">
+                            <h3>Humidity</h3>
+                            <div class="humidity-gauge-container">
+                                <div id="humidity-gauge-1" class="humidity-gauge">
+                                    <div class="humidity-gauge-label">
+                                        <span class="humidity-value" id="humidity-value-1">0</span>
+                                        <span class="humidity-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor1-humidity-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
                             </div>
                         </div>
                     </div>
-                    <div class="sensor-status" id="sensor1-humidity-status">
-                        <span class="status-dot"></span>
-                        <span>Reading...</span>
-                    </div>
                 </div>
 
-                <!-- Split Sensor 2 into two separate cards for Frig2 -->
-                <div class="sensor-card">
-                    <h2>Frig2 Temperature (DHT11)</h2>
-                    <div class="sensor-readings">
-                        <div class="reading">
-                            <span class="reading-icon">🌡️</span>
-                            <div class="reading-info">
-                                <span class="reading-label">Temperature</span>
-                                <span class="reading-value" id="sensor2-temp">--</span>
+                <!-- Fridge 2 -->
+                <div class="fridge-section">
+                    <h2 class="fridge-title">Fridge 2 (DHT11)</h2>
+                    <div class="fridge-monitors">
+                        <!-- Thermometer -->
+                        <div class="monitor-card">
+                            <h3>Temperature</h3>
+                            <div id="thermometer-wrapper-2">
+                                <div id="termometer-2" class="termometer">
+                                    <div id="temperature-2" class="temperature" style="height:0" data-value="0°C"></div>
+                                    <div class="graduations"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor2-temp-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
+                        </div>
+
+                        <!-- Humidity Gauge -->
+                        <div class="monitor-card">
+                            <h3>Humidity</h3>
+                            <div class="humidity-gauge-container">
+                                <div id="humidity-gauge-2" class="humidity-gauge">
+                                    <div class="humidity-gauge-label">
+                                        <span class="humidity-value" id="humidity-value-2">0</span>
+                                        <span class="humidity-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor2-humidity-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
                             </div>
                         </div>
                     </div>
-                    <div class="sensor-status" id="sensor2-status">
-                        <span class="status-dot"></span>
-                        <span>Reading...</span>
-                    </div>
                 </div>
+            </div>
 
-                <div class="sensor-card">
-                    <h2>Frig2 Humidity (DHT11)</h2>
-                    <div class="sensor-readings">
-                        <div class="reading">
-                            <span class="reading-icon">💧</span>
-                            <div class="reading-info">
-                                <span class="reading-label">Humidity</span>
-                                <span class="reading-value" id="sensor2-humidity">--</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="sensor-status" id="sensor2-humidity-status">
-                        <span class="status-dot"></span>
-                        <span>Reading...</span>
-                    </div>
-                </div>
-
-                <!-- Fan Control -->
+            <!-- Fan Control -->
+            <div class="fan-section">
                 <div class="fan-card">
                     <h2>Fan Control</h2>
                     <div class="fan-visual">
@@ -118,7 +130,6 @@
     </div>
 
     <div id="toast-container"></div>
-    <!-- Removed set-temperature.js since we're using real sensor data -->
     <script src="../static/js/notifications.js"></script>
     <script src="../static/js/home.js"></script>
 </body>
