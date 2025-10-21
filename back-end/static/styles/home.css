@@ -17,7 +17,6 @@
   color: var(--color-primary);
   margin-bottom: 1.5rem;
   font-size: 1.25rem;
-  text-align: center;
 }
 
 .sensor-readings {
@@ -92,21 +91,29 @@
   flex-direction: column;
 }
 
-
-
 .fan-visual {
-  display: flexbox;
-  flex-direction: column;
   text-align: center;
-  align-items: center;
   padding: 2rem 0;
   margin-bottom: 1.5rem;
 }
 
-#electric_fan {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+.fan-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s;
+}
+
+.fan-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .fan-status-text {
@@ -129,6 +136,7 @@
   flex: 1;
 }
 
+/* Updated layout for fridge sections */
 .fridges-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -173,7 +181,52 @@
   font-weight: 600;
 }
 
+/* Updated layout to display all cards in one row */
+.all-cards-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Responsive layout for smaller screens */
+@media (max-width: 1400px) {
+  .all-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .all-cards-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Updated fan section to fit in the row layout */
 .fan-section {
-  max-width: 600px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Updated fan card styling */
+.fan-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.fan-visual {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  padding: 2rem 0;
+  margin-bottom: 1.5rem;
+}
+
+#electric_fan {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }

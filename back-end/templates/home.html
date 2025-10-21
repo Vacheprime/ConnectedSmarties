@@ -29,7 +29,8 @@
                 <p class="subtitle">Monitor sensors and control devices</p>
             </div>
 
-            <div class="fridges-container">
+            <!-- All cards in one row for efficiency -->
+            <div class="all-cards-container">
                 <!-- Fridge 1 -->
                 <div class="fridge-section">
                     <h2 class="fridge-title">Fridge 1 (DHT11)</h2>
@@ -105,19 +106,20 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Fan Control -->
-            <div class="fan-section">
-                <div class="fan-card">
-                    <h2>Fan Control</h2>
-                    <div class="fan-visual">
-                        <img src="../static/images/electric_fan.gif" id="electric_fan" width="100" height="100" />
-                        <p class="fan-status-text" id="fan-status-text">OFF</p>
-                    </div>
-                    <div class="fan-controls">
-                        <button class="btn btn-success" id="fan-on-btn" onclick="controlFan('on')">Turn ON</button>
-                        <button class="btn btn-danger" id="fan-off-btn" onclick="controlFan('off')">Turn OFF</button>
+                <!-- Fan Control -->
+                <div class="fridge-section fan-section">
+                    <h2 class="fridge-title">Fan Control</h2>
+                    <div class="fan-card">
+                        <div class="fan-visual">
+                            <!-- Added electric fan GIF -->
+                            <img src="../static/images/electric_fan.gif" id="electric_fan" width="100" height="100" alt="Electric Fan" />
+                            <p class="fan-status-text" id="fan-status-text">OFF</p>
+                        </div>
+                        <div class="fan-controls">
+                            <button class="btn btn-success" id="fan-on-btn" onclick="controlFan('on')">Turn ON</button>
+                            <button class="btn btn-danger" id="fan-off-btn" onclick="controlFan('off')">Turn OFF</button>
+                        </div>
                     </div>
                 </div>
             </div>
