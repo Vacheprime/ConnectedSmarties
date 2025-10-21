@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectedSmarties - Home</title>
+    <link rel="stylesheet" href="../static/styles/main.css">
+    <linl rel="stylesheet" href="../static/styles/home.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <div class="nav-brand">ConnectedSmarties</div>
+                <ul class="nav-menu">
+                    <li><a href="../templates/home.html" class="active">Home</a></li>
+                    <li><a href="../templates/customers.html">Customers</a></li>
+                    <li><a href="../templates/products.html">Products</a></li>
+                    <li><a href="../templates/reports.html">Reports</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="page-header">
+                <h1>System Control</h1>
+                <p class="subtitle">Monitor sensors and control devices</p>
+            </div>
+
+            <div class="control-grid">
+                <!-- Sensor 1 -->
+                <div class="sensor-card">
+                    <h2>Sensor 1 (DHT11)</h2>
+                    <div class="sensor-readings">
+                        <div class="reading">
+                            <span class="reading-icon">🌡️</span>
+                            <div class="reading-info">
+                                <span class="reading-label">Temperature</span>
+                                <span class="reading-value" id="sensor1-temp">--</span>
+                            </div>
+                        </div>
+                        <div class="reading">
+                            <span class="reading-icon">💧</span>
+                            <div class="reading-info">
+                                <span class="reading-label">Humidity</span>
+                                <span class="reading-value" id="sensor1-humidity">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sensor-status" id="sensor1-status">
+                        <span class="status-dot"></span>
+                        <span>Reading...</span>
+                    </div>
+                </div>
+
+                <!-- Sensor 2 -->
+                <div class="sensor-card">
+                    <h2>Sensor 2 (DHT11)</h2>
+                    <div class="sensor-readings">
+                        <div class="reading">
+                            <span class="reading-icon">🌡️</span>
+                            <div class="reading-info">
+                                <span class="reading-label">Temperature</span>
+                                <span class="reading-value" id="sensor2-temp">--</span>
+                            </div>
+                        </div>
+                        <div class="reading">
+                            <span class="reading-icon">💧</span>
+                            <div class="reading-info">
+                                <span class="reading-label">Humidity</span>
+                                <span class="reading-value" id="sensor2-humidity">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sensor-status" id="sensor2-status">
+                        <span class="status-dot"></span>
+                        <span>Reading...</span>
+                    </div>
+                </div>
+
+                <!-- Fan Control -->
+                <div class="fan-card">
+                    <h2>Fan Control</h2>
+                    <div class="fan-visual">
+                        <div class="fan-icon" id="fan-icon">💨</div>
+                        <p class="fan-status-text" id="fan-status-text">OFF</p>
+                    </div>
+                    <div class="fan-controls">
+                        <button class="btn btn-success" id="fan-on-btn" onclick="controlFan('on')">Turn ON</button>
+                        <button class="btn btn-danger" id="fan-off-btn" onclick="controlFan('off')">Turn OFF</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 ConnectedSmarties. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="toast-container"></div>
+    <!-- <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script> -->
+    <script src="../static/js/notifications.js"></script>
+    <script src="../static/js/home.js"></script>
+</body>
+</html>

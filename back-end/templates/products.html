@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectedSmarties - Products</title>
+    <link rel="stylesheet" href="../static/styles/main.css">
+    <link rel="stylesheet" href="../static/styles/products.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <div class="nav-brand">ConnectedSmarties</div>
+                <ul class="nav-menu">
+                    <li><a href="../templates/home.html">Home</a></li>
+                    <li><a href="../templates/customers.html">Customers</a></li>
+                    <li><a href="../templates/products.html" class="active">Products</a></li>
+                    <li><a href="../templates/reports.html">Reports</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="page-header">
+                <h1>Products</h1>
+                <p class="subtitle">Product inventory and management</p>
+            </div>
+
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="product-icon">🍬</div>
+                    <h3>Smarties Classic</h3>
+                    <p>Traditional colorful candy rolls</p>
+                    <div class="product-info">
+                        <span class="product-stock">In Stock</span>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-icon">🌈</div>
+                    <h3>Smarties Rainbow</h3>
+                    <p>Special edition rainbow mix</p>
+                    <div class="product-info">
+                        <span class="product-stock">In Stock</span>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-icon">🎃</div>
+                    <h3>Smarties Seasonal</h3>
+                    <p>Limited edition seasonal flavors</p>
+                    <div class="product-info">
+                        <span class="product-stock low">Low Stock</span>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-icon">🎁</div>
+                    <h3>Smarties Gift Box</h3>
+                    <p>Premium gift packaging</p>
+                    <div class="product-info">
+                        <span class="product-stock">In Stock</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 ConnectedSmarties. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="../static/js/notifications.js"></script>
+</body>
+</html>

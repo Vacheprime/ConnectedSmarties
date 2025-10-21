@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectedSmarties - Reports</title>
+    <link rel="stylesheet" href="../static/styles/main.css">
+    <link rel="stylesheet" href="../static/styles/reports.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <div class="nav-brand">ConnectedSmarties</div>
+                <ul class="nav-menu">
+                    <li><a href="../templates/home.html">Home</a></li>
+                    <li><a href="../templates/customers.html">Customers</a></li>
+                    <li><a href="../templates/products.html">Products</a></li>
+                    <li><a href="../templates/reports.html" class="active">Reports</a></li>
+            </nav>
+        </header>
+
+        <main>
+            <div class="page-header">
+                <h1>Reports & Analytics</h1>
+                <p class="subtitle">System performance and data insights</p>
+            </div>
+
+            <div class="reports-grid">
+                <div class="report-card">
+                    <h3>Environmental Data</h3>
+                    <p>Temperature and humidity trends over time</p>
+                    <button class="btn btn-primary">View Report</button>
+                </div>
+
+                <div class="report-card">
+                    <h3>Customer Analytics</h3>
+                    <p>Customer registration and rewards statistics</p>
+                    <button class="btn btn-primary">View Report</button>
+                </div>
+
+                <div class="report-card">
+                    <h3>System Performance</h3>
+                    <p>Device uptime and operational metrics</p>
+                    <button class="btn btn-primary">View Report</button>
+                </div>
+
+                <div class="report-card">
+                    <h3>Fan Usage</h3>
+                    <p>Climate control activation history</p>
+                    <button class="btn btn-primary">View Report</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 ConnectedSmarties. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="../static/js/notifications.js"></script>
+</body>
+</html>
