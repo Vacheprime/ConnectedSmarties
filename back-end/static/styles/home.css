@@ -17,6 +17,7 @@
   color: var(--color-primary);
   margin-bottom: 1.5rem;
   font-size: 1.25rem;
+  text-align: center;
 }
 
 .sensor-readings {
@@ -91,29 +92,21 @@
   flex-direction: column;
 }
 
+
+
 .fan-visual {
+  display: flexbox;
+  flex-direction: column;
   text-align: center;
+  align-items: center;
   padding: 2rem 0;
   margin-bottom: 1.5rem;
 }
 
-.fan-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
-  transition: transform 0.3s;
-}
-
-.fan-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+#electric_fan {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .fan-status-text {
