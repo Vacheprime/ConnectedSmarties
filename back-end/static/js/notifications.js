@@ -116,7 +116,7 @@ function closeNotification() {
   }
 }
 
-
+// Add CSS animations
 if (!document.getElementById("notification-styles")) {
   const style = document.createElement("style")
   style.id = "notification-styles"
