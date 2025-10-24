@@ -24,44 +24,94 @@
 
         <main>
             <div class="page-header">
-                <h1>Products</h1>
-                <p class="subtitle">Product inventory and management</p>
+                <h1>Product Management</h1>
+                <p class="subtitle">Add and manage product inventory</p>
             </div>
 
-            <div class="products-grid">
-                <div class="product-card">
-                    <div class="product-icon">🍬</div>
-                    <h3>Smarties Classic</h3>
-                    <p>Traditional colorful candy rolls</p>
-                    <div class="product-info">
-                        <span class="product-stock">In Stock</span>
-                    </div>
+            <div class="products-layout">
+                <!-- Add/Edit Product Form -->
+                <div class="form-section">
+                    <h2 id="form-title">Add New Product</h2>
+                    <form id="product-form" onsubmit="saveProduct(event)">
+                        <input type="hidden" id="product_id" name="product_id">
+                        
+                        <div class="form-group">
+                            <label for="name">Product Name *</label>
+                            <input type="text" id="name" name="name" required>
+                            <span class="error-message" id="name-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Price *</label>
+                            <input type="number" id="price" name="price" min="0" step="0.01" required>
+                            <span class="error-message" id="price-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="epc">EPC *</label>
+                            <input type="text" id="epc" name="epc" required>
+                            <span class="error-message" id="epc-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="upc">UPC</label>
+                            <input type="text" id="upc" name="upc">
+                            <span class="error-message" id="upc-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="available_stock">Available Stock</label>
+                            <input type="number" id="available_stock" name="available_stock" min="0" value="0">
+                            <span class="error-message" id="available_stock-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <input type="text" id="category" name="category">
+                            <span class="error-message" id="category-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="points_worth">Points Worth</label>
+                            <input type="number" id="points_worth" name="points_worth" min="0" value="0">
+                            <span class="error-message" id="points_worth-error"></span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">Add Product</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear</button>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="product-card">
-                    <div class="product-icon">🌈</div>
-                    <h3>Smarties Rainbow</h3>
-                    <p>Special edition rainbow mix</p>
-                    <div class="product-info">
-                        <span class="product-stock">In Stock</span>
+                <!-- Product Database -->
+                <div class="database-section">
+                    <div class="database-header">
+                        <h2>Product Database</h2>
+                        <button class="btn btn-secondary" onclick="loadProducts()">Refresh</button>
                     </div>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-icon">🎃</div>
-                    <h3>Smarties Seasonal</h3>
-                    <p>Limited edition seasonal flavors</p>
-                    <div class="product-info">
-                        <span class="product-stock low">Low Stock</span>
-                    </div>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-icon">🎁</div>
-                    <h3>Smarties Gift Box</h3>
-                    <p>Premium gift packaging</p>
-                    <div class="product-info">
-                        <span class="product-stock">In Stock</span>
+                    
+                    <div class="table-container">
+                        <table id="products-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>EPC</th>
+                                    <th>UPC</th>
+                                    <th>Stock</th>
+                                    <th>Category</th>
+                                    <th>Points</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-tbody">
+                                <tr>
+                                    <td colspan="9" class="loading">Loading products...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -74,5 +124,6 @@
 
     <div id="toast-container"></div>
     <script src="../static/js/notifications.js"></script>
+    <script src="../static/js/products.js"></script>
 </body>
 </html>
