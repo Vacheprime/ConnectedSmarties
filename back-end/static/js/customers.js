@@ -1,7 +1,7 @@
 // Load customers from database
 async function loadCustomers() {
   try {
-    const response = await fetch("/api/customers")
+    const response = await fetch("/customers/data");
     if (response.ok) {
       const customers = await response.json()
       displayCustomers(customers)
@@ -100,7 +100,7 @@ async function addCustomer(event) {
       rewards_points: Number.parseInt(formData.get("rewards_points")) || 0,
     }
 
-    const response = await fetch("/api/customers", {
+    const response = await fetch("/customers/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
