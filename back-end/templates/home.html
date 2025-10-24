@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="../static/images/candy.png">
+    <title>ConnectedSmarties - Home</title>
+    <link rel="stylesheet" href="../static/styles/main.css">
+    <link rel="stylesheet" href="../static/styles/home.css">
+    <link rel="stylesheet" href="../static/styles/thermometer.css">
+    <link rel="stylesheet" href="../static/styles/humidity-gauge.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <div class="nav-brand">ConnectedSmarties</div>
+                <ul class="nav-menu">
+                    <li><a href="../templates/home.html" class="active">Home</a></li>
+                    <li><a href="../templates/customers.html">Customers</a></li>
+                    <li><a href="../templates/products.html">Products</a></li>
+                    <li><a href="../templates/reports.html">Reports</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="page-header">
+                <h1>System Control</h1>
+                <p class="subtitle">Monitor sensors and control devices</p>
+            </div>
+
+            <!-- All cards in one row for efficiency -->
+            <div class="all-cards-container">
+                <!-- Fridge 1 -->
+                <div class="fridge-section">
+                    <h2 class="fridge-title">Fridge 1 (DHT11)</h2>
+                    <div class="fridge-monitors">
+                        <!-- Thermometer -->
+                        <div class="monitor-card">
+                            <h3>Temperature</h3>
+                            <div id="thermometer-wrapper-1">
+                                <div id="termometer-1" class="termometer">
+                                    <div id="temperature-1" class="temperature" style="height:0" data-value="0°C"></div>
+                                    <div class="graduations"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor1-temp-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
+                        </div>
+
+                        <!-- Humidity Gauge -->
+                        <div class="monitor-card">
+                            <h3>Humidity</h3>
+                            <div class="humidity-gauge-container">
+                                <div id="humidity-gauge-1" class="humidity-gauge">
+                                    <div class="humidity-gauge-label">
+                                        <span class="humidity-value" id="humidity-value-1">0</span>
+                                        <span class="humidity-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor1-humidity-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fridge 2 -->
+                <div class="fridge-section">
+                    <h2 class="fridge-title">Fridge 2 (DHT11)</h2>
+                    <div class="fridge-monitors">
+                        <!-- Thermometer -->
+                        <div class="monitor-card">
+                            <h3>Temperature</h3>
+                            <div id="thermometer-wrapper-2">
+                                <div id="termometer-2" class="termometer">
+                                    <div id="temperature-2" class="temperature" style="height:0" data-value="0°C"></div>
+                                    <div class="graduations"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor2-temp-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
+                        </div>
+
+                        <!-- Humidity Gauge -->
+                        <div class="monitor-card">
+                            <h3>Humidity</h3>
+                            <div class="humidity-gauge-container">
+                                <div id="humidity-gauge-2" class="humidity-gauge">
+                                    <div class="humidity-gauge-label">
+                                        <span class="humidity-value" id="humidity-value-2">0</span>
+                                        <span class="humidity-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-status" id="sensor2-humidity-status">
+                                <span class="status-dot"></span>
+                                <span>Reading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fan Control -->
+                <div class="fridge-section fan-section">
+                    <h2 class="fridge-title">Fan Control</h2>
+                    <div class="fan-card">
+                        <div class="fan-visual">
+                            <!-- Added electric fan GIF -->
+                            <img src="../static/images/electric_fan.gif" id="electric_fan" width="100" height="100" alt="Electric Fan" />
+                            <p class="fan-status-text" id="fan-status-text">OFF</p>
+                        </div>
+                        <div class="fan-controls">
+                            <button class="btn btn-success" id="fan-on-btn" onclick="controlFan('on')">Turn ON</button>
+                            <button class="btn btn-danger" id="fan-off-btn" onclick="controlFan('off')">Turn OFF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 ConnectedSmarties. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="../static/js/notifications.js"></script>
+    <script src="../static/js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.sensor-card,
+.fan-card {
+  background-color: var(--color-background-light);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.sensor-card h2,
+.fan-card h2 {
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.sensor-readings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.reading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-background-card);
+  border-radius: var(--border-radius-small);
+}
+
+.reading-icon {
+  font-size: 2rem;
+}
+
+.reading-info {
+  flex: 1;
+}
+
+.reading-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.reading-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.sensor-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--color-background-card);
+  border-radius: var(--border-radius-small);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.fan-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fan-visual {
+  text-align: center;
+  padding: 2rem 0;
+  margin-bottom: 1.5rem;
+}
+
+.fan-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s;
+}
+
+.fan-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fan-status-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.fan-status-text.on {
+  color: var(--color-success);
+}
+
+.fan-controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.fan-controls button {
+  flex: 1;
+}
+
+/* Updated layout for fridge sections */
+.fridges-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.fridge-section {
+  background-color: var(--color-background-light);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.fridge-title {
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.fridge-monitors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.monitor-card {
+  background-color: var(--color-background-card);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-small);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.monitor-card h3 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Updated layout to display all cards in one row */
+.all-cards-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Responsive layout for smaller screens */
+@media (max-width: 1400px) {
+  .all-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .all-cards-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Updated fan section to fit in the row layout */
+.fan-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Updated fan card styling */
+.fan-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.fan-visual {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  padding: 2rem 0;
+  margin-bottom: 1.5rem;
+}
+
+#electric_fan {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}

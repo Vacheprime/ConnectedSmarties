@@ -2,11 +2,12 @@
 from flask import Flask, render_template, request, g
 import sqlite3
 import os
+from .leds import success, fail
 
 app = Flask(__name__)
 
 # Initialize db in way that db path won't break if Flask is running on a different working directory
-db_path = os.path.join(os.path.dirname(__file__), "..", "db", "sql_connected_smarties.db")
+db_path = os.path.join(os.path.dirname(__file__), "..", "db", "ConnectedSmarties.db")
 
 # Make the math absolute
 db_path = os.path.abspath(db_path)
@@ -37,13 +38,18 @@ def register_customer():
         rewards_points = request.form['rewards_points']
 
         # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
+        try:
+            conn = get_db()
+            cursor = conn.cursor() # to allow execute sql statement
 
-        # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (first_name, last_name, email, phone_number, rewards_points))
-        conn.commit()
-        conn.close()
+            # Insert the new customer into the Customers table
+            cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (first_name, last_name, email, phone_number, rewards_points))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            fail()
+            return "Could not insert customer"
+        success()
         return f'Customer added'
     else:
         # Note: by default, Flask looks for HTML files inside folder named templates
