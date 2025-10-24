@@ -2,12 +2,6 @@
 from flask import Flask, render_template, request, g
 import sqlite3
 import os
-from mqtt_service import MQTTService
-
-service = MQTTService("127.0.0.1")
-
-while True:
-    pass
 
 app = Flask(__name__)
 
