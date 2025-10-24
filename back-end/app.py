@@ -2,13 +2,14 @@
 from flask import Flask, render_template, request, g, jsonify
 import sqlite3
 import os
-from .leds import success, fail # commented for now!!!!!!!!!!!!!!!!!!!
-from flask_cors import CORS 
+from flask_cors import CORS  
+# Install cors: pip install flask-cors
 
 app = Flask(__name__)
 CORS(app)
 
 # Initialize db in way that db path won't break if Flask is running on a different working directory
+# After pulling, run this: sqlite3 your_database_name.db < your_script.sql
 db_path = os.path.join(os.path.dirname(__file__), "..", "db", "sql_connected_smarties.db")
 
 # Make the math absolute
@@ -91,9 +92,7 @@ def register_customer():
             conn.close()
             return jsonify({'message': 'Customer added successfully'}), 200
         except Exception as e:
-            fail() # commented for now!!!!!!!!!!!!!!!!!!! 
             return jsonify({'message': 'Failed to add Customer'}), 404
-        success() # commented for now!!!!!!!!!!!!!!!!!!!
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
