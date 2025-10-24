@@ -2,6 +2,9 @@
 from flask import Flask, render_template, request, g
 import sqlite3
 import os
+from mqtt_service import MQTTService
+
+service = MQTTService("192.168.0.192")
 
 app = Flask(__name__)
 
