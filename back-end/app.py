@@ -48,6 +48,21 @@ def register_customer():
     else:
         # Note: by default, Flask looks for HTML files inside folder named templates
         return render_template('customer_registration_form.html')
-    
+
+@app.route('/customers', methods=['GET'])
+def get_customers():
+    try:
+        # Establish db connection
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Customers')
+        customers = cursor.fetchall()
+        cursor.close()
+        conn.commit()
+        conn.close()
+        return jsonify(customers)
+    except Exception as e:
+        return jsonify({'error: str(e)'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
