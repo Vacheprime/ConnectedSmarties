@@ -1,6 +1,6 @@
 let fanStatus = "off"
 
-const TEST_MODE = true // 👈 turn this on/off to switch between test & real data
+const TEST_MODE = false // 👈 turn this on/off to switch between test & real data
 
 // Function to show toast messages
 function showToast(title, message, type) {
