@@ -238,22 +238,26 @@ footer {
 }
 
 /* Added toast notification styles */
+/* Updated toast container to center-top position and made toasts smaller */
 #toast-container {
   position: fixed;
   top: 20px;
-  right: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-items: center;
 }
 
 .toast {
   background-color: var(--color-background-light);
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   border-radius: var(--border-radius-small);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 300px;
+  min-width: 280px;
+  max-width: 400px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -306,24 +310,25 @@ footer {
   justify-content: center;
 }
 
+/* Updated animations to slide from top instead of right */
 @keyframes slideIn {
   from {
-    transform: translateX(400px);
+    transform: translateY(-100px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }
 
 @keyframes slideOut {
   from {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
   to {
-    transform: translateX(400px);
+    transform: translateY(-100px);
     opacity: 0;
   }
 }
