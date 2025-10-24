@@ -110,7 +110,7 @@ async function addCustomer(event) {
 
     if (response.ok) {
       const result = await response.json()
-      showToast("Success", "Customer added successfully!", "success")
+      showToast("Success", "Customer successfully created!", "success")
       form.reset()
       loadCustomers()
     } else {
@@ -135,7 +135,7 @@ async function deleteCustomer(customerId) {
     })
 
     if (response.ok) {
-      showToast("Success", "Customer deleted successfully", "success")
+      showToast("Success", "Customer successfully deleted!", "success")
       loadCustomers()
     } else {
       const error = await response.json()
