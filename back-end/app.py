@@ -4,7 +4,10 @@ import sqlite3
 import os
 from mqtt_service import MQTTService
 
-service = MQTTService("192.168.0.192")
+service = MQTTService("127.0.0.1")
+
+while True:
+    pass
 
 app = Flask(__name__)
 

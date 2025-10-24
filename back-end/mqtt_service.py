@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 
 class MQTTService:
     
+    
     def __init__(self, server, port = 1883):
         # Save server and port
         self.mqtt_server = server
@@ -26,7 +27,8 @@ class MQTTService:
     
 
     def _setup_topic_callbacks(self):
-        pass
+        self.mqtt_client.subscribe("Frig1/temperature")
+        self.mqtt_client.message_callback_add("Frig1/temperature", self._receive_frige1_sensor_data)
     
 
     def _on_connect(self, client, userdata, flags, rc):
@@ -36,8 +38,5 @@ class MQTTService:
             print(f"Failed to connect to the MQTT server. Code: {rc}")
              
         
-    def _receive_frige_1_temp():
-        
-
-
-
+    def _receive_frige1_sensor_data(self, client, userdata, message):
+        print(message.payload.decode())
