@@ -1,5 +1,6 @@
 /*********
-https://www.electronicshub.org/esp32-dht11-tutorial/
+  DHT11 and MQTT Code from:
+  https://www.electronicshub.org/esp32-dht11-tutorial/
   Rui Santos
   Complete project details at https://randomnerdtutorials.com  
 *********/
@@ -12,19 +13,24 @@ https://www.electronicshub.org/esp32-dht11-tutorial/
 DHT dht(DHT11PIN, DHT11);
 
 // Replace the next variables with your SSID/Password combination
-const char* ssid = "iotvanier";
-const char* password = "14730078";
+const char* ssid = "";
+const char* password = "";
 
 // Add your MQTT Broker IP address, example:
-const char* mqtt_server = "192.168.0.156";
+const char* mqtt_server = "";
 
 // Define the topics for temperature and humidity publish
 const char* tempTopic = "Frig1/temperature";
 const char* humidityTopic = "Frig1/humidity";
 
 // Define the topics for fan control
-const char* controlTopic = "Frig1/fanControl";
-const char* controlStatucTopic = "Frig1/fanControl/status";
+const char* fanControlTopic = "Frig1/fanControl";
+const char* fanStatusTopic = "Frig1/fanControl/status";
+
+// Define the pins for motor control
+const int enablePin = 32;
+const int input1 = 33;
+const int input2 = 14;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -40,11 +46,30 @@ void setup() {
   // Setup serial bus
   Serial.begin(115200);
   dht.begin();
+
+  // Setup motor pins
+  pinMode(enablePin, OUTPUT);
+  pinMode(input1, OUTPUT);
+  pinMode(input2, OUTPUT);
+  // Set Motor OFF by default
+  digitalWrite(enablePin, LOW);
+
   // default settings
   setup_wifi();
   client.setServer(mqtt_server, 1883);
+
+  // Run client loop in a separate task
+  xTaskCreate(
+    listenToControl,
+    "listenToControl",
+    10000,
+    NULL,
+    1,
+    NULL
+  );
 }
 
+// Connect to WiFi.
 void setup_wifi() {
   delay(10);
   // We start by connecting to a WiFi network
@@ -65,6 +90,7 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
+// Connect to the MQTT server.
 void connect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -74,6 +100,7 @@ void connect() {
       Serial.println("connected");
       // Subscribe to topics
       client.subscribe(fanControlTopic);
+      client.setCallback(msgReceivedCallback);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -84,29 +111,66 @@ void connect() {
   }
 }
 
-void msgReceivedCallback(const char[] topic, byte* payload, unsigned int length) {
+// Callback function used to handle data received from the subscribed topics.
+void msgReceivedCallback(const char* topic, byte* payload, unsigned int length) {
   // Check subscribe topic
-  if (strcmp(topic, fanControlTopic)) {
+  if (strcmp(topic, fanControlTopic) == 0) {
     // Convert payload to string
     std::string payloadStr(reinterpret_cast<const char*>(payload), length);
+
+    if (payloadStr == "START") {
+      // Enable motor
+      digitalWrite(enablePin, HIGH);
+      // Set direction
+      digitalWrite(input1, HIGH);
+      digitalWrite(input2, LOW);
+      // Set motor enabled/disabled
+      isFanOn = true;
+    } else if (payloadStr == "STOP") {
+      // Disable motor
+      digitalWrite(enablePin, LOW);
+      // Set direction
+      digitalWrite(input1, LOW);
+      digitalWrite(input2, LOW);
+      // Set motor enabled/disabled
+      isFanOn = false;
+    }
+
+    int arraySize = payloadStr.length() + 1;
+    char payloadArr[arraySize];
+    strcpy(payloadArr, payloadStr.c_str());
+
+    Serial.println(payloadArr); // Print for test
     
+  }
+  Serial.println(topic);
+}
+
+// Separate task used to listen to fan controls.
+void listenToControl(void *pvParameters) {
+  while (true) {
+    // Execute client loop if connected
+    if (!client.connected()) {
+      continue;
+    }
+    client.loop();
   }
 }
 
+// Run the main loop for reading the measurements and sending status
+// updates.
 void loop() {
   // Attempt to connect to the MQTT
   if (!client.connected()) {
     connect();
   }
 
-  client.loop();
-
   // Read humidity and temperature
   float humi = dht.readHumidity();
   float temp = dht.readTemperature();
   // Format the temperature
   char tempString[8];
-  dtostrf(temp, 6, 2, tempString);
+  dtostrf(temp, 5, 2, tempString);
   Serial.print("Temperature: ");
   Serial.println(tempString);
 
@@ -115,7 +179,7 @@ void loop() {
     
   // Format the humidity
   char humString[8];
-  dtostrf(humi, 6, 2, humString);
+  dtostrf(humi, 5, 2, humString);
   Serial.print("Humidity: ");
   Serial.println(humString);
 
@@ -129,7 +193,7 @@ void loop() {
   strcpy(fanStatusArr, fanStatusString.c_str());
 
   // Publish
-  client.publish(controlStatucTopic, fanStatusArr);
+  client.publish(fanStatusTopic, fanStatusArr);
   Serial.print("Fan status: ");
   Serial.println(fanStatusArr);
 
