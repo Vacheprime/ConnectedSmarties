@@ -26,7 +26,29 @@ CREATE TABLE IF NOT EXISTS SensorDataPoints (
     FOREIGN KEY (sensor_id) REFERENCES Sensors(sensor_id)
 );
 
+ALTER TABLE SensorDataPoints ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+
 -- Insert sample data into the database
+INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
+-- Fridge 1 (sensor_id = 1)
+(1, 'temperature', '5.2', '2025-10-24 18:00:00'),
+(1, 'humidity', '72.5', '2025-10-24 18:00:00'),
+(1, 'temperature', '5.1', '2025-10-24 18:05:00'),
+(1, 'humidity', '73.0', '2025-10-24 18:05:00'),
+(1, 'temperature', '5.3', '2025-10-24 18:10:00'),
+(1, 'humidity', '72.8', '2025-10-24 18:10:00'),
+(1, 'temperature', '5.4', '2025-10-24 18:15:00'),
+(1, 'humidity', '72.9', '2025-10-24 18:15:00'),
+
+-- Fridge 2 (sensor_id = 2)
+(2, 'temperature', '4.9', '2025-10-24 18:00:00'),
+(2, 'humidity', '69.8', '2025-10-24 18:00:00'),
+(2, 'temperature', '5.0', '2025-10-24 18:05:00'),
+(2, 'humidity', '70.1', '2025-10-24 18:05:00'),
+(2, 'temperature', '4.8', '2025-10-24 18:10:00'),
+(2, 'humidity', '70.4', '2025-10-24 18:10:00'),
+(2, 'temperature', '4.9', '2025-10-24 18:15:00'),
+(2, 'humidity', '70.0', '2025-10-24 18:15:00');
 
 -- For the Customers table
 INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points)
