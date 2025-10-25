@@ -2,7 +2,8 @@
 from flask import Flask, render_template, request, g, jsonify
 import sqlite3
 import os
-from flask_cors import CORS  
+from flask_cors import CORS
+from validators import validate_customer, validate_product 
 # Install cors: pip install flask-cors
 
 app = Flask(__name__)
@@ -68,31 +69,38 @@ def register_customer():
     #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
     #       run on another port by typing this command flask run --port=5001
     try:
-        # OLD:
-        # first_name = request.form['first_name']
-        # last_name = request.form['last_name']
-        # email = request.form['email']
-        # phone_number = request.form['phone_number']
-        # rewards_points = request.form['rewards_points']
         data = request.get_json()
-        first_name = data.get("first_name")
-        last_name = data.get("last_name")
-        email = data.get("email")
-        phone_number = data.get("phone_number")
-        rewards_points = data.get("rewards_points")
-
+        
+        # Validate the input
+        error = validate_customer(data)
+        if errors:
+            return jsonify({'error': str(errors)}), 400
+        
         # Establish db connection
-        try:
-            conn = get_db()
-            cursor = conn.cursor() # to allow execute sql statement
+        conn = get_db()
+        cursor = conn.cursor() # to allow execute sql statement
+        
+        # Insert the new customer into the Customers table
+        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Customer added successfully'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-            # Insert the new customer into the Customers table
-            cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (first_name, last_name, email, phone_number, rewards_points))
-            conn.commit()
-            conn.close()
-            return jsonify({'message': 'Customer added successfully'}), 200
-        except Exception as e:
-            return jsonify({'message': 'Failed to add Customer'}), 404
+    
+# Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
+@app.route('/products/add', methods=['POST'])
+def register_product():
+    try:
+        conn = get_db()
+        cursor = conn.cursor() # to allow execute sql statement
+
+        cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Product added successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
