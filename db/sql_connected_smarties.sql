@@ -28,6 +28,12 @@ CREATE TABLE IF NOT EXISTS SensorDataPoints (
 
 ALTER TABLE SensorDataPoints ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
 
+-- Insert both sensors
+INSERT INTO Sensors (sensor_type, `location`)
+VALUES
+('temperature/humidity', 'Store 1: Fridge 1'),
+('temperature/humidity', 'Store 1: Fridge 2');
+
 -- Insert sample data into the database
 INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 -- Fridge 1 (sensor_id = 1)
@@ -59,9 +65,3 @@ VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', '123 456 789', 100);
 
 INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points)
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', '5142246080', 300);
-
--- Insert both sensors
-INSERT INTO Sensors (sensor_type, `location`)
-VALUES
-('temperature/humidity', 'Store 1: Fridge 1'),
-('temperature/humidity', 'Store 1: Fridge 2');
