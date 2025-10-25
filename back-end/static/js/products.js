@@ -260,18 +260,3 @@ function clearFieldError(fieldId) {
     errorElement.style.display = "none"
   }
 }
-
-// New function for showToast
-function showToast(title, message, type) {
-  const toastContainer = document.createElement("div")
-  toastContainer.className = `toast ${type}`
-  toastContainer.innerHTML = `
-    <div class="toast-title">${title}</div>
-    <div class="toast-message">${message}</div>
-  `
-  document.body.appendChild(toastContainer)
-
-  setTimeout(() => {
-    document.body.removeChild(toastContainer)
-  }, 3000)
-}
