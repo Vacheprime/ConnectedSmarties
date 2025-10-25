@@ -13,7 +13,7 @@ class BaseModel:
 		db_table (str): The name of the model's table. 
 	"""
 	PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-	DB_NAME = os.path.join(PROJECT_ROOT, "db", "ConnectedSmarties.db")
+	DB_NAME = os.path.join(PROJECT_ROOT, "db", "sql_connected_smarties.db")
 		
 
 	def __init__(self, db_table):

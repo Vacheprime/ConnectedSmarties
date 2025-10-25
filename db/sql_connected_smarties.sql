@@ -58,6 +58,12 @@ VALUES
 ('temperature/humidity', 'Store 1: Fridge 1'),
 ('temperature/humidity', 'Store 1: Fridge 2');
 
+-- Insert both sensors
+INSERT INTO Sensors (sensor_type, `location`)
+VALUES
+('temperature/humidity', 'Store 1: Fridge 1'),
+('temperature/humidity', 'Store 1: Fridge 2');
+
 -- Insert sample data into the database
 INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 -- Fridge 1 (sensor_id = 1)
