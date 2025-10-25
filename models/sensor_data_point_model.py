@@ -46,7 +46,7 @@ class SensorDataPoint(BaseModel):
     
 
     @classmethod
-    def fetch_latest_sensor_data(cls, sensor_id: int, data_type: str) -> None:
+    def fetch_latest_sensor_data(cls, sensor_id: int, data_type: str) -> SensorDataPoint | None:
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
         WHERE sensor_id = :sensor_id
@@ -69,6 +69,7 @@ class SensorDataPoint(BaseModel):
             
             # Fetch the row
             row = cursor.fetchone()
+            
             # Return no result if none exist
             if row == None:
                 return None
