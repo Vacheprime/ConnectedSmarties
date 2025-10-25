@@ -111,7 +111,7 @@ async function saveProduct(event) {
   // Submit data
   try {
     const isEdit = productId && productId !== ""
-    const url = isEdit ? `/api/products/${productId}` : "/api/products"
+    const url = isEdit ? `/products/${productId}` : "/products"
     const method = isEdit ? "PUT" : "POST"
 
     const response = await fetch(url, {
@@ -141,7 +141,7 @@ async function saveProduct(event) {
 // Edit product - populate form with product data
 async function editProduct(productId) {
   try {
-    const response = await fetch(`/api/products/${productId}`)
+    const response = await fetch(`/products/${productId}`)
     if (response.ok) {
       const product = await response.json()
 
@@ -177,7 +177,7 @@ async function deleteProduct(productId) {
   }
 
   try {
-    const response = await fetch(`/api/products/${productId}`, {
+    const response = await fetch(`/products/${productId}`, {
       method: "DELETE",
     })
 

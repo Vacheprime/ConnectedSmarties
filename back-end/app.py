@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, g, jsonify
 import sqlite3
 import os
 from flask_cors import CORS
-from validators import validate_customer, validate_product 
+from .validators import validate_customer, validate_product 
 # Install cors: pip install flask-cors
 
 app = Flask(__name__)
@@ -72,9 +72,10 @@ def register_customer():
         data = request.get_json()
         
         # Validate the input
-        error = validate_customer(data)
+        errors = validate_customer(data)
         if errors:
-            return jsonify({'error': str(errors)}), 400
+            print("Returning validation errors to client...") 
+            return jsonify({'errors': str(errors)}), 400
         
         # Establish db connection
         conn = get_db()
@@ -87,13 +88,21 @@ def register_customer():
         return jsonify({'message': 'Customer added successfully'}), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'errors': str(e)}), 500
 
     
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
     try:
+        data = request.get_json()
+        
+        # Validate the input
+        errors = validate_product(data)
+        if errors:
+            print("Returning validation errors to client...") 
+            return jsonify({'errors': str(errors)}), 400
+        
         conn = get_db()
         cursor = conn.cursor() # to allow execute sql statement
 
