@@ -31,7 +31,7 @@ function displayProducts(products) {
         <tr>
             <td>${product.product_id}</td>
             <td>${product.name}</td>
-            <td>$${(Number.parseFloat(product.price).toFixed(2))}</td>
+            <td>${Number.parseFloat(product.price).toFixed(2)}</td>
             <td>${product.epc}</td>
             <td>${product.upc || "-"}</td>
             <td>${product.available_stock || 0}</td>
