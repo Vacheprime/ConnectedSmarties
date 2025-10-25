@@ -1,7 +1,7 @@
 // Load products from database
 async function loadProducts() {
   try {
-    const response = await fetch("/api/products")
+    const response = await fetch("/products/data")
     if (response.ok) {
       const products = await response.json()
       displayProducts(products)
@@ -31,7 +31,7 @@ function displayProducts(products) {
         <tr>
             <td>${product.product_id}</td>
             <td>${product.name}</td>
-            <td>$${Number.parseFloat(product.price).toFixed(2)}</td>
+            <td>$${(Number.parseFloat(product.price).toFixed(2))}</td>
             <td>${product.epc}</td>
             <td>${product.upc || "-"}</td>
             <td>${product.available_stock || 0}</td>
@@ -111,7 +111,7 @@ async function saveProduct(event) {
   // Submit data
   try {
     const isEdit = productId && productId !== ""
-    const url = isEdit ? `/products/${productId}` : "/products"
+    const url = isEdit ? `/products/${productId}` : "/products/add"
     const method = isEdit ? "PUT" : "POST"
 
     const response = await fetch(url, {

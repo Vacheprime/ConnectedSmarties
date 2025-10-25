@@ -9,8 +9,9 @@ def validate_customer(data):
     if not data.get("first_name") or not data.get("last_name") or not data.get("email"):
         errors.append("Field is missing, must require the following fields: first name, last name, and email.")
     
-    if not re.fullmatch(name_pattern, data["first_name"]) and not re.fullmatch(name_pattern, data["last_name"]):
-        errors.append("Invalid Name Format")
+    if (data.get("first_name") and not re.fullmatch(name_pattern, data["first_name"])) or \
+   (data.get("last_name") and not re.fullmatch(name_pattern, data["last_name"])):
+    errors.append("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.")
         
     # GeeksForGeeks
     if data.get("email") and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data["email"]):
@@ -33,9 +34,17 @@ def validate_product(data):
     
     required_fields = ["name", "price", "epc", "upc", "available_stock", "category", "points_worth"]
     
-    if not data.get("name") or not data.get("price") or not data.get("epc") or not data.get("upc"):
-        errors.append("Field is missing, must require the following fields: name, price, epc, and upc.")
-            
+    if not data.get("name") or not data.get("price") or not data.get("epc"):
+        errors.append("Field is missing, must require the following fields: name, price, epc.")
+        
+    # Validate name (letters and spaces only)
+    if data.get("name") and not re.match(r"^[A-Za-z\s]+$", data["name"]):
+        errors.append("Product name must contain only letters and spaces.")
+    
+    # Validate category (letters and spaces only)
+    if data.get("category") and not re.match(r"^[A-Za-z\s]+$", data["category"]):
+        errors.append("Category must contain only letters and spaces.")
+      
     # Price Validation
     try:
         price = float(data.get("price", 0))
@@ -52,7 +61,18 @@ def validate_product(data):
     except ValueError:
         errors.append("Stock must be a valid integer")
         
+    # UPC Validation (must be exactly 12 digits)
+    upc = str(data.get("upc", "")).strip()
+    if not re.fullmatch(r"\d{12}", upc):
+        errors.append("UPC must be exactly 12 digits.")
+    
+    # EPC Validation (example: alphanumeric 4–24 characters)
+    epc = str(data.get("epc", "")).strip()
+    if not re.fullmatch(r"[A-Za-z0-9]{4,24}", epc):
+        errors.append("EPC must be 4–24 alphanumeric characters (no spaces or symbols).")
+    
     # Print errors in the terminal
     if errors:
         print("Validation errors:", errors)
     return errors
+

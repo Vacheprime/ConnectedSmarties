@@ -60,6 +60,20 @@ def get_customers():
         return jsonify(customers)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/products/data', methods=['GET'])
+def get_products():
+    try:
+        # Establish db connection
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Products')
+        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
+        products = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
+        conn.close()
+        return jsonify(products)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
 
 # need a method to add customer
@@ -75,7 +89,7 @@ def register_customer():
         errors = validate_customer(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': str(errors)}), 400
+            return jsonify({'errors': errors}), 400
         
         # Establish db connection
         conn = get_db()
@@ -88,7 +102,7 @@ def register_customer():
         return jsonify({'message': 'Customer added successfully'}), 200
         
     except Exception as e:
-        return jsonify({'errors': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
     
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
@@ -101,7 +115,7 @@ def register_product():
         errors = validate_product(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': str(errors)}), 400
+            return jsonify({'errors': errors}), 400
         
         conn = get_db()
         cursor = conn.cursor() # to allow execute sql statement

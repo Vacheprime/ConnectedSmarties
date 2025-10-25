@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Products (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     price INTEGER NOT NULL,
-    epc VARCHAR(64) NOT NULL CHECK(LENGTH(epc) > 0),
+    epc VARCHAR(64) NOT NULL CHECK(LENGTH(epc) > 0) UNIQUE,
     upc INTEGER NOT NULL,
     available_stock INTEGER DEFAULT 0,
     category TEXT,
