@@ -1,5 +1,5 @@
 import paho.mqtt.client as mqtt
-from utils.validation_utils import ValidationUtils
+from .utils.validation_utils import ValidationUtils
 from models.sensor_data_point_model import SensorDataPoint
 
 class MQTTService:
@@ -12,6 +12,8 @@ class MQTTService:
         # Callback for threshold checking (will be set by app.py)
         self.threshold_callback = None
         
+        self.is_connected = False
+        
         # Create a new client
         self.mqtt_client = mqtt.Client(client_id="MQTTService")
         # Attempt to connect
@@ -22,18 +24,25 @@ class MQTTService:
         self.threshold_callback = callback
 
     def _setup_mqtt_connection(self):
-        # Set on event handlers
-        self.mqtt_client.on_connect = self._on_connect
-        # Configure reconnects
-        self.mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)
-        # Attempt to connect
-        self.mqtt_client.connect(self.mqtt_server, self.port)
-        # Setup subscriber callbacks
-        self._setup_topic_callbacks()
-        # Start loop
-        self.mqtt_client.loop_start()
+        try:
+            # Set on event handlers
+            self.mqtt_client.on_connect = self._on_connect
+            # Configure reconnects
+            self.mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)
+            # Attempt to connect
+            self.mqtt_client.connect(self.mqtt_server, self.port)
+            # Setup subscriber callbacks
+            self._setup_topic_callbacks()
+            # Start loop
+            self.mqtt_client.loop_start()
+            self.is_connected = True
+            print(f"INFO: MQTT connection initiated to {self.mqtt_server}:{self.port}")
+        except Exception as e:
+            print(f"WARNING: Could not connect to MQTT broker at {self.mqtt_server}:{self.port}")
+            print(f"WARNING: MQTT features will be disabled. Error: {e}")
+            print(f"INFO: Flask app will continue running without MQTT functionality")
+            self.is_connected = False
     
-
     def _setup_topic_callbacks(self):
         self.mqtt_client.subscribe("Frig1/#")
         self.mqtt_client.message_callback_add("Frig1/#", self._receive_frige1_sensor_data)
@@ -155,6 +164,10 @@ class MQTTService:
         Args:
             topic (str): The control topic that the device controlling the fan is subscribed to.
         """
+        if not self.is_connected:
+            print("WARNING: Cannot activate fan - MQTT broker not connected")
+            return
+            
         # Define qos = 1 -> device will receive the message at least once
         qos = 1
 
@@ -169,6 +182,10 @@ class MQTTService:
         Args:
             topic (str): The control topic that the device controlling the fan is subscribed to.
         """
+        if not self.is_connected:
+            print("WARNING: Cannot deactivate fan - MQTT broker not connected")
+            return
+            
         # Define qos = 1 -> device will receive the message at least once
         qos = 1
 

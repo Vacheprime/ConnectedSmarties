@@ -82,10 +82,10 @@ def get_reports_page():
 
 # ============= CUSTOMER API ROUTES =============
 
-@app.route('/api/customers', methods=['GET'])
-def get_customers_api():
-    """Alias for /customers/data to match frontend API calls."""
-    return get_customers()
+@app.route('/api/customers', methods=['POST'])
+def register_customer_api():
+    """Alias for /customers/add to match frontend API calls."""
+    return register_customer()
 
 @app.route('/customers/data', methods=['GET'])
 def get_customers():

@@ -10,8 +10,8 @@ def validate_customer(data):
         errors.append("Field is missing, must require the following fields: first name, last name, and email.")
     
     if (data.get("first_name") and not re.fullmatch(name_pattern, data["first_name"])) or \
-   (data.get("last_name") and not re.fullmatch(name_pattern, data["last_name"])):
-    errors.append("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.")
+       (data.get("last_name") and not re.fullmatch(name_pattern, data["last_name"])):
+        errors.append("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.")
         
     # GeeksForGeeks
     if data.get("email") and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data["email"]):
