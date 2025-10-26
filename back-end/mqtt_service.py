@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 from utils.validation_utils import ValidationUtils
+from models.sensor_data_point_model import SensorDataPoint
 
 class MQTTService:
     
@@ -8,11 +9,17 @@ class MQTTService:
         self.mqtt_server = server
         self.port = port
         
+        # Callback for threshold checking (will be set by app.py)
+        self.threshold_callback = None
+        
         # Create a new client
         self.mqtt_client = mqtt.Client(client_id="MQTTService")
         # Attempt to connect
         self._setup_mqtt_connection()
     
+    def set_threshold_callback(self, callback):
+        """Set the callback function for threshold checking."""
+        self.threshold_callback = callback
 
     def _setup_mqtt_connection(self):
         # Set on event handlers
@@ -76,8 +83,18 @@ class MQTTService:
                 return # Do not insert in DB
             sensor_value = sensor_value.lower()
         
-        
         print(f"INFO: Received sensor value from Fridge 1 '{sensor_value}' on topic '{topic}'")
+        
+        try:
+            sensor_data_point = SensorDataPoint(sensor_id=1, data_type=sensor_type, value=sensor_value)
+            SensorDataPoint.insert_sensor_data_point(sensor_data_point)
+            print(f"INFO: Saved Frig1 {sensor_type} data to database: {sensor_value}")
+            
+            if sensor_type == "temperature" and self.threshold_callback:
+                self.threshold_callback(1, float(sensor_value), "Frig1")
+                
+        except Exception as e:
+            print(f"ERROR: Failed to save sensor data to database: {e}")
     
 
     def _receive_fridge2_sensor_data(self, client, userdata, message):
@@ -117,8 +134,18 @@ class MQTTService:
         else:
             return # Unrecognised sensor type, do not insert
         
-        
         print(f"INFO: Received sensor value from fridge 2 '{sensor_value}' on topic '{topic}'")
+        
+        try:
+            sensor_data_point = SensorDataPoint(sensor_id=2, data_type=sensor_type, value=sensor_value)
+            SensorDataPoint.insert_sensor_data_point(sensor_data_point)
+            print(f"INFO: Saved Frig2 {sensor_type} data to database: {sensor_value}")
+            
+            if sensor_type == "temperature" and self.threshold_callback:
+                self.threshold_callback(2, float(sensor_value), "Frig2")
+                
+        except Exception as e:
+            print(f"ERROR: Failed to save sensor data to database: {e}")
     
 
     def ActivateFan(self, topic: str) -> None:
