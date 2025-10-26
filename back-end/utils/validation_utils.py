@@ -19,11 +19,13 @@ class ValidationUtils:
 
     @staticmethod
     def is_numeric_sensor_message_valid(msg: str) -> bool:
-        regex = "\d+:-?\d+(.\d+)?"
-        return re.fullmatch(regex, msg) != None
+        # Use raw string and escape the dot for decimal part
+        regex = r"\d+:-?\d+(\.\d+)?"
+        return re.fullmatch(regex, msg) is not None
 
 
     @staticmethod
     def is_boolean_sensor_message_valid(msg: str) -> bool:
-        regex = "\d+:(true|false)"
-        return re.fullmatch(regex, msg, re.IGNORECASE) != None
+        # Use raw string to avoid escape sequence warnings
+        regex = r"\d+:(true|false)"
+        return re.fullmatch(regex, msg, re.IGNORECASE) is not None
