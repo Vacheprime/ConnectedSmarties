@@ -174,7 +174,7 @@ class MQTTService:
         print(f"INFO: Received sensor value from fridge 2 '{sensor_value}' on topic '{topic}'")
     
 
-    def ActivateFan(self, topic: str) -> None:
+    def activate_fan(self, topic: str) -> None:
         """
         Activate the fan of a fridge.
 
@@ -188,7 +188,7 @@ class MQTTService:
         self.mqtt_client.publish(topic, "START", qos=qos)
     
 
-    def DeactivateFan(self, topic: str) -> None:
+    def deactivate_fan(self, topic: str) -> None:
         """
         Deactivate the fan of a fridge.
 
