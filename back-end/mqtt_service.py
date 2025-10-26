@@ -146,9 +146,6 @@ class MQTTService:
         if sensor == None:
             print(f"WARNING: Received '{sensor_message}' from unknown sensor with declared ID: {sensor_id}")
             return
-        
-        # Decode the data as string
-        sensor_value = message.payload.decode()
 
         # Check for sensor type and validate sensor value
         if data_type == "temperature":
