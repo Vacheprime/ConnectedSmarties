@@ -18,7 +18,7 @@ def validate_customer(data):
         errors.append("Invalid Email Format")
         
     # https://stackabuse.com/python-regular-expressions-validate-phone-numbers
-    if data.get("phone_number") and not re.match(r"(\+\d{1,3})?\s?\(?\d{1,4}\)?[\s.-]?\d{3}[\s.-]?\d{4}", str(data["phone_number"])):
+    if data.get("phone_number") and not re.match(r"(\+\d{1,3})?\s?$$?\d{1,4}$$?[\s.-]?\d{3}[\s.-]?\d{4}", str(data["phone_number"])):
         errors.append("Phone Number Format")
 
     # Rewards must be integers
@@ -75,4 +75,3 @@ def validate_product(data):
     if errors:
         print("Validation errors:", errors)
     return errors
-
