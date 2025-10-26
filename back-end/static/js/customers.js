@@ -134,7 +134,7 @@ async function deleteCustomer(customerId) {
   }
 
   try {
-    const response = await fetch(`/api/customers/${customerId}`, {
+    const response = await fetch(`/customers/delete/${customerId}`, {
       method: "DELETE",
     });
 
