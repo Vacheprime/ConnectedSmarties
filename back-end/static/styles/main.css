@@ -45,7 +45,7 @@ body {
   line-height: 1.6;
 }
 
-.container {
+.app-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -236,6 +236,9 @@ footer {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
 
+body, button, input, select, textarea {
+  font-family: "Inter", Arial, sans-serif !important;
+}
 
 #toast-container {
   position: fixed !important;

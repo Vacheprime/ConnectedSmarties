@@ -89,7 +89,7 @@ def register_customer():
         errors = validate_customer(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
+            return jsonify({"success": False, "errors": errors}), 400
         
         # Establish db connection
         conn = get_db()
@@ -99,12 +99,32 @@ def register_customer():
         cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
         conn.commit()
         conn.close()
-        return jsonify({'message': 'Customer added successfully'}), 200
+        return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    
+@app.route('/customers/delete/<int:id>', methods=['DELETE'])
+def delete_customer(id):
+    try:
+        
+        # Establish db connection
+        conn = get_db()
+        cursor = conn.cursor() # to allow execute sql statement
+        
+        # Insert the new customer into the Customers table
+        cursor.execute('DELETE FROM Customers WHERE customer_id = ?', (id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            return jsonify({"success": False, "message": f"No customer found with id {id}"}), 404
+        
+        conn.close()
+        return jsonify({"success": True, 'message': 'Customer delete successfully'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
@@ -115,7 +135,7 @@ def register_product():
         errors = validate_product(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
+            return jsonify({"success": False, 'errors': errors}), 400
         
         conn = get_db()
         cursor = conn.cursor() # to allow execute sql statement
@@ -123,7 +143,27 @@ def register_product():
         cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
         conn.commit()
         conn.close()
-        return jsonify({'message': 'Product added successfully'}), 200
+        return jsonify({"success": True, 'message': 'Product added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/products/delete/<int:id>', methods=['DELETE'])
+def delete_product(id):
+    try:
+        # Establish db connection
+        conn = get_db()
+        cursor = conn.cursor() # to allow execute sql statement
+        
+        # Insert the new customer into the Products table
+        cursor.execute('DELETE FROM Products WHERE product_id = ?', (id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            return jsonify({"success": False, "message": f"No Product found with id {id}"}), 404
+        
+        conn.close()
+        return jsonify({"success": True, 'message': 'Product delete successfully'}), 200
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     

@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS Customers (
 CREATE TABLE IF NOT EXISTS Products (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    price INTEGER NOT NULL,
+    price DECIMAL(5,2) NOT NULL,
     epc VARCHAR(64) NOT NULL CHECK(LENGTH(epc) > 0) UNIQUE,
     upc INTEGER NOT NULL,
     available_stock INTEGER DEFAULT 0,
@@ -58,12 +58,6 @@ VALUES
 ('temperature/humidity', 'Store 1: Fridge 1'),
 ('temperature/humidity', 'Store 1: Fridge 2');
 
--- Insert both sensors
-INSERT INTO Sensors (sensor_type, `location`)
-VALUES
-('temperature/humidity', 'Store 1: Fridge 1'),
-('temperature/humidity', 'Store 1: Fridge 2');
-
 -- Insert sample data into the database
 INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 -- Fridge 1 (sensor_id = 1)
@@ -88,13 +82,13 @@ INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 
 -- Insert for Products table
 INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES
-('Organic Apple Juice 1L', 499, 'EPC001', 123456789012, 120, 'Beverages', 10),
-('Tropical Mango Smoothie 500ml', 699, 'EPC002', 123456789013, 80, 'Beverages', 15),
-('Dark Roast Coffee Beans 1kg', 1499, 'EPC003', 123456789014, 60, 'Groceries', 30),
-('Whole Grain Bread', 399, 'EPC004', 123456789015, 200, 'Bakery', 8),
-('Fresh Pineapple', 599, 'EPC005', 123456789016, 150, 'Fruits', 12),
-('Avocado Toast Pack', 999, 'EPC006', 123456789017, 90, 'Snacks', 20),
-('Coconut Water 1L', 499, 'EPC007', 123456789018, 180, 'Beverages', 10),
-('Chocolate Chip Cookies', 799, 'EPC008', 123456789019, 130, 'Snacks', 16),
-('Vanilla Yogurt 4-pack', 599, 'EPC009', 123456789020, 110, 'Dairy', 12),
-('Green Tea Bags 25ct', 499, 'EPC010', 123456789021, 170, 'Beverages', 10);
+('Organic Apple Juice 1L', 4.99, 'EPC001', 123456789012, 120, 'Beverages', 10),
+('Tropical Mango Smoothie 500ml', 6.99, 'EPC002', 123456789013, 80, 'Beverages', 15),
+('Dark Roast Coffee Beans 1kg', 14.99, 'EPC003', 123456789014, 60, 'Groceries', 30),
+('Whole Grain Bread', 3.99, 'EPC004', 123456789015, 200, 'Bakery', 8),
+('Fresh Pineapple', 5.99, 'EPC005', 123456789016, 150, 'Fruits', 12),
+('Avocado Toast Pack', 9.99, 'EPC006', 123456789017, 90, 'Snacks', 20),
+('Coconut Water 1L', 4.99, 'EPC007', 123456789018, 180, 'Beverages', 10),
+('Chocolate Chip Cookies', 7.99, 'EPC008', 123456789019, 130, 'Snacks', 16),
+('Vanilla Yogurt 4-pack', 5.99, 'EPC009', 123456789020, 110, 'Dairy', 12),
+('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 170, 'Beverages', 10);
