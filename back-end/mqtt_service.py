@@ -117,11 +117,11 @@ class MQTTService:
         print(f"INFO: Received sensor value from Fridge 1 '{sensor_value}' on topic '{topic}'")
         
         try:
-            sensor_data_point = SensorDataPoint(sensor_id=1, data_type=sensor_type, value=sensor_value)
+            sensor_data_point = SensorDataPoint(sensor_id=sensor_id, data_type=data_type, value=sensor_value)
             SensorDataPoint.insert_sensor_data_point(sensor_data_point)
-            print(f"INFO: Saved Frig1 {sensor_type} data to database: {sensor_value}")
+            print(f"INFO: Saved Frig1 {data_type} data to database: {sensor_value}")
             
-            if sensor_type == "temperature" and self.threshold_callback:
+            if data_type == "temperature" and self.threshold_callback:
                 self.threshold_callback(1, float(sensor_value), "Frig1")
                 
         except Exception as e:
@@ -189,11 +189,11 @@ class MQTTService:
         print(f"INFO: Received sensor value from fridge 2 '{sensor_value}' on topic '{topic}'")
         
         try:
-            sensor_data_point = SensorDataPoint(sensor_id=2, data_type=sensor_type, value=sensor_value)
+            sensor_data_point = SensorDataPoint(sensor_id=sensor_id, data_type=data_type, value=sensor_value)
             SensorDataPoint.insert_sensor_data_point(sensor_data_point)
-            print(f"INFO: Saved Frig2 {sensor_type} data to database: {sensor_value}")
+            print(f"INFO: Saved Frig2 {data_type} data to database: {sensor_value}")
             
-            if sensor_type == "temperature" and self.threshold_callback:
+            if data_type == "temperature" and self.threshold_callback:
                 self.threshold_callback(2, float(sensor_value), "Frig2")
                 
         except Exception as e:
