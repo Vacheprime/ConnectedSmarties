@@ -45,65 +45,69 @@ function displayCustomers(customers) {
     .join("");
 }
 
+
+// Function to validate inputs for adding a Customer
+function validateCustomer(data) {
+  const errors = [];
+  const namePattern = /^[A-Za-z]+(?:[-' ][A-Za-z]+)*$/;
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const phonePattern = /(\+\d{1,3})?\s?\(?\d{1,4}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
+
+  // Required fields
+  if (!data.first_name || !data.last_name || !data.email || !data.phone_number) {
+    errors.push("Field is missing, must require the following fields: first name, last name, and email.");
+  }
+
+  // Name validation
+  if (
+    (data.first_name && !namePattern.test(data.first_name)) ||
+    (data.last_name && !namePattern.test(data.last_name))
+  ) {
+    errors.push("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.");
+  }
+
+  // Email validation
+  if (data.email && !emailPattern.test(data.email)) {
+    errors.push("Invalid Email Format");
+  }
+
+  // Phone validation
+  if (data.phone_number && !phonePattern.test(data.phone_number)) {
+    errors.push("Phone Number Format Invalid");
+  }
+
+  // Reward points validation
+  if (data.rewards_points !== undefined && data.rewards_points !== "") {
+    if (isNaN(parseInt(data.rewards_points))) {
+      errors.push("Reward points must be an integer.");
+    }
+  }
+
+  return errors;
+}
 // Add customer
 async function addCustomer(event) {
   event.preventDefault();
-  clearAllErrors();
 
   const form = document.getElementById("customer-form");
   const formData = new FormData(form);
 
-  // Validation
-  let isValid = true;
+  const data = {
+    first_name: formData.get("first_name").trim(),
+    last_name: formData.get("last_name").trim(),
+    email: formData.get("email").trim(),
+    phone_number: formData.get("phone_number").trim(),
+    rewards_points: formData.get("rewards_points").trim() || "0",
+  };
 
-  const firstName = formData.get("first_name");
-  if (!validateRequired(firstName)) {
-    showFieldError("first_name", "First name is required");
-    isValid = false;
-  }
-
-  const lastName = formData.get("last_name");
-  if (!validateRequired(lastName)) {
-    showFieldError("last_name", "Last name is required");
-    isValid = false;
-  }
-
-  const email = formData.get("email");
-  if (!validateRequired(email)) {
-    showFieldError("email", "Email is required");
-    isValid = false;
-  } else if (!validateEmail(email)) {
-    showFieldError("email", "Please enter a valid email address");
-    isValid = false;
-  }
-
-  const phone = formData.get("phone_number");
-  if (!validateRequired(phone)) {
-    showFieldError("phone_number", "Phone number is required");
-    isValid = false;
-  } else if (!validatePhone(phone)) {
-    showFieldError(
-      "phone_number",
-      "Please enter a valid phone number (at least 10 digits)"
-    );
-    isValid = false;
-  }
-
-  if (!isValid) {
-    showToast("Validation Error", "Please fix the errors in the form", "error");
+  const errors = validateCustomer(data);
+  if (errors.length > 0) {
+    showToast("Validation Error", errors.join("<br>"), "error");
     return;
   }
 
   // Submit data
   try {
-    const data = {
-      first_name: firstName,
-      last_name: lastName,
-      email: email,
-      phone_number: phone,
-      rewards_points: Number.parseInt(formData.get("rewards_points")) || 0,
-    };
-
     const response = await fetch("/customers/add", {
       method: "POST",
       headers: {
@@ -157,36 +161,6 @@ function resetForm() {
   clearAllErrors();
 }
 
-// Add real-time validation
-document.addEventListener("DOMContentLoaded", () => {
-  loadCustomers();
-
-  // Real-time validation
-  const emailInput = document.getElementById("email");
-  if (emailInput) {
-    emailInput.addEventListener("blur", () => {
-      const value = emailInput.value;
-      if (value && !validateEmail(value)) {
-        showFieldError("email", "Please enter a valid email address");
-      } else {
-        clearFieldError("email");
-      }
-    });
-  }
-
-  const phoneInput = document.getElementById("phone_number");
-  if (phoneInput) {
-    phoneInput.addEventListener("blur", () => {
-      const value = phoneInput.value;
-      if (value && !validatePhone(value)) {
-        showFieldError("phone_number", "Please enter a valid phone number");
-      } else {
-        clearFieldError("phone_number");
-      }
-    });
-  }
-});
-
 function clearAllErrors() {
   // Clear all errors logic here
 }
@@ -200,16 +174,6 @@ function showFieldError(fieldId, errorMessage) {
   if (field) {
     field.nextElementSibling.textContent = errorMessage;
   }
-}
-
-function validateEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function validatePhone(phone) {
-  const phoneRegex = /^\d{10,}$/;
-  return phoneRegex.test(phone);
 }
 
 function clearFieldError(fieldId) {

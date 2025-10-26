@@ -188,12 +188,14 @@
 //   document.querySelectorAll(".error").forEach((el) => el.classList.remove("error"))
 //   document.querySelectorAll(".error-message").forEach((el) => (el.textContent = ""))
 // }
+
+
 function showToast(title, message, type = "info") {
   // Create the toast container if it doesn't exist
-  let toastContainer = document.getElementById("toastContainer");
+  let toastContainer = document.getElementById("toast-container");
   if (!toastContainer) {
     toastContainer = document.createElement("div");
-    toastContainer.id = "toastContainer";
+    toastContainer.id = "toast-container";
     toastContainer.className = "toast-container position-fixed top-0 end-0 p-3";
     document.body.appendChild(toastContainer);
   }
