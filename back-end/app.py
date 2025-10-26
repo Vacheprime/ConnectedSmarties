@@ -82,6 +82,11 @@ def get_reports_page():
 
 # ============= CUSTOMER API ROUTES =============
 
+@app.route('/api/customers', methods=['GET'])
+def get_customers_api():
+    """Alias for /customers/data to match frontend API calls."""
+    return get_customers()
+
 @app.route('/customers/data', methods=['GET'])
 def get_customers():
     try:
@@ -362,6 +367,7 @@ def turn_fan_off():
         print(f"ERROR: Failed to turn off fan: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= HELPER FUNCTIONS =============
 
 if __name__ == '__main__':
     app.run(debug=True)
