@@ -1,6 +1,6 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify
-import sqlite3
+import sqlite3  
 import os
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
@@ -82,6 +82,11 @@ def get_reports_page():
 
 # ============= CUSTOMER API ROUTES =============
 
+@app.route('/api/customers', methods=['GET'])
+def get_customers_api():
+    """Alias for /customers/data to match frontend API calls."""
+    return get_customers()
+
 @app.route('/api/customers', methods=['POST'])
 def register_customer_api():
     """Alias for /customers/add to match frontend API calls."""
@@ -99,6 +104,7 @@ def get_customers():
         conn.close()
         return jsonify(customers)
     except Exception as e:
+        print(f"!!! ERROR in get_customers: {e}")
         return jsonify({'error': str(e)}), 500
 
 # need a method to add customer
@@ -124,10 +130,24 @@ def register_customer():
         cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
         conn.commit()
         conn.close()
-        return jsonify({'message': 'Customer added successfully'}), 200
+        return jsonify({'message': 'Customer added successfully'}), 201 # Use 201 Created for a successful POST
         
+    # *** MODIFIED ERROR HANDLING ***
+    except sqlite3.IntegrityError as e:
+        print(f"!!! INTEGRITY ERROR: {e}")
+        # Check if it's an email or phone constraint
+        if "Customers.email" in str(e):
+            return jsonify({'error': 'This email address is already in use.'}), 409 # 409 Conflict
+        if "Customers.phone_number" in str(e):
+            return jsonify({'error': 'This phone number is already in use.'}), 409 # 409 Conflict
+        
+        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
+
+    # Catch all other general errors
     except Exception as e:
+        print(f"!!! UNKNOWN ERROR in register_customer: {e}")
         return jsonify({'error': str(e)}), 500
+    # ********************************
 
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
@@ -139,6 +159,7 @@ def delete_customer(customer_id):
         conn.close()
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
+        print(f"!!! ERROR in delete_customer: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= PRODUCT API ROUTES =============
@@ -160,6 +181,7 @@ def get_products():
         conn.close()
         return jsonify(products)
     except Exception as e:
+        print(f"!!! ERROR in get_products: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
@@ -177,6 +199,7 @@ def get_product_by_id(product_id):
         else:
             return jsonify({'error': 'Product not found'}), 404
     except Exception as e:
+        print(f"!!! ERROR in get_product_by_id: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products', methods=['POST'])
@@ -202,8 +225,16 @@ def register_product():
         cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
         conn.commit()
         conn.close()
-        return jsonify({'message': 'Product added successfully'}), 200
+        return jsonify({'message': 'Product added successfully'}), 201
+    
+    except sqlite3.IntegrityError as e:
+        print(f"!!! INTEGRITY ERROR (Products): {e}")
+        if "Products.epc" in str(e):
+             return jsonify({'error': 'This EPC code is already in use.'}), 409
+        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
+
     except Exception as e:
+        print(f"!!! ERROR in register_product: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
@@ -225,14 +256,22 @@ def update_product(product_id):
         cursor = conn.cursor()
         
         cursor.execute('''UPDATE Products 
-                         SET name = ?, price = ?, epc = ?, upc = ?, available_stock = ?, category = ?, points_worth = ?
-                         WHERE product_id = ?''',
-                      (data["name"], data["price"], data["epc"], data["upc"], 
-                       data["available_stock"], data["category"], data["points_worth"], product_id))
+                          SET name = ?, price = ?, epc = ?, upc = ?, available_stock = ?, category = ?, points_worth = ?
+                          WHERE product_id = ?''',
+                       (data["name"], data["price"], data["epc"], data["upc"], 
+                        data["available_stock"], data["category"], data["points_worth"], product_id))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Product updated successfully'}), 200
+
+    except sqlite3.IntegrityError as e:
+        print(f"!!! INTEGRITY ERROR (Products Update): {e}")
+        if "Products.epc" in str(e):
+             return jsonify({'error': 'This EPC code is already in use.'}), 409
+        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
+
     except Exception as e:
+        print(f"!!! ERROR in update_product: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
@@ -250,6 +289,7 @@ def delete_product(product_id):
         conn.close()
         return jsonify({'message': 'Product deleted successfully'}), 200
     except Exception as e:
+        print(f"!!! ERROR in delete_product: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= SENSOR API ROUTES =============
