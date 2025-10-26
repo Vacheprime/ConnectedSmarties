@@ -27,6 +27,9 @@ const char* humidityTopic = "Frig1/humidity";
 const char* fanControlTopic = "Frig1/fanControl";
 const char* fanStatusTopic = "Frig1/fanControl/status";
 
+// Define the ID of the sensor
+const int sensorId = 1;
+
 // Define the pins for motor control
 const int enablePin = 32;
 const int input1 = 33;
@@ -171,11 +174,15 @@ void loop() {
   // Format the temperature
   char tempString[8];
   dtostrf(temp, 5, 2, tempString);
+
+  // Format message
+  snprintf(msg, sizeof(msg), "%d:%s", sensorId, tempString);
+
   Serial.print("Temperature: ");
-  Serial.println(tempString);
+  Serial.println(msg);
 
   // Publish the temperature
-  client.publish(tempTopic, tempString);
+  client.publish(tempTopic, msg);
     
   // Format the humidity
   char humString[8];
@@ -183,8 +190,11 @@ void loop() {
   Serial.print("Humidity: ");
   Serial.println(humString);
 
+  // Format message
+  snprintf(msg, sizeof(msg), "%d:%s", sensorId, humString);
+
   // Publish the humidity
-  client.publish(humidityTopic, humString);
+  client.publish(humidityTopic, msg);
 
   // Format fan status to control
   std::string fanStatusString = isFanOn ? "true" : "false";
@@ -192,8 +202,11 @@ void loop() {
   char fanStatusArr[arraySize];
   strcpy(fanStatusArr, fanStatusString.c_str());
 
+  // Format message
+  snprintf(msg, sizeof(msg), "%d:%s", sensorId, fanStatusArr);
+
   // Publish
-  client.publish(fanStatusTopic, fanStatusArr);
+  client.publish(fanStatusTopic, msg);
   Serial.print("Fan status: ");
   Serial.println(fanStatusArr);
 

@@ -47,6 +47,62 @@ function displayProducts(products) {
     .join("")
 }
 
+// Function to validate inputs for adding a Product
+function validateProduct(data) {
+  const errors = [];
+  const namePattern = /^[A-Za-z\s]+$/;
+  const categoryPattern = /^[A-Za-z\s]+$/;
+  const upcPattern = /^\d{12}$/;
+  const epcPattern = /^[A-Za-z0-9]{4,24}$/;
+
+  // Required fields
+  if (!data.name || !data.price || !data.epc) {
+    errors.push("Field is missing, must require the following fields: name, price, epc.");
+  }
+
+  // Name
+  if (data.name && !namePattern.test(data.name)) {
+    errors.push("Product name must contain only letters and spaces.");
+  }
+
+  // Category
+  if (data.category && !categoryPattern.test(data.category)) {
+    errors.push("Category must contain only letters and spaces.");
+  }
+
+  // Price
+  const price = parseFloat(data.price);
+  if (isNaN(price)) {
+    errors.push("Price must be a valid number.");
+  } else if (price < 0 || price >= 1000) {
+    errors.push("Price cannot be negative and cannot exceed 999.99");
+  }
+
+  // Stock
+  const stock = parseInt(data.available_stock);
+  if (isNaN(stock)) {
+    errors.push("Stock must be a valid integer.");
+  } else if (stock < 0) {
+    errors.push("Stock cannot be negative.");
+  }
+
+  // UPC
+  const upc = String(data.upc || "").trim();
+  if (!upcPattern.test(upc)) {
+    errors.push("UPC must be exactly 12 digits.");
+  }
+
+  // EPC
+  const epc = String(data.epc || "").trim();
+  if (!epcPattern.test(epc)) {
+    errors.push("EPC must be 4-24 alphanumeric characters (no spaces or symbols).");
+  }
+
+  return errors;
+}
+
+
+// Save product (add or update)
 async function saveProduct(event) {
   event.preventDefault()
   window.clearAllErrors()
@@ -55,56 +111,21 @@ async function saveProduct(event) {
   const formData = new FormData(form)
   const productId = formData.get("product_id")
 
+    const data = {
+    name: formData.get("name").trim(),
+    price: formData.get("price").trim(),
+    epc: formData.get("epc").trim(),
+    upc: formData.get("upc").trim(),
+    available_stock: formData.get("available_stock").trim() || "0",
+    category: formData.get("category").trim(),
+    points_worth: formData.get("points_worth").trim() || "0",
+  };
+
   // Validation
-  let isValid = true
-
-  const name = formData.get("name")
-  if (!window.validateRequired(name)) {
-    window.showToast("Validation Error", "Product name is required", "error")
-    isValid = false
-  }
-
-  const price = formData.get("price")
-  if (!window.validateRequired(price)) {
-    window.showToast("Validation Error", "Price is required", "error")
-    isValid = false
-  } else if (Number.parseFloat(price) < 0) {
-    window.showToast("Validation Error", "Price must be a positive number", "error")
-    isValid = false
-  }
-
-  const epc = formData.get("epc")
-  if (!window.validateRequired(epc)) {
-    window.showToast("Validation Error", "EPC is required", "error")
-    isValid = false
-  }
-
-  const availableStock = formData.get("available_stock")
-  if (availableStock && Number.parseInt(availableStock) < 0) {
-    window.showToast("Validation Error", "Stock must be a non-negative number", "error")
-    isValid = false
-  }
-
-  const pointsWorth = formData.get("points_worth")
-  if (pointsWorth && Number.parseInt(pointsWorth) < 0) {
-    window.showToast("Validation Error", "Points must be a non-negative number", "error")
-    isValid = false
-  }
-
-  if (!isValid) {
-    window.showToast("Validation Error", "Please fix the errors in the form", "error")
-    return
-  }
-
-  // Prepare data
-  const data = {
-    name: name,
-    price: Number.parseFloat(price),
-    epc: epc,
-    upc: formData.get("upc") || null,
-    available_stock: Number.parseInt(availableStock) || 0,
-    category: formData.get("category") || null,
-    points_worth: Number.parseInt(pointsWorth) || 0,
+  const errors = validateProduct(data);
+  if(errors.length > 0) {
+    showToast("Validation Error", errors.join("<br>"), "error");
+    return;
   }
 
   // Submit data
@@ -176,7 +197,7 @@ async function deleteProduct(productId) {
   }
 
   try {
-    const response = await fetch(`/api/products/${productId}`, {
+    const response = await fetch(`/products/delete/${productId}`, {
       method: "DELETE",
     })
 
@@ -232,3 +253,30 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 })
+
+// Helper functions
+function validateRequired(value) {
+  return value !== null && value !== ""
+}
+
+function clearAllErrors() {
+  const errorElements = document.querySelectorAll(".error")
+  errorElements.forEach((element) => {
+    element.style.display = "none"
+  })
+}
+
+function showFieldError(fieldId, errorMessage) {
+  const errorElement = document.getElementById(`${fieldId}-error`)
+  if (errorElement) {
+    errorElement.textContent = errorMessage
+    errorElement.style.display = "block"
+  }
+}
+
+function clearFieldError(fieldId) {
+  const errorElement = document.getElementById(`${fieldId}-error`)
+  if (errorElement) {
+    errorElement.style.display = "none"
+  }
+}

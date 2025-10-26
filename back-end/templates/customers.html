@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="../static/images/candy.png">
     <title>ConnectedSmarties - Customers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../static/styles/main.css">
     <link rel="stylesheet" href="../static/styles/customer.css">
 </head>
 
 <body>
-    <div class="container">
+    <div class="app-container">
         <header>
             <nav class="navbar">
                 <div class="nav-brand">ConnectedSmarties</div>
@@ -37,25 +38,25 @@
                     <form id="customer-form" onsubmit="addCustomer(event)">
                         <div class="form-group">
                             <label for="first_name">First Name *</label>
-                            <input type="text" id="first_name" name="first_name" required>
+                            <input type="text" id="first_name" name="first_name">
                             <span class="error-message" id="first_name-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="last_name">Last Name *</label>
-                            <input type="text" id="last_name" name="last_name" required>
+                            <input type="text" id="last_name" name="last_name">
                             <span class="error-message" id="last_name-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="email">Email *</label>
-                            <input type="email" id="email" name="email" required>
+                            <input type="email" id="email" name="email">
                             <span class="error-message" id="email-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="phone_number">Phone Number *</label>
-                            <input type="tel" id="phone_number" name="phone_number" required>
+                            <input type="tel" id="phone_number" name="phone_number">
                             <span class="error-message" id="phone_number-error"></span>
                         </div>
 
@@ -108,9 +109,10 @@
         </footer>
     </div>
 
-    <div id="toast-container"></div>
-    <script src="../static/js/notifications.js"></script>
-    <script src="../static/js/customers.js"></script>
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/customers.js') }}"></script>
 </body>
 
 </html>

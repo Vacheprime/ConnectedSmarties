@@ -1,93 +1,44 @@
-// Bootstrap Alert Notification System
+// Notification system
 function showToast(title, message, type = "info") {
-  const alertContainer = document.getElementById("alert-container")
-  if (!alertContainer) {
-    console.error("Alert container not found")
-    return
+  // Create the toast container if it doesn't exist
+  let toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    toastContainer.className = "toast-container position-fixed top-0 end-0 p-3";
+    document.body.appendChild(toastContainer);
   }
 
-  // Map types to Bootstrap alert classes
-  const alertTypes = {
-    success: "alert-success",
-    error: "alert-danger",
-    warning: "alert-warning",
-    info: "alert-info",
-  }
+  // Determine Bootstrap color class
+  const typeClass = {
+    success: "text-bg-success",
+    error: "text-bg-danger",
+    warning: "text-bg-warning",
+    info: "text-bg-primary"
+  }[type] || "text-bg-secondary";
 
-  const alertClass = alertTypes[type] || alertTypes.info
+  // Create toast element
+  const toastEl = document.createElement("div");
+  toastEl.className = `toast align-items-center ${typeClass} border-0`;
+  toastEl.setAttribute("role", "alert");
+  toastEl.setAttribute("aria-live", "assertive");
+  toastEl.setAttribute("aria-atomic", "true");
 
-  // Create alert element
-  const alert = document.createElement("div")
-  alert.className = `alert ${alertClass} alert-dismissible fade show`
-  alert.setAttribute("role", "alert")
-  alert.style.cssText = "margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        <strong>${title}</strong><br>${message}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  `;
 
-  alert.innerHTML = `
-    <strong>${title}</strong> ${message}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `
+  toastContainer.appendChild(toastEl);
 
-  // Add to container
-  alertContainer.appendChild(alert)
+  // Show the toast
+  const bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+  bsToast.show();
 
-  // Auto dismiss after 4 seconds
-  setTimeout(() => {
-    if (alert.parentElement) {
-      alert.classList.remove("show")
-      setTimeout(() => {
-        alert.remove()
-      }, 150)
-    }
-  }, 4000)
-}
-
-// Alias for backward compatibility
-function showNotification(title, message, type = "info") {
-  showToast(title, message, type)
-}
-
-// Validation helpers
-function validateEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
-}
-
-function validatePhone(phone) {
-  const re = /^[\d\s\-+$$$$]+$/
-  return re.test(phone) && phone.replace(/\D/g, "").length >= 10
-}
-
-function validateRequired(value) {
-  return value && value.trim().length > 0
-}
-
-function showFieldError(fieldId, message) {
-  const field = document.getElementById(fieldId)
-  const errorSpan = document.getElementById(`${fieldId}-error`)
-
-  if (field) {
-    field.classList.add("error")
-  }
-
-  if (errorSpan) {
-    errorSpan.textContent = message
-  }
-}
-
-function clearFieldError(fieldId) {
-  const field = document.getElementById(fieldId)
-  const errorSpan = document.getElementById(`${fieldId}-error`)
-
-  if (field) {
-    field.classList.remove("error")
-  }
-
-  if (errorSpan) {
-    errorSpan.textContent = ""
-  }
-}
-
-function clearAllErrors() {
-  document.querySelectorAll(".error").forEach((el) => el.classList.remove("error"))
-  document.querySelectorAll(".error-message").forEach((el) => (el.textContent = ""))
+  // Remove toast from DOM after it hides
+  toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
 }

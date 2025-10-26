@@ -120,7 +120,7 @@ def register_customer():
         errors = validate_customer(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
+            return jsonify({"success": False, "errors": errors}), 400
         
         # Establish db connection
         conn = get_db()
@@ -130,7 +130,7 @@ def register_customer():
         cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
         conn.commit()
         conn.close()
-        return jsonify({'message': 'Customer added successfully'}), 201 # Use 201 Created for a successful POST
+        return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
         
     # *** MODIFIED ERROR HANDLING ***
     except sqlite3.IntegrityError as e:
@@ -217,7 +217,7 @@ def register_product():
         errors = validate_product(data)
         if errors:
             print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
+            return jsonify({"success": False, 'errors': errors}), 400
         
         conn = get_db()
         cursor = conn.cursor() # to allow execute sql statement

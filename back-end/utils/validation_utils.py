@@ -1,3 +1,5 @@
+import re
+
 
 class ValidationUtils:
     @staticmethod
@@ -13,3 +15,17 @@ class ValidationUtils:
     def is_boolean(value: str) -> bool:
         value = value.lower()
         return value == "false" or value == "true"
+    
+
+    @staticmethod
+    def is_numeric_sensor_message_valid(msg: str) -> bool:
+        # Use raw string and escape the dot for decimal part
+        regex = r"\d+:-?\d+(\.\d+)?"
+        return re.fullmatch(regex, msg) is not None
+
+
+    @staticmethod
+    def is_boolean_sensor_message_valid(msg: str) -> bool:
+        # Use raw string to avoid escape sequence warnings
+        regex = r"\d+:(true|false)"
+        return re.fullmatch(regex, msg, re.IGNORECASE) is not None
