@@ -86,6 +86,7 @@ function validateCustomer(data) {
 // Add customer
 async function addCustomer(event) {
   event.preventDefault();
+  window.clearAllErrors()
 
   const form = document.getElementById("customer-form");
   const formData = new FormData(form);
@@ -125,7 +126,7 @@ async function addCustomer(event) {
     }
   } catch (error) {
     console.error("Error adding customer:", error);
-    showToast("Error", error.message, "error");
+    window.showToast("Error", error.message, "error");
   }
 }
 
@@ -188,11 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 })
-
-// Declare variables
-function showToast(title, message, type) {
-  console.log(`${type}: ${title} - ${message}`)
-}
 
 function clearAllErrors() {
   // Clear all errors logic here

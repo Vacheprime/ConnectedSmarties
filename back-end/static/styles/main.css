@@ -239,14 +239,23 @@ footer {
 body, button, input, select, textarea {
   font-family: "Inter", Arial, sans-serif !important;
 }
+#toast-container {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 99999 !important;
+  display: block !important;
+}
+.toast { display: block !important; opacity: 1 !important; }
 
+/* 
 #toast-container {
   position: fixed !important;
   bottom: 20px !important;
   right: 20px !important;
   left: auto !important;
   top: auto !important;
-  z-index: 1000;
+  z-index: 1000 !important;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -267,7 +276,7 @@ body, button, input, select, textarea {
   animation: slideInRight 0.3s ease-out;
   border-left: 4px solid var(--color-primary);
   pointer-events: auto;
-}
+} */
 
 .toast.success {
   border-left-color: var(--color-success);
