@@ -1,11 +1,8 @@
 let fanStatus = "off"
 
-const TEST_MODE = false // 👈 turn this on/off to switch between test & real data
-
-// Function to show toast messages
+// Declare showToast function or import it from notifications.js
 function showToast(title, message, type) {
-  // Implementation of showToast function
-  console.log(`Toast - Title: ${title}, Message: ${message}, Type: ${type}`)
+  console.log(`Title: ${title}, Message: ${message}, Type: ${type}`)
 }
 
 function updateThermometer(temperature, thermometerId) {
@@ -34,30 +31,8 @@ function updateHumidityGauge(humidity, gaugeId) {
   document.documentElement.style.setProperty(`--humidity-${gaugeId}`, clampedHumidity)
 }
 
-// Fetch sensor data
 async function fetchSensorData() {
   try {
-    if (TEST_MODE) {
-      // ✅ Test values
-      const data = {
-        sensor1: { temperature: 50, humidity: 35 },
-        sensor2: { temperature: 13.33, humidity: 45 },
-      }
-
-      // Update UI with test values
-      updateThermometer(data.sensor1.temperature, 1)
-      updateHumidityGauge(data.sensor1.humidity, 1)
-      updateThermometer(data.sensor2.temperature, 2)
-      updateHumidityGauge(data.sensor2.humidity, 2)
-
-      document.getElementById("sensor1-temp-status").innerHTML = '<span class="status-dot"></span><span>Test</span>'
-      document.getElementById("sensor1-humidity-status").innerHTML = '<span class="status-dot"></span><span>Test</span>'
-      document.getElementById("sensor2-temp-status").innerHTML = '<span class="status-dot"></span><span>Test</span>'
-      document.getElementById("sensor2-humidity-status").innerHTML = '<span class="status-dot"></span><span>Test</span>'
-      return // ✅ Skip the API fetch completely
-    }
-
-    // 🌐 Normal API mode
     const response = await fetch("/api/sensors")
     if (response.ok) {
       const data = await response.json()
@@ -71,9 +46,11 @@ async function fetchSensorData() {
       updateHumidityGauge(data.sensor2.humidity, 2)
 
       document.getElementById("sensor1-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
-      document.getElementById("sensor1-humidity-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
+      document.getElementById("sensor1-humidity-status").innerHTML =
+        '<span class="status-dot"></span><span>Active</span>'
       document.getElementById("sensor2-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
-      document.getElementById("sensor2-humidity-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
+      document.getElementById("sensor2-humidity-status").innerHTML =
+        '<span class="status-dot"></span><span>Active</span>'
     } else {
       throw new Error("Failed to fetch sensor data")
     }
@@ -88,16 +65,18 @@ async function fetchSensorData() {
   }
 }
 
-// Control fan
 async function controlFan(action) {
   try {
-    const response = await fetch(`/api/fan/${action}`, {
+    
+    const sensorId = 1 
+
+    const response = await fetch(`/fan/${action}?sensor_id=${sensorId}`, {
       method: "POST",
     })
 
     if (response.ok) {
       const data = await response.json()
-      fanStatus = data.status
+      fanStatus = action === "on" ? "on" : "off"
       updateFanUI()
       showToast("Fan Control", data.message, "success")
     } else {
