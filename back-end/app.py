@@ -373,7 +373,7 @@ def turn_fan_on():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Activate the fan via MQTT
-        mqtt_service.ActivateFan(topic)
+        mqtt_service.activate_fan(topic)
         
         print(f"INFO: Fan activated for {location}")
         return jsonify({'message': f'Fan turned on for {location}'}), 200
@@ -399,7 +399,7 @@ def turn_fan_off():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Deactivate the fan via MQTT
-        mqtt_service.DeactivateFan(topic)
+        mqtt_service.deactivate_fan(topic)
         
         print(f"INFO: Fan deactivated for {location}")
         return jsonify({'message': f'Fan turned off for {location}'}), 200
