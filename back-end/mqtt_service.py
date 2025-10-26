@@ -1,5 +1,7 @@
 import paho.mqtt.client as mqtt
-from utils.validation_utils import ValidationUtils
+from .utils.validation_utils import ValidationUtils
+from models.sensor_data_point_model import SensorDataPoint
+from models.sensor_model import Sensor
 
 class MQTTService:
     
@@ -29,7 +31,7 @@ class MQTTService:
 
     def _setup_topic_callbacks(self):
         self.mqtt_client.subscribe("Frig1/#")
-        self.mqtt_client.message_callback_add("Frig1/#", self._receive_frige1_sensor_data)
+        self.mqtt_client.message_callback_add("Frig1/#", self._receive_fridge1_sensor_data)
         self.mqtt_client.subscribe("Frig2/#")
         self.mqtt_client.message_callback_add("Frig2/#", self._receive_fridge2_sensor_data)
     
@@ -41,17 +43,17 @@ class MQTTService:
             print(f"Failed to connect to the MQTT server. Code: {rc}")
              
         
-    def _receive_frige1_sensor_data(self, client, userdata, message):
+    def _receive_fridge1_sensor_data(self, client, userdata, message):
         # Map the sensor type
-        sensor_type = None
+        data_type = None
         topic = message.topic
 
         if topic == "Frig1/temperature":
-            sensor_type = "temperature"
+            data_type = "temperature"
         elif topic == "Frig1/humidity":
-            sensor_type = "humidity"
+            data_type = "humidity"
         elif topic == "Frig1/fanControl/status":
-            sensor_type = "fan_status"
+            data_type = "fan_status"
         elif topic == "Frig1/fanControl":
             return # Ignore fanControl commands
         else:
@@ -59,38 +61,62 @@ class MQTTService:
             return
         
         # Decode the data as string
-        sensor_value = message.payload.decode()
+        sensor_message = message.payload.decode()
+
+        # Validate the sensor message
+        if data_type == "temperature" or data_type == "humidity":
+            if not ValidationUtils.is_numeric_sensor_message_valid(sensor_message):
+                print(f"WARNING: Invalid sensor message received: {sensor_message}")
+                return
+        else:
+            if not ValidationUtils.is_boolean_sensor_message_valid(sensor_message):
+                print(f"WARNING: Invalid sensor message received: {sensor_message}")
+                return
+        
+        # Split the message into two parts
+        message_parts = sensor_message.split(":")
+        sensor_id = int(message_parts[0])
+        sensor_value = message_parts[1]
+
+        # Validate the sensor ID
+        sensor = Sensor.fetch_sensor_by_id(sensor_id)
+        if sensor == None:
+            print(f"WARNING: Received '{sensor_message}' from unknown sensor with declared ID: {sensor_id}")
+            return
 
         # Check for sensor type and validate sensor value
-        if sensor_type == "temperature":
+        if data_type == "temperature":
             if not ValidationUtils.is_string_numeric(sensor_value, 0):
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
-        elif sensor_type == "humidity":
+        elif data_type == "humidity":
             if not ValidationUtils.is_string_numeric(sensor_value, 0) or float(sensor_value) > 100:
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
-        elif sensor_type == "fan_status":
+        elif data_type == "fan_status":
             if not ValidationUtils.is_boolean(sensor_value):
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
             sensor_value = sensor_value.lower()
         
+        # Insert data into database
+        sensor_data_point = SensorDataPoint(sensor_id, data_type, sensor_value)
+        SensorDataPoint.insert_sensor_data_point(sensor_data_point)
         
         print(f"INFO: Received sensor value from Fridge 1 '{sensor_value}' on topic '{topic}'")
     
 
     def _receive_fridge2_sensor_data(self, client, userdata, message):
         # Map the sensor type
-        sensor_type = None
+        data_type = None
         topic = message.topic
 
         if topic == "Frig2/temperature":
-            sensor_type = "temperature"
+            data_type = "temperature"
         elif topic == "Frig2/humidity":
-            sensor_type = "humidity"
+            data_type = "humidity"
         elif topic == "Frig2/fanControl/status":
-            sensor_type = "fan_status"
+            data_type = "fan_status"
         elif topic == "Frig2/fanControl":
             return # Ignore fanControl commands
         else:
@@ -98,25 +124,52 @@ class MQTTService:
             return
         
         # Decode the data as string
+        sensor_message = message.payload.decode()
+
+        # Validate the sensor message
+        if data_type == "temperature" or data_type == "humidity":
+            if not ValidationUtils.is_numeric_sensor_message_valid(sensor_message):
+                print(f"WARNING: Invalid sensor message received: {sensor_message}")
+                return
+        else:
+            if not ValidationUtils.is_boolean_sensor_message_valid(sensor_message):
+                print(f"WARNING: Invalid sensor message received: {sensor_message}")
+                return
+        
+        # Split the message into two parts
+        message_parts = sensor_message.split(":")
+        sensor_id = int(message_parts[0])
+        sensor_value = message_parts[1]
+
+        # Validate the sensor ID
+        sensor = Sensor.fetch_sensor_by_id(sensor_id)
+        if sensor == None:
+            print(f"WARNING: Received '{sensor_message}' from unknown sensor with declared ID: {sensor_id}")
+            return
+        
+        # Decode the data as string
         sensor_value = message.payload.decode()
 
         # Check for sensor type and validate sensor value
-        if sensor_type == "temperature":
+        if data_type == "temperature":
             if not ValidationUtils.is_string_numeric(sensor_value, 0):
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
-        elif sensor_type == "humidity":
+        elif data_type == "humidity":
             if not ValidationUtils.is_string_numeric(sensor_value, 0) or float(sensor_value) > 100:
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
-        elif sensor_type == "fan_status":
+        elif data_type == "fan_status":
             if not ValidationUtils.is_boolean(sensor_value):
                 print(f"WARNING: Invalid sensor data received: {sensor_value}")
                 return # Do not insert in DB
             sensor_value = sensor_value.lower()
         else:
-            return # Unrecognised sensor type, do not insert
+            return # Unrecognized sensor type, do not insert
         
+        # Insert data into database
+        sensor_data_point = SensorDataPoint(sensor_id, data_type, sensor_value)
+        SensorDataPoint.insert_sensor_data_point(sensor_data_point)
         
         print(f"INFO: Received sensor value from fridge 2 '{sensor_value}' on topic '{topic}'")
     
