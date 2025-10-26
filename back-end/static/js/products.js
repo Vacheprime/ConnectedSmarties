@@ -10,7 +10,7 @@ async function loadProducts() {
     }
   } catch (error) {
     console.error("Error loading products:", error)
-    showToast("Database Error", "Failed to load products", "error")
+    window.showToast("Database Error", "Failed to load products", "error")
     document.getElementById("products-tbody").innerHTML =
       '<tr><td colspan="9" class="loading">Error loading products</td></tr>'
   }
@@ -47,10 +47,9 @@ function displayProducts(products) {
     .join("")
 }
 
-// Save product (add or update)
 async function saveProduct(event) {
   event.preventDefault()
-  clearAllErrors()
+  window.clearAllErrors()
 
   const form = document.getElementById("product-form")
   const formData = new FormData(form)
@@ -60,40 +59,40 @@ async function saveProduct(event) {
   let isValid = true
 
   const name = formData.get("name")
-  if (!validateRequired(name)) {
-    showToast("Validation Error", "Product name is required", "error")
+  if (!window.validateRequired(name)) {
+    window.showToast("Validation Error", "Product name is required", "error")
     isValid = false
   }
 
   const price = formData.get("price")
-  if (!validateRequired(price)) {
-    showToast("Validation Error", "Price is required", "error")
+  if (!window.validateRequired(price)) {
+    window.showToast("Validation Error", "Price is required", "error")
     isValid = false
   } else if (Number.parseFloat(price) < 0) {
-    showToast("Validation Error", "Price must be a positive number", "error")
+    window.showToast("Validation Error", "Price must be a positive number", "error")
     isValid = false
   }
 
   const epc = formData.get("epc")
-  if (!validateRequired(epc)) {
-    showToast("Validation Error", "EPC is required", "error")
+  if (!window.validateRequired(epc)) {
+    window.showToast("Validation Error", "EPC is required", "error")
     isValid = false
   }
 
   const availableStock = formData.get("available_stock")
   if (availableStock && Number.parseInt(availableStock) < 0) {
-    showToast("Validation Error", "Stock must be a non-negative number", "error")
+    window.showToast("Validation Error", "Stock must be a non-negative number", "error")
     isValid = false
   }
 
   const pointsWorth = formData.get("points_worth")
   if (pointsWorth && Number.parseInt(pointsWorth) < 0) {
-    showToast("Validation Error", "Points must be a non-negative number", "error")
+    window.showToast("Validation Error", "Points must be a non-negative number", "error")
     isValid = false
   }
 
   if (!isValid) {
-    showToast("Validation Error", "Please fix the errors in the form", "error")
+    window.showToast("Validation Error", "Please fix the errors in the form", "error")
     return
   }
 
@@ -125,7 +124,7 @@ async function saveProduct(event) {
     if (response.ok) {
       const result = await response.json()
       const action = isEdit ? "edited" : "created"
-      showToast("Success", `Product successfully ${action}!`, "success")
+      window.showToast("Success", `Product successfully ${action}!`, "success")
       resetForm()
       loadProducts()
     } else {
@@ -134,7 +133,7 @@ async function saveProduct(event) {
     }
   } catch (error) {
     console.error("Error saving product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
@@ -166,7 +165,7 @@ async function editProduct(productId) {
     }
   } catch (error) {
     console.error("Error loading product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
@@ -182,7 +181,7 @@ async function deleteProduct(productId) {
     })
 
     if (response.ok) {
-      showToast("Success", "Product successfully deleted!", "success")
+      window.showToast("Success", "Product successfully deleted!", "success")
       loadProducts()
     } else {
       const error = await response.json()
@@ -190,7 +189,7 @@ async function deleteProduct(productId) {
     }
   } catch (error) {
     console.error("Error deleting product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
@@ -200,7 +199,7 @@ function resetForm() {
   document.getElementById("product_id").value = ""
   document.getElementById("form-title").textContent = "Add New Product"
   document.getElementById("submit-btn").textContent = "Add Product"
-  clearAllErrors()
+  window.clearAllErrors()
 }
 
 // Initialize on page load
@@ -213,9 +212,9 @@ document.addEventListener("DOMContentLoaded", () => {
     priceInput.addEventListener("blur", () => {
       const value = priceInput.value
       if (value && Number.parseFloat(value) < 0) {
-        showToast("Validation Error", "Price must be a positive number", "error")
+        window.showToast("Validation Error", "Price must be a positive number", "error")
       } else {
-        clearFieldError("price")
+        window.clearFieldError("price")
       }
     })
   }
@@ -226,52 +225,10 @@ document.addEventListener("DOMContentLoaded", () => {
     stockInput.addEventListener("blur", () => {
       const value = stockInput.value
       if (value && Number.parseInt(value) < 0) {
-        showToast("Validation Error", "Stock must be a non-negative number", "error")
+        window.showToast("Validation Error", "Stock must be a non-negative number", "error")
       } else {
-        clearFieldError("available_stock")
+        window.clearFieldError("available_stock")
       }
     })
   }
 })
-
-// Helper functions
-function validateRequired(value) {
-  return value !== null && value !== ""
-}
-
-function clearAllErrors() {
-  const errorElements = document.querySelectorAll(".error")
-  errorElements.forEach((element) => {
-    element.style.display = "none"
-  })
-}
-
-function showFieldError(fieldId, errorMessage) {
-  const errorElement = document.getElementById(`${fieldId}-error`)
-  if (errorElement) {
-    errorElement.textContent = errorMessage
-    errorElement.style.display = "block"
-  }
-}
-
-function clearFieldError(fieldId) {
-  const errorElement = document.getElementById(`${fieldId}-error`)
-  if (errorElement) {
-    errorElement.style.display = "none"
-  }
-}
-
-// New function for showToast
-function showToast(title, message, type) {
-  const toastContainer = document.createElement("div")
-  toastContainer.className = `toast ${type}`
-  toastContainer.innerHTML = `
-    <div class="toast-title">${title}</div>
-    <div class="toast-message">${message}</div>
-  `
-  document.body.appendChild(toastContainer)
-
-  setTimeout(() => {
-    document.body.removeChild(toastContainer)
-  }, 3000)
-}
