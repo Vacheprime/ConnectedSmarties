@@ -177,7 +177,7 @@ async function deleteProduct(productId) {
   }
 
   try {
-    const response = await fetch(`/products/${productId}`, {
+    const response = await fetch(`/products/delete/${productId}`, {
       method: "DELETE",
     })
 

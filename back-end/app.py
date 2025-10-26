@@ -125,7 +125,6 @@ def delete_customer(id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
@@ -145,6 +144,26 @@ def register_product():
         conn.commit()
         conn.close()
         return jsonify({"success": True, 'message': 'Product added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/products/delete/<int:id>', methods=['DELETE'])
+def delete_product(id):
+    try:
+        # Establish db connection
+        conn = get_db()
+        cursor = conn.cursor() # to allow execute sql statement
+        
+        # Insert the new customer into the Products table
+        cursor.execute('DELETE FROM Products WHERE product_id = ?', (id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            return jsonify({"success": False, "message": f"No Product found with id {id}"}), 404
+        
+        conn.close()
+        return jsonify({"success": True, 'message': 'Product delete successfully'}), 200
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
