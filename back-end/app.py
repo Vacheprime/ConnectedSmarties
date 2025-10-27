@@ -1,6 +1,6 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify
-import sqlite3  
+import sqlite3
 import os
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
@@ -8,6 +8,11 @@ from .mqtt_service import MQTTService
 from .utils.email_service import EmailService
 from models.sensor_model import Sensor
 from models.sensor_data_point_model import SensorDataPoint
+from models.customer_model import Customer
+from models.product_model import Product
+from models.exceptions.database_insert_exception import DatabaseInsertException
+from models.exceptions.database_delete_exception import DatabaseDeleteException
+from models.exceptions.database_read_exception import DatabaseReadException
 
 app = Flask(__name__)
 CORS(app)
@@ -94,18 +99,15 @@ def register_customer_api():
 
 @app.route('/customers/data', methods=['GET'])
 def get_customers():
+    # Fetch customers
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Customers')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        customers = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(customers)
-    except Exception as e:
-        print(f"!!! ERROR in get_customers: {e}")
-        return jsonify({'error': str(e)}), 500
+        customers = Customer.fetch_all_customers()
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+    
+    # Return customers as JSON
+    return jsonify([customer.to_dict() for customer in customers]), 200
 
 # need a method to add customer
 @app.route('/customers/add', methods=['POST'])
@@ -113,54 +115,39 @@ def register_customer():
     # Note: if you got this error,
     #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
     #       run on another port by typing this command flask run --port=5001
+    data = request.get_json()
+    
+    # Validate the input
+    errors = validate_customer(data)
+    if errors:
+        print("Returning validation errors to client...") 
+        return jsonify({"success": False, "errors": errors}), 400
+    
+    # Create the customer object
+    customer = Customer(data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"])
+    # Insert the customer
     try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_customer(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({"success": False, "errors": errors}), 400
-        
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-        
-        # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
-        conn.commit()
-        conn.close()
-        return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
-        
-    # *** MODIFIED ERROR HANDLING ***
-    except sqlite3.IntegrityError as e:
-        print(f"!!! INTEGRITY ERROR: {e}")
-        # Check if it's an email or phone constraint
-        if "Customers.email" in str(e):
-            return jsonify({'error': 'This email address is already in use.'}), 409 # 409 Conflict
+        Customer.insertCustomer(customer)
+    except DatabaseInsertException as e:
         if "Customers.phone_number" in str(e):
-            return jsonify({'error': 'This phone number is already in use.'}), 409 # 409 Conflict
+            return jsonify({"error": "The phone number is already in use."}), 400
+        elif "Customers.email" in str(e):
+            return jsonify({"error": "The email is already in use."}), 400
         
-        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
+        print(f"ERROR: Failed to insert customer {customer} due to error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    # Catch all other general errors
-    except Exception as e:
-        print(f"!!! UNKNOWN ERROR in register_customer: {e}")
-        return jsonify({'error': str(e)}), 500
-    # ********************************
+    return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
 
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM Customers WHERE customer_id = ?', (customer_id,))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Customer deleted successfully'}), 200
-    except Exception as e:
-        print(f"!!! ERROR in delete_customer: {e}")
+        Customer.delete_customer(customer_id)
+    except DatabaseDeleteException as e:
+        print(f"ERROR: {e}")
         return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Customer deleted successfully'}), 200
 
 # ============= PRODUCT API ROUTES =============
 
@@ -172,35 +159,29 @@ def get_products_api():
 @app.route('/products/data', methods=['GET'])
 def get_products():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        products = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(products)
-    except Exception as e:
-        print(f"!!! ERROR in get_products: {e}")
-        return jsonify({'error': str(e)}), 500
+        products = Product.fetch_all_products()
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify([product.to_dict() for product in products]), 200
+
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_by_id(product_id):
     """Get a single product by ID."""
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products WHERE product_id = ?', (product_id,))
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            return jsonify(dict(row)), 200
-        else:
-            return jsonify({'error': 'Product not found'}), 404
-    except Exception as e:
-        print(f"!!! ERROR in get_product_by_id: {e}")
-        return jsonify({'error': str(e)}), 500
+        product = Product.fetch_product_by_id(product_id)
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    # Check if product exists
+    if product is None:
+        return jsonify({"error": "Product not found."}), 404
+
+    # Return data
+    return jsonify(product.to_dict()), 200
 
 @app.route('/api/products', methods=['POST'])
 def register_product_api():
@@ -210,6 +191,7 @@ def register_product_api():
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
+    """
     try:
         data = request.get_json()
         
@@ -236,6 +218,35 @@ def register_product():
     except Exception as e:
         print(f"!!! ERROR in register_product: {e}")
         return jsonify({'error': str(e)}), 500
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate the input
+        errors = validate_product(data)
+        if errors:
+            print("Returning validation errors to client...") 
+            return jsonify({"success": False, 'errors': errors}), 400
+
+        # Create the product
+        product = Product(
+            data["name"],
+            data["price"],
+            data["epc"],
+            data["upc"],
+            data["category"],
+            data["available_stock"],
+            data["points_worth"]
+        )
+        # Insert product
+        Product.insert_product(product)
+    except DatabaseInsertException as e:
+        if "Products.epc" in str(e):
+            return jsonify({"error": "This EPC is already in use."}), 400
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({'message': 'Product added successfully'}), 201
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product_api(product_id):
