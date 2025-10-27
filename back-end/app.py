@@ -129,6 +129,11 @@ def register_customer():
     try:
         Customer.insertCustomer(customer)
     except DatabaseInsertException as e:
+        if "Customers.phone_number" in str(e):
+            return jsonify({"error": "The phone number is already in use."}), 400
+        elif "Customers.email" in str(e):
+            return jsonify({"error": "The email is already in use."}), 400
+        
         print(f"ERROR: Failed to insert customer {customer} due to error: {e}")
         return jsonify({"error": str(e)}), 500
 
@@ -186,6 +191,7 @@ def register_product_api():
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
+    """
     try:
         data = request.get_json()
         
@@ -212,6 +218,35 @@ def register_product():
     except Exception as e:
         print(f"!!! ERROR in register_product: {e}")
         return jsonify({'error': str(e)}), 500
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate the input
+        errors = validate_product(data)
+        if errors:
+            print("Returning validation errors to client...") 
+            return jsonify({"success": False, 'errors': errors}), 400
+
+        # Create the product
+        product = Product(
+            data["name"],
+            data["price"],
+            data["epc"],
+            data["upc"],
+            data["category"],
+            data["available_stock"],
+            data["points_worth"]
+        )
+        # Insert product
+        Product.insert_product(product)
+    except DatabaseInsertException as e:
+        if "Products.epc" in str(e):
+            return jsonify({"error": "This EPC is already in use."}), 400
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({'message': 'Product added successfully'}), 201
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product_api(product_id):
