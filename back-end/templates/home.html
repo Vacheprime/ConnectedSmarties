@@ -112,23 +112,44 @@
                     </div>
                 </div>
 
-                <!-- Fan Control -->
-                <div class="fridge-section fan-section">
-                    <h2 class="fridge-title">Fan Control</h2>
+                <!-- Fan Controls 1 -->
+                <div class="fridge-section fan-section" id="fan-section-1">
+                    <h2 class="fridge-title">Fan Control 1</h2>
                     <div class="fan-card">
                         <div class="fan-visual">
-                            <!-- Added electric fan GIF -->
-                            <img src="../static/images/electric_fan.gif" id="electric_fan" width="100" height="100"
+                            <img src="../static/images/electric_fan.gif" id="fan-1-img" width="100" height="100"
                                 alt="Electric Fan" />
-                            <p class="fan-status-text" id="fan-status-text">OFF</p>
+                            <div class="sensor-status">
+                                <span class="status-dot" id="fan-dot-1"></span>
+                                <span id="fan-status-text-1">Deactivated</span>
+                            </div>
                         </div>
                         <div class="fan-controls">
-                            <button class="btn btn-success" id="fan-on-btn" onclick="controlFan('on')">Turn ON</button>
-                            <button class="btn btn-danger" id="fan-off-btn" onclick="controlFan('off')">Turn
-                                OFF</button>
+                            <button class="btn btn-success" onclick="controlFan('on', '1')">Turn ON</button>
+                            <button class="btn btn-danger" onclick="controlFan('off', '1')">Turn OFF</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Fan Controls 2 -->
+                <div class="fridge-section fan-section" id="fan-section-2">
+                    <h2 class="fridge-title">Fan Control 2</h2>
+                    <div class="fan-card">
+                        <div class="fan-visual">
+                            <img src="../static/images/electric_fan.gif" id="fan-2-img" width="100" height="100"
+                                alt="Electric Fan" />
+                            <div class="sensor-status">
+                                <span class="status-dot" id="fan-dot-2"></span>
+                                <span id="fan-status-text-2">Deactivated</span>
+                            </div>
+                        </div>
+                        <div class="fan-controls">
+                            <button class="btn btn-success" onclick="controlFan('on', '2')">Turn ON</button>
+                            <button class="btn btn-danger" onclick="controlFan('off', '2')">Turn OFF</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
 
@@ -138,8 +159,9 @@
     </div>
 
     <div id="alert-container"></div>
-    <script src="../static/js/notifications.js"></script>
-    <script src="../static/js/home.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>
 
 </html>

@@ -1,9 +1,6 @@
 let fanStatus = "off"
 
-// Declare showToast function or import it from notifications.js
-function showToast(title, message, type) {
-  console.log(`Title: ${title}, Message: ${message}, Type: ${type}`)
-}
+if (!window.fanStatuses) window.fanStatuses = {}
 
 function updateThermometer(temperature, thermometerId) {
   const thermometerElement = document.getElementById(`temperature-${thermometerId}`)
@@ -34,80 +31,106 @@ function updateHumidityGauge(humidity, gaugeId) {
 async function fetchSensorData() {
   try {
     const response = await fetch("/api/sensors")
-    if (response.ok) {
-      const data = await response.json()
+    if (!response.ok) throw new Error("Failed to fetch sensor data")
 
-      const sensor1Temp = Number.parseFloat(data.sensor1.temperature)
-      updateThermometer(sensor1Temp, 1)
-      updateHumidityGauge(data.sensor1.humidity, 1)
+    const data = await response.json()
 
-      const sensor2Temp = Number.parseFloat(data.sensor2.temperature)
-      updateThermometer(sensor2Temp, 2)
-      updateHumidityGauge(data.sensor2.humidity, 2)
+    // Sensor 1
+    const sensor1Temp = Number.parseFloat(data.sensor1.temperature)
+    const sensor1Hum = Number.parseFloat(data.sensor1.humidity)
+    updateThermometer(sensor1Temp, 1)
+    updateHumidityGauge(sensor1Hum, 1)
+    updateSensorStatus("sensor1-temp-status", true)
+    updateSensorStatus("sensor1-humidity-status", true)
 
-      document.getElementById("sensor1-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
-      document.getElementById("sensor1-humidity-status").innerHTML =
-        '<span class="status-dot"></span><span>Active</span>'
-      document.getElementById("sensor2-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
-      document.getElementById("sensor2-humidity-status").innerHTML =
-        '<span class="status-dot"></span><span>Active</span>'
-    } else {
-      throw new Error("Failed to fetch sensor data")
-    }
+    // Sensor 2
+    const sensor2Temp = Number.parseFloat(data.sensor2.temperature)
+    const sensor2Hum = Number.parseFloat(data.sensor2.humidity)
+    updateThermometer(sensor2Temp, 2)
+    updateHumidityGauge(sensor2Hum, 2)
+    updateSensorStatus("sensor2-temp-status", true)
+    updateSensorStatus("sensor2-humidity-status", true)
   } catch (error) {
     console.error("Error fetching sensor data:", error)
     showToast("Sensor Error", "Failed to fetch sensor data", "error")
 
-    document.getElementById("sensor1-temp-status").innerHTML = "<span>Error</span>"
-    document.getElementById("sensor1-humidity-status").innerHTML = "<span>Error</span>"
-    document.getElementById("sensor2-temp-status").innerHTML = "<span>Error</span>"
-    document.getElementById("sensor2-humidity-status").innerHTML = "<span>Error</span>"
+    // Set statuses to error state
+    updateSensorStatus("sensor1-temp-status", false)
+    updateSensorStatus("sensor1-humidity-status", false)
+    updateSensorStatus("sensor2-temp-status", false)
+    updateSensorStatus("sensor2-humidity-status", false)
   }
 }
 
-async function controlFan(action) {
-  try {
-    
-    const sensorId = 1 
+// === SENSOR STATUS UI ===
+function updateSensorStatus(elementId, isActive) {
+  const el = document.getElementById(elementId)
+  if (!el) return
 
+  const dot = el.querySelector(".status-dot")
+  const text = el.querySelector("span:last-child")
+
+  if (isActive) {
+    dot.style.backgroundColor = "green"
+    text.textContent = "Active"
+    text.style.color = "green"
+  } else {
+    dot.style.backgroundColor = "red"
+    text.textContent = "Deactivated"
+    text.style.color = "red"
+  }
+}
+
+async function controlFan(action, sensorId) {
+  try {
     const response = await fetch(`/fan/${action}?sensor_id=${sensorId}`, {
       method: "POST",
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      fanStatus = action === "on" ? "on" : "off"
-      updateFanUI()
-      showToast("Fan Control", data.message, "success")
-    } else {
+    if (!response.ok) {
       const error = await response.json()
       throw new Error(error.error || "Failed to control fan")
     }
+
+    const data = await response.json()
+    window.fanStatuses[sensorId] = action === "on" ? "on" : "off"
+    updateFanUI(sensorId)
+    showToast("Fan Control", data.message, "success")
   } catch (error) {
     console.error("Error controlling fan:", error)
     showToast("Fan Error", error.message, "error")
   }
 }
 
-// Update fan UI
-function updateFanUI() {
-  const fanIcon = document.getElementById("fan-icon")
-  const fanStatusText = document.getElementById("fan-status-text")
+function updateFanUI(sensorId) {
+  const fanStatusText = document.getElementById(`fan-status-text-${sensorId}`)
+  const fanImage = document.getElementById(`fan-${sensorId}-img`)
+  const fanDot = document.getElementById(`fan-dot-${sensorId}`)
+  
 
-  if (fanStatus === "on") {
-    fanIcon.classList.add("spinning")
-    fanStatusText.textContent = "ON"
-    fanStatusText.classList.add("on")
-  } else {
-    fanIcon.classList.remove("spinning")
-    fanStatusText.textContent = "OFF"
-    fanStatusText.classList.remove("on")
-  }
+  const isOn = window.fanStatuses[sensorId] === "on"
+
+  fanStatusText.textContent = isOn ? "Active" : "Deactivated"
+  fanStatusText.style.color = isOn ? "green" : "red"
+  fanDot.style.backgroundColor = isOn ? "green" : "red"
+
+  if (isOn) fanImage.classList.add("spinning")
+  else fanImage.classList.remove("spinning")
 }
 
-// Initialize page
+// === PAGE INIT ===
 document.addEventListener("DOMContentLoaded", () => {
-  fetchSensorData()
-  // Update sensor data every 5 seconds
-  setInterval(fetchSensorData, 5000)
-})
+  // Initialize all fans to OFF (Deactivated)
+  window.fanStatuses = {
+    1: "off",
+    2: "off"
+  };
+
+  // Make sure UI starts correctly
+  updateFanUI(1);
+  updateFanUI(2);
+
+  // Fetch sensor data immediately and then every 5s
+  fetchSensorData();
+  setInterval(fetchSensorData, 5000);
+});
