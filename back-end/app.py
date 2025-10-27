@@ -1,6 +1,6 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify
-import sqlite3  
+import sqlite3
 import os
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
@@ -10,6 +10,8 @@ from models.sensor_model import Sensor
 from models.sensor_data_point_model import SensorDataPoint
 from models.customer_model import Customer
 from models.exceptions.database_insert_exception import DatabaseInsertException
+from models.exceptions.database_delete_exception import DatabaseDeleteException
+from models.exceptions.database_read_exception import DatabaseReadException
 
 app = Flask(__name__)
 CORS(app)
@@ -99,8 +101,8 @@ def get_customers():
     # Fetch customers
     try:
         customers = Customer.fetch_all_customers()
-    except Exception as e:
-        print("ERROR " + e)
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
     
     # Return customers as JSON
     return jsonify([customer.to_dict() for customer in customers])
@@ -133,15 +135,12 @@ def register_customer():
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM Customers WHERE customer_id = ?', (customer_id,))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Customer deleted successfully'}), 200
-    except Exception as e:
-        print(f"!!! ERROR in delete_customer: {e}")
+        Customer.delete_customer(customer_id)
+    except DatabaseDeleteException as e:
+        print(f"ERROR: {e}")
         return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Customer deleted successfully'}), 200
 
 # ============= PRODUCT API ROUTES =============
 
