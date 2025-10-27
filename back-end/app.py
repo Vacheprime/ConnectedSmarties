@@ -8,6 +8,8 @@ from .mqtt_service import MQTTService
 from .utils.email_service import EmailService
 from models.sensor_model import Sensor
 from models.sensor_data_point_model import SensorDataPoint
+from models.customer_model import Customer
+from models.exceptions.database_insert_exception import DatabaseInsertException
 
 app = Flask(__name__)
 CORS(app)
@@ -94,18 +96,14 @@ def register_customer_api():
 
 @app.route('/customers/data', methods=['GET'])
 def get_customers():
+    # Fetch customers
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Customers')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        customers = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(customers)
+        customers = Customer.fetch_all_customers()
     except Exception as e:
-        print(f"!!! ERROR in get_customers: {e}")
-        return jsonify({'error': str(e)}), 500
+        print("ERROR " + e)
+    
+    # Return customers as JSON
+    return jsonify([customer.to_dict() for customer in customers])
 
 # need a method to add customer
 @app.route('/customers/add', methods=['POST'])
@@ -113,41 +111,24 @@ def register_customer():
     # Note: if you got this error,
     #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
     #       run on another port by typing this command flask run --port=5001
+    data = request.get_json()
+    
+    # Validate the input
+    errors = validate_customer(data)
+    if errors:
+        print("Returning validation errors to client...") 
+        return jsonify({"success": False, "errors": errors}), 400
+    
+    # Create the customer object
+    customer = Customer(data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"])
+    # Insert the customer
     try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_customer(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({"success": False, "errors": errors}), 400
-        
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-        
-        # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
-        conn.commit()
-        conn.close()
-        return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
-        
-    # *** MODIFIED ERROR HANDLING ***
-    except sqlite3.IntegrityError as e:
-        print(f"!!! INTEGRITY ERROR: {e}")
-        # Check if it's an email or phone constraint
-        if "Customers.email" in str(e):
-            return jsonify({'error': 'This email address is already in use.'}), 409 # 409 Conflict
-        if "Customers.phone_number" in str(e):
-            return jsonify({'error': 'This phone number is already in use.'}), 409 # 409 Conflict
-        
-        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
+        Customer.insertCustomer(customer)
+    except DatabaseInsertException as e:
+        print(f"ERROR: Failed to insert customer {customer} due to error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    # Catch all other general errors
-    except Exception as e:
-        print(f"!!! UNKNOWN ERROR in register_customer: {e}")
-        return jsonify({'error': str(e)}), 500
-    # ********************************
+    return jsonify({"success": True, 'message': 'Customer added successfully'}), 200
 
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
