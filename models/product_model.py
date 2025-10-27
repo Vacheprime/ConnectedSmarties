@@ -36,6 +36,32 @@ class Product(BaseModel):
     
 
     @classmethod
+    def insert_product(cls, product: Product) -> None:
+        sql = f"""
+        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, available_stock, category, points_worth)
+        VALUES
+        (:name, :price, :epc, :upc, :available_stock, :category, :points_worth);
+        """
+
+        sql_values = {
+            "name": product.name,
+            "price": product.price,
+            "epc": product.epc,
+            "upc": product.upc,
+            "available_stock": product.available_stock,
+            "category": product.category,
+            "points_worth": product.points_worth
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Execute
+                cursor.execute(sql, sql_values)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while inserting a product: {e}")
+    
+
+    @classmethod
     def fetch_all_products(cls) -> list[Product]:
         sql = f"""
         SELECT * FROM {cls.DB_TABLE};
@@ -111,4 +137,6 @@ class Product(BaseModel):
         product.product_id = int(row["product_id"])
 
         return product
+
+
         
