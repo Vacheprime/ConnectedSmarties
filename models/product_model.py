@@ -74,4 +74,41 @@ class Product(BaseModel):
             products.append(product)
         
         return products
+
+
+    @classmethod
+    def fetch_product_by_id(cls, product_id: int) -> Product | None:
+        sql = f"""
+        SELECT * FROM {cls.DB_TABLE} WHERE product_id = :product_id;
+        """
+
+        sql_values = {"product_id": product_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                
+                # Execute
+                cursor.execute(sql, sql_values)
+
+                # Fetch one
+                row = cursor.fetchone()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching the product with ID {product_id}: {e}")
+    
+        # Map row to Product
+        product = Product(
+            row["name"],
+            float(row["price"]),
+            row["epc"],
+            int(row["upc"]),
+            row["category"],
+            row["available_stock"],
+            row["points_worth"]
+        )
+        # Set ID
+        product.product_id = int(row["product_id"])
+
+        return product
         
