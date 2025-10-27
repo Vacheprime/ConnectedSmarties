@@ -1,6 +1,8 @@
 from __future__ import annotations
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
+from .exceptions.database_read_exception import DatabaseReadException
+from .exceptions.database_delete_exception import DatabaseDeleteException
 from contextlib import closing
 import sqlite3
 
@@ -109,7 +111,7 @@ class Customer(BaseModel):
 				# Fetch data
 				rows = cursor.fetchall()
 			except Exception as e:
-				pass
+				raise DatabaseReadException(f"An unexpected error occured while fetching all customers: {e}")
 		
 		# Map rows to customer objects
 		customers = []
@@ -125,3 +127,18 @@ class Customer(BaseModel):
 			customers.append(customer)
 
 		return customers
+
+
+	@classmethod
+	def delete_customer(cls, customer_id: int) -> None:
+		sql = f"""
+		DELETE FROM {cls.DB_TABLE} WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {"customer_id": customer_id}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				cursor.execute(sql, sql_values)
+			except Exception as e:
+				raise DatabaseDeleteException(f"An unexpected error occured while deleting customer with ID {customer_id}: {e}")
