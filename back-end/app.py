@@ -9,6 +9,7 @@ from .utils.email_service import EmailService
 from models.sensor_model import Sensor
 from models.sensor_data_point_model import SensorDataPoint
 from models.customer_model import Customer
+from models.product_model import Product
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
@@ -103,9 +104,10 @@ def get_customers():
         customers = Customer.fetch_all_customers()
     except DatabaseReadException as e:
         print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
     
     # Return customers as JSON
-    return jsonify([customer.to_dict() for customer in customers])
+    return jsonify([customer.to_dict() for customer in customers]), 200
 
 # need a method to add customer
 @app.route('/customers/add', methods=['POST'])
@@ -152,35 +154,29 @@ def get_products_api():
 @app.route('/products/data', methods=['GET'])
 def get_products():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        products = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(products)
-    except Exception as e:
-        print(f"!!! ERROR in get_products: {e}")
-        return jsonify({'error': str(e)}), 500
+        products = Product.fetch_all_products()
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify([product.to_dict() for product in products]), 200
+
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_by_id(product_id):
     """Get a single product by ID."""
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products WHERE product_id = ?', (product_id,))
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            return jsonify(dict(row)), 200
-        else:
-            return jsonify({'error': 'Product not found'}), 404
-    except Exception as e:
-        print(f"!!! ERROR in get_product_by_id: {e}")
-        return jsonify({'error': str(e)}), 500
+        product = Product.fetch_product_by_id(product_id)
+    except DatabaseReadException as e:
+        print(f"ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    # Check if product exists
+    if product is None:
+        return jsonify({"error": "Product not found."}), 404
+
+    # Return data
+    return jsonify(product.to_dict()), 200
 
 @app.route('/api/products', methods=['POST'])
 def register_product_api():
