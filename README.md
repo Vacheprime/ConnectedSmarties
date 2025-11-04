@@ -2,7 +2,6 @@
 
 ## Oct 24 2025
 
-
 Florence:
 
 - routes for getting the pages dashboard, customers, products, reports
@@ -13,8 +12,6 @@ creating customer, and product (input validation)
 + route for fetching sensor data /sensors/1/values
 
 + sending emails when temperature exceeds the threshold
-
-
 
 Ishi:
     + possibly adjust UI javascript to refresh the values of the sensors in real time
@@ -35,3 +32,16 @@ Danat:
 Order:
 1) 
 
+## Nov 4, 2025 
+#### Danat: 
+- SDK
+- email (receipt and QR for customer) 
+#### Ishi: 
+- I18LN (bilingual) -> THIS IS A BONUS FEATURE
+- UI
+- design for the self-checkout
+#### Florence 
+- product management system
+    - tracking product inventory
+- create account
+- login (to check history and accumulated points)
