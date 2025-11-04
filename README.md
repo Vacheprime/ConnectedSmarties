@@ -41,7 +41,7 @@ Order:
 - I18LN (bilingual) -> THIS IS A BONUS FEATURE
 - UI
 - design for the self-checkout
-- (fix ui for humidity)
+- (fix ui for humidity) + pareto anywhere
 #### Florence 
 - product management system
     - tracking product inventory
