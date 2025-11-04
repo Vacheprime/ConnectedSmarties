@@ -35,11 +35,13 @@ Order:
 ## Nov 4, 2025 
 #### Danat: 
 - SDK
-- email (receipt and QR for customer) 
+- email (receipt and QR for customer)
+- payment simulation
 #### Ishi: 
 - I18LN (bilingual) -> THIS IS A BONUS FEATURE
 - UI
 - design for the self-checkout
+- (fix ui for humidity)
 #### Florence 
 - product management system
     - tracking product inventory
