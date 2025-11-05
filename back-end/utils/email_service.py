@@ -166,8 +166,6 @@ class EmailService:
                     <img src="cid:qrcode" alt="QR Code" style="max-width: 300px; border: 2px solid #ddd; padding: 10px;"/>
                 </div>
                 
-                <p><strong>Encoded data:</strong> <code style="background-color: #f5f5f5; padding: 2px 6px; border-radius: 3px;">{data}</code></p>
-                
                 <p style="margin-top: 30px; color: #666; font-size: 12px;">
                     This is an automated message from ConnectedSmarties system.
                 </p>
