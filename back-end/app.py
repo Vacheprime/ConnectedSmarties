@@ -191,34 +191,6 @@ def register_product_api():
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_product(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({"success": False, 'errors': errors}), 400
-        
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-
-        cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Product added successfully'}), 201
-    
-    except sqlite3.IntegrityError as e:
-        print(f"!!! INTEGRITY ERROR (Products): {e}")
-        if "Products.epc" in str(e):
-             return jsonify({'error': 'This EPC code is already in use.'}), 409
-        return jsonify({'error': 'Database integrity error: ' + str(e)}), 409
-
-    except Exception as e:
-        print(f"!!! ERROR in register_product: {e}")
-        return jsonify({'error': str(e)}), 500
-    """
     try:
         data = request.get_json()
         
