@@ -71,7 +71,17 @@ def close_connection(exception):
 @app.route("/", methods=["GET"])
 def get_home_page():
     # Note: by default, Flask looks for HTML files inside folder named templates
-    return render_template('create_account.html')
+    return render_template('login.html')
+
+@app.route("/recover", methods=["GET"])
+def get_recover_password():
+    # Note: by default, Flask looks for HTML files inside folder named templates
+    return render_template('recover_password.html')
+
+@app.route("/register", methods=["GET"])
+def get_register_page():
+    # Note: by default, Flask looks for HTML files inside folder named templates
+    return render_template('register.html')
 
 @app.route('/customers', methods=['GET'])
 def get_customers_page():

@@ -5,34 +5,23 @@ body {
   height: 100vh;
 }
 
-.login-container {
-  width: 100%;
-  max-width: 420px;
-  padding: 20px;
-}
-
-.login-card {
+.login-card, .register-card {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px var(--card-shadow-lighter);
   padding: 40px 35px;
   text-align: center;
   margin-top: 15rem;
   width: 30rem;
 }
 
-.logo img {
-  width: 50px;
-  margin-bottom: 10px;
-}
-
 .logo h2 {
-  color: var(--color-primary); /* Adjust this blue to your preferred accent */
+  color: var(--color-primary); 
   margin-bottom: 25px;
 }
 
 h3 {
-  color:--color-text-normal;
+  color: var(--color-text-normal);
   margin-bottom: 20px;
 }
 
