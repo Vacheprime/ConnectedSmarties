@@ -9,16 +9,17 @@ def validate_customer(data):
     if not data.get("first_name") or not data.get("last_name") or not data.get("email"):
         errors.append("Field is missing, must require the following fields: first name, last name, and email.")
     
-    if (data.get("first_name") and not re.fullmatch(name_pattern, data["first_name"])) or (data.get("last_name") and not re.fullmatch(name_pattern, data["last_name"])):
+    if (data.get("first_name") and not re.fullmatch(name_pattern, data["first_name"])) or \
+       (data.get("last_name") and not re.fullmatch(name_pattern, data["last_name"])):
         errors.append("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.")
         
     # GeeksForGeeks
     if data.get("email") and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data["email"]):
         errors.append("Invalid Email Format")
         
-    # https://stackabuse.com/python-regular-expressions-validate-phone-numbers
-    if data.get("phone_number") and not re.match(r"(\+\d{1,3})?\s?\(?\d{1,4}\)?[\s.-]?\d{3}[\s.-]?\d{4}", str(data["phone_number"])):
-        errors.append("Phone Number Format")
+   # Use the same regex as customers.js for consistency (10 or more digits)
+    if data.get("phone_number") and not re.fullmatch(r"\d{10,}", str(data["phone_number"])):
+        errors.append("Phone number must be at least 10 digits.")
 
     # Rewards must be integers
     if data.get("rewards_points") is not None:
@@ -74,4 +75,3 @@ def validate_product(data):
     if errors:
         print("Validation errors:", errors)
     return errors
-

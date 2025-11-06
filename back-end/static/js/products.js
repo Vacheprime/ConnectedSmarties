@@ -1,7 +1,7 @@
 // Load products from database
 async function loadProducts() {
   try {
-    const response = await fetch("/products/data")
+    const response = await fetch("/api/products")
     if (response.ok) {
       const products = await response.json()
       displayProducts(products)
@@ -10,7 +10,7 @@ async function loadProducts() {
     }
   } catch (error) {
     console.error("Error loading products:", error)
-    showToast("Database Error", "Failed to load products", "error")
+    window.showToast("Database Error", "Failed to load products", "error")
     document.getElementById("products-tbody").innerHTML =
       '<tr><td colspan="9" class="loading">Error loading products</td></tr>'
   }
@@ -31,7 +31,7 @@ function displayProducts(products) {
         <tr>
             <td>${product.product_id}</td>
             <td>${product.name}</td>
-            <td>${Number.parseFloat(product.price).toFixed(2)}</td>
+            <td>$${Number.parseFloat(product.price).toFixed(2)}</td>
             <td>${product.epc}</td>
             <td>${product.upc || "-"}</td>
             <td>${product.available_stock || 0}</td>
@@ -105,7 +105,7 @@ function validateProduct(data) {
 // Save product (add or update)
 async function saveProduct(event) {
   event.preventDefault()
-  clearAllErrors()
+  window.clearAllErrors()
 
   const form = document.getElementById("product-form")
   const formData = new FormData(form)
@@ -131,7 +131,7 @@ async function saveProduct(event) {
   // Submit data
   try {
     const isEdit = productId && productId !== ""
-    const url = isEdit ? `/products/${productId}` : "/products/add"
+    const url = isEdit ? `/api/products/${productId}` : "/api/products"
     const method = isEdit ? "PUT" : "POST"
 
     const response = await fetch(url, {
@@ -145,7 +145,7 @@ async function saveProduct(event) {
     if (response.ok) {
       const result = await response.json()
       const action = isEdit ? "edited" : "created"
-      showToast("Success", `Product successfully ${action}!`, "success")
+      window.showToast("Success", `Product successfully ${action}!`, "success")
       resetForm()
       loadProducts()
     } else {
@@ -154,14 +154,14 @@ async function saveProduct(event) {
     }
   } catch (error) {
     console.error("Error saving product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
 // Edit product - populate form with product data
 async function editProduct(productId) {
   try {
-    const response = await fetch(`/products/${productId}`)
+    const response = await fetch(`/api/products/${productId}`)
     if (response.ok) {
       const product = await response.json()
 
@@ -186,7 +186,7 @@ async function editProduct(productId) {
     }
   } catch (error) {
     console.error("Error loading product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
@@ -202,7 +202,7 @@ async function deleteProduct(productId) {
     })
 
     if (response.ok) {
-      showToast("Success", "Product successfully deleted!", "success")
+      window.showToast("Success", "Product successfully deleted!", "success")
       loadProducts()
     } else {
       const error = await response.json()
@@ -210,7 +210,7 @@ async function deleteProduct(productId) {
     }
   } catch (error) {
     console.error("Error deleting product:", error)
-    showToast("Error", error.message, "error")
+    window.showToast("Error", error.message, "error")
   }
 }
 
@@ -220,7 +220,7 @@ function resetForm() {
   document.getElementById("product_id").value = ""
   document.getElementById("form-title").textContent = "Add New Product"
   document.getElementById("submit-btn").textContent = "Add Product"
-  clearAllErrors()
+  window.clearAllErrors()
 }
 
 // Initialize on page load
@@ -233,9 +233,9 @@ document.addEventListener("DOMContentLoaded", () => {
     priceInput.addEventListener("blur", () => {
       const value = priceInput.value
       if (value && Number.parseFloat(value) < 0) {
-        showToast("Validation Error", "Price must be a positive number", "error")
+        window.showToast("Validation Error", "Price must be a positive number", "error")
       } else {
-        clearFieldError("price")
+        window.clearFieldError("price")
       }
     })
   }
@@ -246,9 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
     stockInput.addEventListener("blur", () => {
       const value = stockInput.value
       if (value && Number.parseInt(value) < 0) {
-        showToast("Validation Error", "Stock must be a non-negative number", "error")
+        window.showToast("Validation Error", "Stock must be a non-negative number", "error")
       } else {
-        clearFieldError("available_stock")
+        window.clearFieldError("available_stock")
       }
     })
   }
