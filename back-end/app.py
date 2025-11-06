@@ -66,7 +66,7 @@ def close_connection(exception):
 @app.route("/", methods=["GET"])
 def get_home_page():
     # Note: by default, Flask looks for HTML files inside folder named templates
-    return render_template('home.html')
+    return render_template('create_account.html')
 
 @app.route('/customers', methods=['GET'])
 def get_customers_page():
