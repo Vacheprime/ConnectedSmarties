@@ -1,6 +1,10 @@
+from __future__ import annotations
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
+from .exceptions.database_read_exception import DatabaseReadException
+from .exceptions.database_delete_exception import DatabaseDeleteException
 from contextlib import closing
+import sqlite3
 
 class Customer(BaseModel):
 	"""
@@ -19,7 +23,7 @@ class Customer(BaseModel):
 
 	DB_TABLE = "Customers"
 	
-	def __init__(self, first_name, last_name, email, phone_number):
+	def __init__(self, first_name, last_name, email, phone_number, rewards_points):
 		"""
         Constructor for a new Customer.
         
@@ -38,7 +42,18 @@ class Customer(BaseModel):
 		self.last_name = last_name
 		self.email = email
 		self.phone_number = phone_number
-		self.rewards_points = 0
+		self.rewards_points = rewards_points
+	
+
+	def to_dict(self) -> dict:
+		return {
+			"customer_id": self.customer_id,
+			"first_name": self.first_name,
+			"last_name": self.last_name,
+			"email": self.email,
+			"phone_number": self.phone_number,
+			"rewards_points": self.rewards_points
+		}
 
 
 	@staticmethod
@@ -78,3 +93,52 @@ class Customer(BaseModel):
 				connection.commit()
 			except Exception as e:
 				raise DatabaseInsertException(f"An unexpected error occured while inserting the customer: {e}")
+
+
+	@classmethod
+	def fetch_all_customers(cls) -> list[Customer]:
+		sql = f"""
+		SELECT * FROM {cls.DB_TABLE};
+		"""
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				# Set the return mode
+				cursor.row_factory = sqlite3.Row
+
+				# Execute the quer
+				cursor.execute(sql)
+
+				# Fetch data
+				rows = cursor.fetchall()
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occured while fetching all customers: {e}")
+		
+		# Map rows to customer objects
+		customers = []
+		for row in rows:
+			customer = Customer(
+				row["first_name"],
+				row["last_name"],
+				row["email"],
+				row["phone_number"],
+				row["rewards_points"]
+			)
+			customer.customer_id = int(row["customer_id"])
+			customers.append(customer)
+
+		return customers
+
+
+	@classmethod
+	def delete_customer(cls, customer_id: int) -> None:
+		sql = f"""
+		DELETE FROM {cls.DB_TABLE} WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {"customer_id": customer_id}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				cursor.execute(sql, sql_values)
+			except Exception as e:
+				raise DatabaseDeleteException(f"An unexpected error occured while deleting customer with ID {customer_id}: {e}")
