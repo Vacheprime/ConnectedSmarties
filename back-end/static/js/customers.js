@@ -44,6 +44,22 @@
 //     .join("")
 // }
 
+document.addEventListener('DOMContentLoaded', function() {
+  const passwordInput = document.getElementById('passwordInput');
+  const togglePasswordButton = document.getElementById('togglePassword');
+  const eyeIcon = togglePasswordButton.querySelector('i');
+
+  togglePasswordButton.addEventListener('click', function() {
+    // Toggle the type attribute
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+
+    // Toggle the eye icon
+    eyeIcon.classList.toggle('bi-eye');
+    eyeIcon.classList.toggle('bi-eye-slash');
+  });
+});
+
 // Function to validate inputs for adding a Customer
 function validateCustomer(data) {
   const errors = [];
@@ -56,7 +72,7 @@ function validateCustomer(data) {
   if (!data.first_name || !data.last_name || !data.email || !data.phone_number || !data.password) {
     errors.push("Field is missing, must require the following fields: first name, last name, email, password, and phone number.");
   }
-  
+
   // Name validation
   if (
     (data.first_name && !namePattern.test(data.first_name)) ||
