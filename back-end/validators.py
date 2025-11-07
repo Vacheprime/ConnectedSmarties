@@ -69,7 +69,7 @@ def validate_product(data):
     # EPC Validation (example: alphanumeric 4–24 characters)
     epc = str(data.get("epc", "")).strip()
     if not re.fullmatch(r"[A-Za-z0-9]{4,24}", epc):
-        errors.append("EPC must be 4–24 alphanumeric characters (no spaces or symbols).")
+        errors.append("EPC must be 4-24 alphanumeric characters (no spaces or symbols).")
     
     # Print errors in the terminal
     if errors:

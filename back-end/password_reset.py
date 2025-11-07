@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash
 import sqlite3
 import os
 
-password_recovery_bp = Blueprint("password_recovery_bp", __name__)
+password_reset_bp = Blueprint("password_reset_bp", __name__)
 
 # === Helper: Send Email ===
 def send_email(recipient, subject, html_content):
@@ -34,13 +34,13 @@ def send_email(recipient, subject, html_content):
 
 
 # === Route: Forgot Password ===
-@password_recovery_bp.route("/recover-password", methods=["GET", "POST"])
+@password_reset_bp.route("/reset-password", methods=["GET", "POST"])
 def forgot_password():
     app = current_app
     serializer = URLSafeTimedSerializer(app.secret_key or "super-secret-key")
 
     if request.method == "GET":
-        return render_template("recover_password.html")
+        return render_template("reset_password.html")
 
     email = request.form.get("email")
     if not email:
@@ -57,7 +57,7 @@ def forgot_password():
 
     # Generate token
     token = serializer.dumps(email, salt="password-reset")
-    reset_url = url_for("password_recovery_bp.reset_password", token=token, _external=True)
+    reset_url = url_for("password_reset_bp.reset_password", token=token, _external=True)
 
     html_content = f"""
     <html>
@@ -80,7 +80,7 @@ def forgot_password():
 
 
 # === Route: Reset Password ===
-@password_recovery_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@password_reset_bp.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
     app = current_app
     serializer = URLSafeTimedSerializer(app.secret_key or "super-secret-key")
