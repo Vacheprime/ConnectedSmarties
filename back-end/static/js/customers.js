@@ -1,48 +1,48 @@
 // Load customers from database
-async function loadCustomers() {
-  try {
-    const response = await fetch("/api/customers")
-    if (response.ok) {
-      const customers = await response.json()
-      displayCustomers(customers)
-    } else {
-      throw new Error("Failed to load customers")
-    }
-  } catch (error) {
-    console.error("Error loading customers:", error)
-    showToast("Database Error", "Failed to load customers", "error")
-    document.getElementById("customers-tbody").innerHTML =
-      '<tr><td colspan="7" class="loading">Error loading customers</td></tr>'
-  }
-}
+// async function loadCustomers() {
+//   try {
+//     const response = await fetch("/api/customers")
+//     if (response.ok) {
+//       const customers = await response.json()
+//       displayCustomers(customers)
+//     } else {
+//       throw new Error("Failed to load customers")
+//     }
+//   } catch (error) {
+//     console.error("Error loading customers:", error)
+//     showToast("Database Error", "Failed to load customers", "error")
+//     document.getElementById("customers-tbody").innerHTML =
+//       '<tr><td colspan="7" class="loading">Error loading customers</td></tr>'
+//   }
+// }
 
-// Display customers in table
-function displayCustomers(customers) {
-  const tbody = document.getElementById("customers-tbody")
+// // Display customers in table
+// function displayCustomers(customers) {
+//   const tbody = document.getElementById("customers-tbody")
 
-  if (customers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">No customers found</td></tr>'
-    return
-  }
+//   if (customers.length === 0) {
+//     tbody.innerHTML = '<tr><td colspan="7" class="loading">No customers found</td></tr>'
+//     return
+//   }
 
-  tbody.innerHTML = customers
-    .map(
-      (customer) => `
-        <tr>
-            <td>${customer.customer_id}</td>
-            <td>${customer.first_name}</td>
-            <td>${customer.last_name}</td>
-            <td>${customer.email}</td>
-            <td>${customer.phone_number}</td>
-            <td>${customer.rewards_points}</td>
-            <td>
-                <button class="action-btn delete-btn" onclick="deleteCustomer(${customer.customer_id})">Delete</button>
-            </td>
-        </tr>
-    `,
-    )
-    .join("")
-}
+//   tbody.innerHTML = customers
+//     .map(
+//       (customer) => `
+//         <tr>
+//             <td>${customer.customer_id}</td>
+//             <td>${customer.first_name}</td>
+//             <td>${customer.last_name}</td>
+//             <td>${customer.email}</td>
+//             <td>${customer.phone_number}</td>
+//             <td>${customer.rewards_points}</td>
+//             <td>
+//                 <button class="action-btn delete-btn" onclick="deleteCustomer(${customer.customer_id})">Delete</button>
+//             </td>
+//         </tr>
+//     `,
+//     )
+//     .join("")
+// }
 
 // Function to validate inputs for adding a Customer
 function validateCustomer(data) {
@@ -50,10 +50,11 @@ function validateCustomer(data) {
   const namePattern = /^[A-Za-z]+(?:[-' ][A-Za-z]+)*$/;
   const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const phonePattern = /(\+\d{1,3})?\s?\(?\d{1,4}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
+  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|:;"'<>,.?/~`]).{8,16}$/;
 
   // Required fields
-  if (!data.first_name || !data.last_name || !data.email || !data.phone_number) {
-    errors.push("Field is missing, must require the following fields: first name, last name, and email.");
+  if (!data.first_name || !data.last_name || !data.email || !data.phone_number || !data.password) {
+    errors.push("Field is missing, must require the following fields: first name, last name, email, password, and phone number.");
   }
 
   // Name validation
@@ -69,15 +70,19 @@ function validateCustomer(data) {
     errors.push("Invalid Email Format");
   }
 
+  if (data.password && !passwordPattern.test(data.password)) {
+    errors.push("Invalid password format: must include uppercase, lowercase, number, special character, and be 8-16 characters long.");
+  }
+
   // Phone validation
   if (data.phone_number && !phonePattern.test(data.phone_number)) {
-    errors.push("Phone Number Format Invalid");
+    errors.push("Invalid phone number format");
   }
 
   // Reward points validation
   if (data.rewards_points !== undefined && data.rewards_points !== "") {
     if (isNaN(parseInt(data.rewards_points))) {
-      errors.push("Reward points must be an integer.");
+      errors.push("Reward points must be a positive, non-decimal number.");
     }
   }
 
@@ -95,7 +100,10 @@ async function addCustomer(event) {
     first_name: formData.get("first_name").trim(),
     last_name: formData.get("last_name").trim(),
     email: formData.get("email").trim(),
+    password: formData.get("password").trim(),
     phone_number: formData.get("phone_number").trim(),
+    qr_identification: formData.get("qr_identification").trim() || "",
+    has_membership: formData.get("has_membership").trim() || "false",
     rewards_points: formData.get("rewards_points").trim() || "0",
   };
 
