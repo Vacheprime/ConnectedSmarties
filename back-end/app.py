@@ -323,6 +323,42 @@ def get_sensor_values(sensor_id):
         print(f"ERROR: Failed to fetch sensor values: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= THRESHOLD API ROUTES =============
+
+@app.route('/api/threshold', methods=['GET'])
+def get_threshold():
+    """Get current temperature thresholds."""
+    try:
+        return jsonify({
+            'high_threshold': TEMP_THRESHOLD_HIGH,
+            'low_threshold': TEMP_THRESHOLD_LOW
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get thresholds: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/threshold', methods=['POST'])
+def update_threshold():
+    """Update temperature thresholds."""
+    global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+    try:
+        data = request.get_json()
+        
+        if 'high_threshold' in data:
+            TEMP_THRESHOLD_HIGH = float(data['high_threshold'])
+        if 'low_threshold' in data:
+            TEMP_THRESHOLD_LOW = float(data['low_threshold'])
+        
+        print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
+        return jsonify({
+            'message': 'Thresholds updated successfully',
+            'high_threshold': TEMP_THRESHOLD_HIGH,
+            'low_threshold': TEMP_THRESHOLD_LOW
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to update thresholds: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= FAN CONTROL ROUTES =============
 
 @app.route('/fan/on', methods=['GET', 'POST'])
