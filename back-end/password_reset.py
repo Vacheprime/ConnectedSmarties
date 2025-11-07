@@ -11,8 +11,8 @@ password_reset_bp = Blueprint("password_reset_bp", __name__)
 
 # === Helper: Send Email ===
 def send_email(recipient, subject, html_content):
-    self.sender_email = os.getenv('SENDER_EMAIL', '')
-    self.sender_password = os.getenv('SENDER_PASSWORD', '')
+    sender_email = os.getenv('SENDER_EMAIL', '')
+    sender_password = os.getenv('SENDER_PASSWORD', '')
 
     msg = MIMEMultipart("alternative")
     msg["From"] = sender_email
@@ -91,7 +91,7 @@ def reset_password(token):
         return "Invalid or expired reset link.", 400
 
     if request.method == "GET":
-        return render_template("reset_password.html", email=email, token=token)
+        return render_template("create_new_password.html", email=email, token=token)
 
     password = request.form.get("password")
     confirm = request.form.get("confirm_password")
