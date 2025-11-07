@@ -6,6 +6,7 @@ from flask_cors import CORS
 from .validators import validate_customer, validate_product
 from .mqtt_service import MQTTService
 from .utils.email_service import EmailService
+from .password_recovery import password_recovery_bp
 from models.sensor_model import Sensor
 from models.sensor_data_point_model import SensorDataPoint
 from models.customer_model import Customer
@@ -16,6 +17,8 @@ from models.exceptions.database_read_exception import DatabaseReadException
 
 app = Flask(__name__)
 CORS(app)
+app.secret_key = "super-secret-key"
+app.register_blueprint(password_recovery_bp)
 
 # Initialize db in way that db path won't break if Flask is running on a different working directory
 # After pulling, run this: sqlite3 your_database_name.db < your_script.sql
