@@ -34,7 +34,7 @@ def send_email(recipient, subject, html_content):
 
 
 # === Route: Forgot Password ===
-@password_reset_bp.route("/reset-password", methods=["GET", "POST"])
+@password_reset_bp.route("/reset_password", methods=["GET", "POST"])
 def forgot_password():
     app = current_app
     serializer = URLSafeTimedSerializer(app.secret_key or "super-secret-key")
@@ -80,7 +80,7 @@ def forgot_password():
 
 
 # === Route: Reset Password ===
-@password_reset_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@password_reset_bp.route("/reset_password/<token>", methods=["GET", "POST"])
 def reset_password(token):
     app = current_app
     serializer = URLSafeTimedSerializer(app.secret_key or "super-secret-key")
