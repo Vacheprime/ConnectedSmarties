@@ -16,6 +16,18 @@ body {
   width: 30rem;
 }
 
+.back-to-login {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--color-text-normal);
+}
+
+.back-to-login a {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .logo h2 {
   color: var(--color-primary); 
   margin-bottom: 25px;
