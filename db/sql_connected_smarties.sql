@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS Customers (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
     phone_number TEXT UNIQUE,
+    qr_identification TEXT,
+    has_membership BOOLEAN DEFAULT FALSE,
     rewards_points INTEGER DEFAULT 0
 );
 
@@ -43,14 +46,14 @@ CREATE TABLE IF NOT EXISTS SensorDataPoints (
 );
 
 -- For the Customers table
-INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points)
-VALUES ('Ishilia Gilcedes', 'Labrador', 'lalinglabrador@gmail.com', '5145010503', 8);
+INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
+VALUES ('Ishilia Gilcedes', 'Labrador', 'lalinglabrador@gmail.com', 'password123' ,'5145010503', 8);
 
-INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points)
-VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', '123 456 789', 100);
+INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
+VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'password123', '123 456 789', 100);
 
-INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points)
-VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', '5142246080', 300);
+INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
+VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'password123' ,'5142246080', 5);
 
 -- Insert both sensors
 INSERT INTO Sensors (sensor_type, `location`)
