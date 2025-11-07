@@ -102,9 +102,9 @@ async function addCustomer(event) {
     email: formData.get("email")?.trim(),
     password: formData.get("password")?.trim(),
     phone_number: formData.get("phone_number")?.trim(),
-    qr_identification: formData.get("qr_identification" || "").trim(),
-    has_membership: formData.get("has_membership" || "false").trim(),
-    rewards_points: formData.get("rewards_points" || "0").trim(),
+    qr_identification: formData.get("qr_identification" || "")?.trim(),
+    has_membership: formData.get("has_membership" || "false")?.trim(),
+    rewards_points: formData.get("rewards_points" || "0")?.trim(),
   };
 
   const errors = validateCustomer(data);
