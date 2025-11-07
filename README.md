@@ -42,6 +42,9 @@ Order:
 - UI
 - design for the self-checkout
 - (fix ui for humidity) + pareto anywhere
+  - In having pareto-anywhere running in the background make another card in the dashboard that shows the same dashboard for humidity but in a small card in the home.html.
+  - For the UI in the home.html, add 1 envelop icon that says that the email is sent, add a threshold indicator and a small card where we can edit the threshold, it must also work with the back end too when lik when the threshold is edited it uses the new value as the threshold.
+  - Have everything in the dashboard in 1 row.
 #### Florence 
 - product management system
     - tracking product inventory
