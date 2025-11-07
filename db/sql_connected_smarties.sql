@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS Customers (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    phone_number TEXT UNIQUE,
-    qr_identification TEXT,
+    password VARCHAR(255) NOT NULL,
+    phone_number TEXT UNIQUE NOT NULL,
+    qr_identification VARCHAR(255) DEFAULT NULL,
     has_membership BOOLEAN DEFAULT FALSE,
     rewards_points INTEGER DEFAULT 0
 );

@@ -56,7 +56,7 @@ function validateCustomer(data) {
   if (!data.first_name || !data.last_name || !data.email || !data.phone_number || !data.password) {
     errors.push("Field is missing, must require the following fields: first name, last name, email, password, and phone number.");
   }
-
+  
   // Name validation
   if (
     (data.first_name && !namePattern.test(data.first_name)) ||
