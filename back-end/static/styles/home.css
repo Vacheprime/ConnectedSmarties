@@ -184,7 +184,7 @@
 /* Updated layout to display all cards in one row */
 .all-cards-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -229,4 +229,232 @@
   display: block;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Updated dashboard layout for single row */
+.dashboard-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-card {
+  background-color: var(--color-background-light);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+/* Humidity Chart Card Styles */
+.humidity-chart-card {
+  grid-column: span 1;
+}
+
+.humidity-chart-card h3 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Threshold Card Styles */
+.threshold-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.email-status-section h3,
+.threshold-section h3 {
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.email-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: var(--color-success);
+  color: white;
+  border-radius: var(--border-radius-small);
+  font-weight: 600;
+}
+
+.email-indicator i {
+  font-size: 1.5rem;
+}
+
+.threshold-display {
+  background-color: var(--color-background-card);
+  padding: 1rem;
+  border-radius: var(--border-radius-small);
+  margin-bottom: 1rem;
+}
+
+.threshold-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.threshold-item label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.threshold-item span {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Fridge Card Styles */
+.fridge-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fridge-title {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.fridge-monitors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.monitor-card {
+  background-color: var(--color-background-card);
+  padding: 1rem;
+  border-radius: var(--border-radius-small);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.monitor-card h3 {
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Compact Fan Control Styles */
+.fan-control-compact {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-button-normal);
+  width: 100%;
+}
+
+.fan-visual-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.fan-controls-compact {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.fan-controls-compact .btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Modal Styles for Threshold Editor */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-content {
+  background-color: var(--color-background-light);
+  margin: 10% auto;
+  padding: 0;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-button-normal);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+.close {
+  color: var(--color-text-muted);
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close:hover {
+  color: var(--color-text-normal);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--color-button-normal);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .dashboard-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-row {
+    grid-template-columns: 1fr;
+  }
+
+  .fridge-monitors {
+    grid-template-columns: 1fr;
+  }
 }
