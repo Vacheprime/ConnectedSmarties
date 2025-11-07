@@ -95,6 +95,10 @@ def get_products_page():
 def get_reports_page():
     return render_template('reports.html')
 
+@app.route('/selfcheckout', methods=['GET'])
+def get_selfcheckout_page():
+    return render_template('selfcheckout.html')
+
 # ============= CUSTOMER API ROUTES =============
 
 @app.route('/api/customers', methods=['GET'])
