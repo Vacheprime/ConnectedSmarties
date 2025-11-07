@@ -1,9 +1,0 @@
-.register-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px var(--card-shadow-lighter);
-  padding: 40px 35px;
-  text-align: center;
-  margin-top: 5rem;
-  width: 30rem;
-}
