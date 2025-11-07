@@ -134,7 +134,7 @@ def register_customer():
         return jsonify({"success": False, "errors": errors}), 400
     
     # Create the customer object
-    customer = Customer(data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"])
+    customer = Customer(data["first_name"], data["last_name"], data["email"], data['password'], data["phone_number"], data["qr_identification"], data["has_membership"], data["rewards_points"])
     # Insert the customer
     try:
         Customer.insertCustomer(customer)

@@ -97,14 +97,14 @@ async function addCustomer(event) {
   const formData = new FormData(form);
 
   const data = {
-    first_name: formData.get("first_name").trim(),
-    last_name: formData.get("last_name").trim(),
-    email: formData.get("email").trim(),
-    password: formData.get("password").trim(),
-    phone_number: formData.get("phone_number").trim(),
-    qr_identification: formData.get("qr_identification").trim() || "",
-    has_membership: formData.get("has_membership").trim() || "false",
-    rewards_points: formData.get("rewards_points").trim() || "0",
+    first_name: formData.get("first_name")?.trim(),
+    last_name: formData.get("last_name")?.trim(),
+    email: formData.get("email")?.trim(),
+    password: formData.get("password")?.trim(),
+    phone_number: formData.get("phone_number")?.trim(),
+    qr_identification: formData.get("qr_identification" || "").trim(),
+    has_membership: formData.get("has_membership" || "false").trim(),
+    rewards_points: formData.get("rewards_points" || "0").trim(),
   };
 
   const errors = validateCustomer(data);
@@ -127,7 +127,7 @@ async function addCustomer(event) {
       const result = await response.json();
       showToast("Success", "Customer successfully created!", "success");
       form.reset();
-      loadCustomers();
+      // loadCustomers();
     } else {
       const error = await response.json();
       throw new Error(error.error || "Failed to add customer");
@@ -168,35 +168,35 @@ function resetForm() {
   clearAllErrors()
 }
 
-// Add real-time validation
-document.addEventListener("DOMContentLoaded", () => {
-  loadCustomers()
+// // Add real-time validation
+// document.addEventListener("DOMContentLoaded", () => {
+//   loadCustomers()
 
-  // Real-time validation
-  const emailInput = document.getElementById("email")
-  if (emailInput) {
-    emailInput.addEventListener("blur", () => {
-      const value = emailInput.value
-      if (value && !validateEmail(value)) {
-        showFieldError("email", "Please enter a valid email address")
-      } else {
-        clearFieldError("email")
-      }
-    })
-  }
+//   // Real-time validation
+//   const emailInput = document.getElementById("email")
+//   if (emailInput) {
+//     emailInput.addEventListener("blur", () => {
+//       const value = emailInput.value
+//       if (value && !validateEmail(value)) {
+//         showFieldError("email", "Please enter a valid email address")
+//       } else {
+//         clearFieldError("email")
+//       }
+//     })
+//   }
 
-  const phoneInput = document.getElementById("phone_number")
-  if (phoneInput) {
-    phoneInput.addEventListener("blur", () => {
-      const value = phoneInput.value
-      if (value && !validatePhone(value)) {
-        showFieldError("phone_number", "Please enter a valid phone number")
-      } else {
-        clearFieldError("phone_number")
-      }
-    })
-  }
-})
+//   const phoneInput = document.getElementById("phone_number")
+//   if (phoneInput) {
+//     phoneInput.addEventListener("blur", () => {
+//       const value = phoneInput.value
+//       if (value && !validatePhone(value)) {
+//         showFieldError("phone_number", "Please enter a valid phone number")
+//       } else {
+//         clearFieldError("phone_number")
+//       }
+//     })
+//   }
+// })
 
 function clearAllErrors() {
   // Clear all errors logic here
