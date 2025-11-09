@@ -1,5 +1,5 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
-from flask import Flask, render_template, request, g, jsonify
+from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
 import sqlite3
 import os
 from flask_cors import CORS
@@ -68,11 +68,25 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+from functools import wraps
+
+def login_required(role=None):
+    """Decorator to protect routes based on session role."""
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for('get_login'))
+            if role and session.get("role") != role:
+                return jsonify({"error": "Unauthorized access"}), 403
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 # ============= PAGE ROUTES =============
         
 # get the HTML page        
 @app.route("/", methods=["GET"])
-def get_home_page():
+def get_login():
     # Note: by default, Flask looks for HTML files inside folder named templates
     return render_template('login.html')
 
@@ -87,16 +101,41 @@ def get_register_page():
     return render_template('register.html')
 
 @app.route('/customers', methods=['GET'])
+@login_required(role="admin")
 def get_customers_page():
     return render_template('customers.html')
 
 @app.route('/products', methods=['GET'])
+@login_required(role="admin")
 def get_products_page():
     return render_template('products.html')
 
 @app.route('/reports', methods=['GET'])
+@login_required(role="admin")
 def get_reports_page():
     return render_template('reports.html')
+# ============= LOGIN ROUTES =============
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    # Check Admin
+    admin = query_db("SELECT * FROM Admins WHERE email = ? AND password = ?", (email, password), one=True)
+    if admin:
+        session["role"] = "admin"
+        session["user_id"] = admin["admin_id"]
+        return jsonify({"redirect": "/dashboard/admin"})
+
+    # Check Customer
+    customer = query_db("SELECT * FROM Customers WHERE email = ? AND password = ?", (email, password), one=True)
+    if customer:
+        session["role"] = "customer"
+        session["user_id"] = customer["customer_id"]
+        return jsonify({"redirect": "/dashboard/customer"})
+
+    return jsonify({"error": "Invalid email or password"}), 401
 
 # ============= CUSTOMER API ROUTES =============
 
