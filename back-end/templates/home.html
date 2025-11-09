@@ -19,29 +19,31 @@
             <nav class="navbar">
                 <div class="nav-brand">ConnectedSmarties</div>
                 <ul class="nav-menu">
-                    <li><a href="/" class="active">Home</a></li>
-                    <li><a href="/customers">Customers</a></li>
-                    <li><a href="/products">Products</a></li>
-                    <li><a href="/reports">Reports</a></li>
+                    <li><a href="/" class="active" data-i18n="navHome">Home</a></li>
+                    <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
+                    <li><a href="/products" data-i18n="navProducts">Products</a></li>
+                    <li><a href="/reports" data-i18n="navReports">Reports</a></li>
+                    <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
             </nav>
         </header>
 
         <main>
             <div class="page-header">
-                <h1>System Control</h1>
-                <p class="subtitle">Monitor sensors and control devices</p>
+                <h1 data-i18n="homeTitle">System Control</h1>
+                <p class="subtitle" data-i18n="homeSubtitle">Monitor sensors and control devices</p>
             </div>
 
             <!-- All cards in one row for efficiency -->
             <div class="all-cards-container">
                 <!-- Fridge 1 -->
                 <div class="fridge-section">
-                    <h2 class="fridge-title">Fridge 1 (DHT11)</h2>
+                    <h2 class="fridge-title" data-i18n="fridge1">Fridge 1 (DHT11)</h2>
                     <div class="fridge-monitors">
                         <!-- Thermometer -->
                         <div class="monitor-card">
-                            <h3>Temperature</h3>
+                            <h3 data-i18n="temperature">Temperature</h3>
                             <div id="thermometer-wrapper-1">
                                 <div id="termometer-1" class="termometer">
                                     <div id="temperature-1" class="temperature" style="height:0" data-value="0°C"></div>
@@ -50,13 +52,13 @@
                             </div>
                             <div class="sensor-status" id="sensor1-temp-status">
                                 <span class="status-dot"></span>
-                                <span>Reading...</span>
+                                <span data-i18n="reading">Reading...</span>
                             </div>
                         </div>
 
                         <!-- Humidity Gauge -->
                         <div class="monitor-card">
-                            <h3>Humidity</h3>
+                            <h3 data-i18n="humidity">Humidity</h3>
                             <div class="humidity-gauge-container">
                                 <div id="humidity-gauge-1" class="humidity-gauge">
                                     <div class="humidity-gauge-label">
@@ -67,7 +69,7 @@
                             </div>
                             <div class="sensor-status" id="sensor1-humidity-status">
                                 <span class="status-dot"></span>
-                                <span>Reading...</span>
+                                <span data-i18n="reading">Reading...</span>
                             </div>
                         </div>
                     </div>
@@ -75,11 +77,11 @@
 
                 <!-- Fridge 2 -->
                 <div class="fridge-section">
-                    <h2 class="fridge-title">Fridge 2 (DHT11)</h2>
+                    <h2 class="fridge-title" data-i18n="fridge2">Fridge 2 (DHT11)</h2>
                     <div class="fridge-monitors">
                         <!-- Thermometer -->
                         <div class="monitor-card">
-                            <h3>Temperature</h3>
+                            <h3 data-i18n="temperature">Temperature</h3>
                             <div id="thermometer-wrapper-2">
                                 <div id="termometer-2" class="termometer">
                                     <div id="temperature-2" class="temperature" style="height:0" data-value="0°C"></div>
@@ -88,13 +90,13 @@
                             </div>
                             <div class="sensor-status" id="sensor2-temp-status">
                                 <span class="status-dot"></span>
-                                <span>Reading...</span>
+                                <span data-i18n="reading">Reading...</span>
                             </div>
                         </div>
 
                         <!-- Humidity Gauge -->
                         <div class="monitor-card">
-                            <h3>Humidity</h3>
+                            <h3 data-i18n="humidity">Humidity</h3>
                             <div class="humidity-gauge-container">
                                 <div id="humidity-gauge-2" class="humidity-gauge">
                                     <div class="humidity-gauge-label">
@@ -105,7 +107,7 @@
                             </div>
                             <div class="sensor-status" id="sensor2-humidity-status">
                                 <span class="status-dot"></span>
-                                <span>Reading...</span>
+                                <span data-i18n="reading">Reading...</span>
                             </div>
                         </div>
                     </div>
@@ -113,38 +115,38 @@
 
                 <!-- Fan Controls 1 -->
                 <div class="fridge-section fan-section" id="fan-section-1">
-                    <h2 class="fridge-title">Fan Control 1</h2>
+                    <h2 class="fridge-title" data-i18n="fanControl1">Fan Control 1</h2>
                     <div class="fan-card">
                         <div class="fan-visual">
                             <img src="../static/images/electric_fan.gif" id="fan-1-img" width="100" height="100"
                                 alt="Electric Fan" />
                             <div class="sensor-status">
                                 <span class="status-dot" id="fan-dot-1"></span>
-                                <span id="fan-status-text-1">Deactivated</span>
+                                <span id="fan-status-text-1" data-i18n="deactivated">Deactivated</span>
                             </div>
                         </div>
                         <div class="fan-controls">
-                            <button class="btn btn-success" onclick="controlFan('on', '1')">Turn ON</button>
-                            <button class="btn btn-danger" onclick="controlFan('off', '1')">Turn OFF</button>
+                            <button class="btn btn-success" onclick="controlFan('on', '1')" data-i18n="turnOn">Turn ON</button>
+                            <button class="btn btn-danger" onclick="controlFan('off', '1')" data-i18n="turnOff">Turn OFF</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Fan Controls 2 -->
                 <div class="fridge-section fan-section" id="fan-section-2">
-                    <h2 class="fridge-title">Fan Control 2</h2>
+                    <h2 class="fridge-title" data-i18n="fanControl2">Fan Control 2</h2>
                     <div class="fan-card">
                         <div class="fan-visual">
                             <img src="../static/images/electric_fan.gif" id="fan-2-img" width="100" height="100"
                                 alt="Electric Fan" />
                             <div class="sensor-status">
                                 <span class="status-dot" id="fan-dot-2"></span>
-                                <span id="fan-status-text-2">Deactivated</span>
+                                <span id="fan-status-text-2" data-i18n="deactivated">Deactivated</span>
                             </div>
                         </div>
                         <div class="fan-controls">
-                            <button class="btn btn-success" onclick="controlFan('on', '2')">Turn ON</button>
-                            <button class="btn btn-danger" onclick="controlFan('off', '2')">Turn OFF</button>
+                            <button class="btn btn-success" onclick="controlFan('on', '2')" data-i18n="turnOn">Turn ON</button>
+                            <button class="btn btn-danger" onclick="controlFan('off', '2')" data-i18n="turnOff">Turn OFF</button>
                         </div>
                     </div>
                 </div>
@@ -153,12 +155,13 @@
         </main>
 
         <footer>
-            <p>&copy; 2025 ConnectedSmarties. All rights reserved.</p>
+            <p data-i18n="footer">&copy; 2025 ConnectedSmarties. All rights reserved.</p>
         </footer>
     </div>
 
     <div id="alert-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>
