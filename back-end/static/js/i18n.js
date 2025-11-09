@@ -22,6 +22,15 @@ const translations = {
     activated: "Activated",
     turnOn: "Turn ON",
     turnOff: "Turn OFF",
+    humidityChart: "Humidity Dashboard",
+    emailStatus: "Email Status",
+    emailSent: "Email Sent",
+    thresholdSettings: "Threshold Settings",
+    highThreshold: "High Threshold",
+    lowThreshold: "Low Threshold",
+    editThreshold: "Edit Threshold",
+    cancel: "Cancel",
+    save: "Save",
 
     // Customers page
     customersTitle: "Customer Management",
@@ -131,6 +140,15 @@ const translations = {
     activated: "Activé",
     turnOn: "Allumer",
     turnOff: "Éteindre",
+    humidityChart: "Tableau de Bord Humidité",
+    emailStatus: "Statut Email",
+    emailSent: "Email Envoyé",
+    thresholdSettings: "Paramètres de Seuil",
+    highThreshold: "Seuil Élevé",
+    lowThreshold: "Seuil Bas",
+    editThreshold: "Modifier le Seuil",
+    cancel: "Annuler",
+    save: "Enregistrer",
 
     // Customers page
     customersTitle: "Gestion des Clients",
