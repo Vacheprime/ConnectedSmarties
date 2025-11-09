@@ -62,6 +62,13 @@ def get_db():
         db.row_factory = sqlite3.Row # access rows by the column names
     return db
 
+def query_db(query, args=(), one=False):
+    db = get_db()
+    cur = db.execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
+
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
@@ -82,6 +89,7 @@ def login_required(role=None):
             return f(*args, **kwargs)
         return wrapped
     return decorator
+
 # ============= PAGE ROUTES =============
         
 # get the HTML page        
@@ -100,6 +108,11 @@ def get_register_page():
     # Note: by default, Flask looks for HTML files inside folder named templates
     return render_template('register.html')
 
+@app.route("/home", methods=["GET"])
+@login_required(role="admin")
+def get_admin_home():
+    return render_template("home.html")
+
 @app.route('/customers', methods=['GET'])
 @login_required(role="admin")
 def get_customers_page():
@@ -114,6 +127,7 @@ def get_products_page():
 @login_required(role="admin")
 def get_reports_page():
     return render_template('reports.html')
+
 # ============= LOGIN ROUTES =============
 @app.route("/login", methods=["POST"])
 def login():
@@ -126,16 +140,21 @@ def login():
     if admin:
         session["role"] = "admin"
         session["user_id"] = admin["admin_id"]
-        return jsonify({"redirect": "/dashboard/admin"})
+        return jsonify({"redirect": "/home"})
 
     # Check Customer
     customer = query_db("SELECT * FROM Customers WHERE email = ? AND password = ?", (email, password), one=True)
     if customer:
         session["role"] = "customer"
         session["user_id"] = customer["customer_id"]
-        return jsonify({"redirect": "/dashboard/customer"})
+        return jsonify({"redirect": "/dashboard-customer"})
 
     return jsonify({"error": "Invalid email or password"}), 401
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('get_login'))
 
 # ============= CUSTOMER API ROUTES =============
 
