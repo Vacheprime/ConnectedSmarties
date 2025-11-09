@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
 import sqlite3
 import os
+from functools import wraps
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
 from .mqtt_service import MQTTService
@@ -95,8 +96,6 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-from functools import wraps
-
 def login_required(role=None):
     """Decorator to protect routes based on session role."""
     def decorator(f):
@@ -179,7 +178,6 @@ def logout():
 @app.route('/selfcheckout', methods=['GET'])
 def get_selfcheckout_page():
     return render_template('selfcheckout.html')
->>>>>>> f471051468599f39b3651567480be01e978f35d7
 
 # ============= CUSTOMER API ROUTES =============
 
@@ -419,42 +417,6 @@ def get_sensor_values(sensor_id):
         return jsonify(response), 200
     except Exception as e:
         print(f"ERROR: Failed to fetch sensor values: {e}")
-        return jsonify({'error': str(e)}), 500
-
-# ============= THRESHOLD API ROUTES =============
-
-@app.route('/api/threshold', methods=['GET'])
-def get_threshold():
-    """Get current temperature thresholds."""
-    try:
-        return jsonify({
-            'high_threshold': TEMP_THRESHOLD_HIGH,
-            'low_threshold': TEMP_THRESHOLD_LOW
-        }), 200
-    except Exception as e:
-        print(f"ERROR: Failed to get thresholds: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/threshold', methods=['POST'])
-def update_threshold():
-    """Update temperature thresholds."""
-    global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
-    try:
-        data = request.get_json()
-        
-        if 'high_threshold' in data:
-            TEMP_THRESHOLD_HIGH = float(data['high_threshold'])
-        if 'low_threshold' in data:
-            TEMP_THRESHOLD_LOW = float(data['low_threshold'])
-        
-        print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
-        return jsonify({
-            'message': 'Thresholds updated successfully',
-            'high_threshold': TEMP_THRESHOLD_HIGH,
-            'low_threshold': TEMP_THRESHOLD_LOW
-        }), 200
-    except Exception as e:
-        print(f"ERROR: Failed to update thresholds: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= FAN CONTROL ROUTES =============
