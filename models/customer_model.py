@@ -20,11 +20,8 @@ class Customer(BaseModel):
         phone_number (str): Customer's phone number.
         rewards_points (int): Customer's reward points balance.
 	"""
-
 	DB_TABLE = "Customers"
-	
-	def __init__(self, first_name, last_name, email, phone_number, rewards_points):
-		"""
+	"""
         Constructor for a new Customer.
         
         Args:
@@ -35,15 +32,18 @@ class Customer(BaseModel):
         
         Returns:
             None
-        """
+    """
+	def __init__(self, first_name, last_name, email, password=None, phone_number=None, qr_identification=None, has_membership=False, rewards_points=0):
 		super().__init__(Customer.DB_TABLE)
 		self.customer_id = None
 		self.first_name = first_name
 		self.last_name = last_name
 		self.email = email
+		self.password = password
 		self.phone_number = phone_number
+		self.qr_identification = qr_identification
+		self.has_membership = has_membership
 		self.rewards_points = rewards_points
-	
 
 	def to_dict(self) -> dict:
 		return {
@@ -51,7 +51,10 @@ class Customer(BaseModel):
 			"first_name": self.first_name,
 			"last_name": self.last_name,
 			"email": self.email,
-			"phone_number": self.phone_number,
+			"password": self.password,
+   			"phone_number": self.phone_number,
+			"qr_identification": self.qr_identification,
+			"has_membership": self.has_membership,
 			"rewards_points": self.rewards_points
 		}
 
@@ -69,14 +72,17 @@ class Customer(BaseModel):
         """
 
 		# Define the insert statement and values
-		sql = """INSERT INTO Customers(first_name, last_name, email, phone_number, rewards_points)
-			VALUES (:first_name, :last_name, :email, :phone_number, :rewards_points);
+		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, has_membership ,rewards_points)
+			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :has_membership, :rewards_points);
 		"""
 		sql_values = {
 			"first_name": customer.first_name,
 			"last_name": customer.last_name,
 			"email": customer.email,
+   			"password": customer.password,
 			"phone_number": customer.phone_number,
+			"qr_identification": customer.qr_identification,
+			"has_membership": customer.has_membership,
 			"rewards_points": customer.rewards_points
 		}
 
@@ -120,7 +126,10 @@ class Customer(BaseModel):
 				row["first_name"],
 				row["last_name"],
 				row["email"],
+				row["password"],
 				row["phone_number"],
+				row["qr_identification"],
+				row["has_membership"],
 				row["rewards_points"]
 			)
 			customer.customer_id = int(row["customer_id"])

@@ -1,40 +1,33 @@
-
-
-// Notification system (debug-safe version)
 function showToast(title, message, type = "info") {
-  console.log("showToast called:", { title, message, type });
-
   try {
     // Create toast container if it doesn’t exist
     let toastContainer = document.getElementById("toast-container");
     if (!toastContainer) {
-      console.log("No toast-container found — creating one.");
       toastContainer = document.createElement("div");
       toastContainer.id = "toast-container";
-      toastContainer.className = "toast-container position-fixed top-0 end-0 p-3";
       document.body.appendChild(toastContainer);
     }
 
-    // Make sure container is visible and above everything
     toastContainer.style.position = "fixed";
     toastContainer.style.top = "1rem";
     toastContainer.style.right = "1rem";
     toastContainer.style.zIndex = "9999";
+    toastContainer.style.display = "flex";
+    toastContainer.style.flexDirection = "column";
+    toastContainer.style.alignItems = "end";
+    toastContainer.style.gap = "0.5rem";
 
-    // Determine Bootstrap color class
     const typeClassMap = {
       success: "text-bg-success",
       error: "text-bg-danger",
       warning: "text-bg-warning",
-      info: "text-bg-primary"
+      info: "text-bg-primary",
     };
-
     const typeClass = typeClassMap[type] || "text-bg-secondary";
-    console.log("Toast typeClass:", typeClass);
 
-    // Create the toast element
+    // Toast HTML structure
     const toastEl = document.createElement("div");
-    toastEl.className = `toast align-items-center ${typeClass} border-0 mt-2 fade`;
+    toastEl.className = `toast align-items-center ${typeClass} border-0 shadow`;
     toastEl.setAttribute("role", "alert");
     toastEl.setAttribute("aria-live", "assertive");
     toastEl.setAttribute("aria-atomic", "true");
@@ -49,30 +42,19 @@ function showToast(title, message, type = "info") {
       </div>
     `;
 
-    console.log("Appending toast to container...");
     toastContainer.appendChild(toastEl);
 
-    // Ensure Bootstrap is available
-    if (typeof bootstrap === "undefined" || !bootstrap.Toast) {
-      console.error("Bootstrap.Toast is not available!");
-      alert(`${title}: ${message}`); // fallback for debugging
-      return;
+    if (typeof bootstrap !== "undefined" && bootstrap.Toast) {
+      const bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+      bsToast.show();
+
+      // Remove after it disappears
+      toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+    } else {
+      alert(`${title}: ${message}`); 
     }
-
-    // Initialize and show the toast
-    console.log("Initializing Bootstrap toast...");
-    const bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
-    bsToast.show();
-
-    // Clean up toast after hiding
-    toastEl.addEventListener("hidden.bs.toast", () => {
-      console.log("Toast hidden → removing element.");
-      toastEl.remove();
-    });
-
-    console.log("✅ Toast should now be visible!");
   } catch (err) {
     console.error("showToast() failed:", err);
-    alert("Toast error: " + err.message); // fallback visible alert
+    alert("Toast error: " + err.message);
   }
 }
