@@ -2,7 +2,6 @@
 from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
 import sqlite3
 import os
-from functools import wraps
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
 from .mqtt_service import MQTTService
@@ -96,6 +95,8 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+from functools import wraps
+
 def login_required(role=None):
     """Decorator to protect routes based on session role."""
     def decorator(f):
@@ -178,6 +179,7 @@ def logout():
 @app.route('/selfcheckout', methods=['GET'])
 def get_selfcheckout_page():
     return render_template('selfcheckout.html')
+>>>>>>> f471051468599f39b3651567480be01e978f35d7
 
 # ============= CUSTOMER API ROUTES =============
 
