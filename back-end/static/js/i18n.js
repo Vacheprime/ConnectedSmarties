@@ -106,9 +106,10 @@ const translations = {
     register: "Register",
     createAccount: "Create Account",
     haveAccount: "Already have an account?",
-    recoverPassword: "Recover Password",
-    recoverSubtitle: "Enter your registered email address below and we'll send you a link to reset your password.",
-    sendRecoveryLink: "Send Recovery Link",
+    resetPassword: "Reset Password",
+    resetPasswordSubtitle:
+      "Enter your registered email address below and we'll send you a link to reset your password.",
+    sendResetEmail: "Send Reset Email",
     rememberedPassword: "Remembered your password?",
     backToSignIn: "Back to Sign In",
 
@@ -224,10 +225,10 @@ const translations = {
     register: "S'inscrire",
     createAccount: "Créer un Compte",
     haveAccount: "Vous avez déjà un compte?",
-    recoverPassword: "Récupérer le Mot de Passe",
-    recoverSubtitle:
+    resetPassword: "Réinitialiser le Mot de Passe",
+    resetPasswordSubtitle:
       "Entrez votre adresse courriel enregistrée ci-dessous et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
-    sendRecoveryLink: "Envoyer le Lien de Récupération",
+    sendResetEmail: "Envoyer le Lien de Réinitialisation",
     rememberedPassword: "Vous vous souvenez de votre mot de passe?",
     backToSignIn: "Retour à la Connexion",
 
