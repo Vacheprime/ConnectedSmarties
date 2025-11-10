@@ -32,15 +32,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
-function logoutUser() {
-    fetch("/logout")
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                window.location.href = "/";
-            }
-        })
-        .catch(err => console.error("Logout failed:", err));
-}
