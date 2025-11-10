@@ -15,12 +15,21 @@
     <div class="app-container">
         <header>
             <nav class="navbar">
-                <div class="nav-brand">ConnectedSmarties</div>
+                <div class="nav-left">
+                    <button id="logout-btn" class="btn btn-outline-danger me-3" onclick="logoutUser()"
+                        data-i18n="logout">
+                        Logout
+                    </button>
+                    <div class="nav-brand">ConnectedSmarties</div>
+                </div>
                 <ul class="nav-menu">
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/customers" class="active">Customers</a></li>
-                    <li><a href="/products">Products</a></li>
-                    <li><a href="/reports">Reports</a></li>
+                    <li><a href="/" data-i18n="navHome">Home</a></li>
+                    <li><a href="/customers" class="active" data-i18n="navCustomers">Customers</a></li>
+                    <li><a href="/products" data-i18n="navProducts">Products</a></li>
+                    <li><a href="/reports" data-i18n="navReports">Reports</a></li>
+                    <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()"
+                            style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
             </nav>
         </header>
@@ -112,6 +121,7 @@
     <div id="toast-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='js/customers.js') }}"></script>
 </body>
 
