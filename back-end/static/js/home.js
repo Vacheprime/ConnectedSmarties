@@ -178,6 +178,16 @@ async function saveThreshold() {
   const highThreshold = Number.parseFloat(document.getElementById("high-threshold-input").value)
   const lowThreshold = Number.parseFloat(document.getElementById("low-threshold-input").value)
 
+  if (isNaN(highThreshold) || isNaN(lowThreshold)) {
+    showToast("Error", "Please enter valid threshold values", "error")
+    return
+  }
+
+  if (highThreshold <= lowThreshold) {
+    showToast("Error", "High threshold must be greater than low threshold", "error")
+    return
+  }
+
   try {
     const response = await fetch("/api/threshold", {
       method: "POST",
@@ -191,9 +201,10 @@ async function saveThreshold() {
     })
 
     if (response.ok) {
+      const data = await response.json()
       document.getElementById("high-threshold-value").textContent = highThreshold
       document.getElementById("low-threshold-value").textContent = lowThreshold
-      showToast("Success", "Thresholds updated successfully", "success")
+      showToast("Success", "Thresholds updated successfully. Email alerts will now use these values.", "success")
       closeThresholdModal()
     } else {
       throw new Error("Failed to update thresholds")
