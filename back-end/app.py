@@ -1,7 +1,6 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
-import sqlite3
-import os
+import sqlite3, sys, os
 from functools import wraps
 from flask_cors import CORS
 from .validators import validate_customer, validate_product
@@ -15,11 +14,6 @@ from models.product_model import Product
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
-from flask import Flask, render_template, request, g, jsonify
-from flask_cors import CORS
-import sqlite3
-import os
-import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -166,7 +160,7 @@ def login():
     if customer:
         session["role"] = "customer"
         session["user_id"] = customer["customer_id"]
-        return jsonify({"redirect": "/dashboard-customer"})
+        return jsonify({"redirect": "/account"})
 
     return jsonify({"error": "Invalid email or password"}), 401
 
@@ -246,6 +240,65 @@ def delete_customer(customer_id):
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# ============= CUSTOMER ACCOUNT ROUTES =============
+
+@app.route("/account")
+def account():
+    if "user_id" not in session:
+        return redirect("/")
+
+    db = get_db()
+    cursor = db.cursor()
+
+    # Fetch user info + membership
+    cursor.execute("""
+        SELECT c.first_name, c.last_name, c.email, c.rewards_points, 
+               m.membership_number, m.join_date
+        FROM Customers c
+        LEFT JOIN memberships m ON c.customer_id = m.customer_id
+        WHERE c.customer_id = ?
+    """, (session["user_id"],))
+    user = cursor.fetchone()
+
+    # Fetch purchase history
+    cursor.execute("""
+        SELECT receipt_id, date, total_amount
+        FROM Purchases
+        WHERE customer_id = ?
+        ORDER BY date DESC
+    """, (session["user_id"],))
+    purchases = cursor.fetchall()
+
+    return render_template("account.html", user=user, purchases=purchases)
+
+@app.route("/join-membership", methods=["POST"])
+def join_membership():
+    if "user_id" not in session:
+        return jsonify({"error": "You must be logged in first."}), 403
+
+    db = get_db()
+    cursor = db.cursor()
+
+    user_id = session["user_id"]
+
+    # Check if already has membership
+    cursor.execute("SELECT membership_number FROM memberships WHERE customer_id = ?", (user_id,))
+    existing = cursor.fetchone()
+    if existing:
+        return jsonify({"error": "Already a member."}), 400
+
+    # Create new membership
+    cursor.execute("INSERT INTO memberships (customer_id) VALUES (?)", (user_id,))
+    db.commit()
+
+    cursor.execute("UPDATE Customers SET has_membership = TRUE WHERE customer_id = ?", (user_id,))
+    db.commit()
+
+    cursor.execute("SELECT membership_number FROM memberships WHERE customer_id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    return jsonify({"success": True, "membership_number": row["membership_number"]})
 
 # ============= PRODUCT API ROUTES =============
 
