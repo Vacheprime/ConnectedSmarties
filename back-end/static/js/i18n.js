@@ -102,6 +102,7 @@ const translations = {
     sendRecoveryLink: "Send Recovery Link",
     rememberedPassword: "Remembered your password?",
     backToSignIn: "Back to Sign In",
+    logout: "Logout",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
@@ -212,6 +213,7 @@ const translations = {
     sendRecoveryLink: "Envoyer le Lien de Récupération",
     rememberedPassword: "Vous vous souvenez de votre mot de passe?",
     backToSignIn: "Retour à la Connexion",
+    logout: "Se déconnecter",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",

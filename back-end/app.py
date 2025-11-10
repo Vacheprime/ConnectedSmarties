@@ -3,12 +3,7 @@ from flask import Flask, render_template, request, g, jsonify, session, redirect
 import sqlite3, sys, os
 from functools import wraps
 from flask_cors import CORS
-from .validators import validate_customer, validate_product
-from .mqtt_service import MQTTService
-from .utils.email_service import EmailService
 from .password_reset import password_reset_bp
-from models.sensor_model import Sensor
-from models.sensor_data_point_model import SensorDataPoint
 from models.customer_model import Customer
 from models.product_model import Product
 from models.exceptions.database_insert_exception import DatabaseInsertException
@@ -108,8 +103,14 @@ def login_required(role=None):
 # get the HTML page        
 @app.route("/", methods=["GET"])
 def get_login():
-    # Note: by default, Flask looks for HTML files inside folder named templates
-    return render_template('login.html')
+    # If user is already logged in
+    if "user_id" in session:
+        if session.get("role") == "admin":
+            return redirect(url_for("get_admin_home"))
+        elif session.get("role") == "customer":
+            return redirect(url_for("account"))
+    
+    return render_template("login.html")
 
 @app.route("/reset_password", methods=["GET"])
 def get_reset_password():
@@ -207,9 +208,7 @@ def register_customer():
     customer = Customer(data.get("first_name"),data.get("last_name"),data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
 
     # Insert the customer
-    try:
-        data = request.get_json()
-        
+    try:        
         # Validate the input
         errors = validate_customer(data)
         if errors:
@@ -221,7 +220,8 @@ def register_customer():
         cursor = conn.cursor() # to allow execute sql statement
         
         # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
+        cursor.execute('INSERT INTO Customers (first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ', 
+        (data["first_name"], data["last_name"], data["email"], data["phone_number"],  data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0)))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Customer added successfully'}), 200

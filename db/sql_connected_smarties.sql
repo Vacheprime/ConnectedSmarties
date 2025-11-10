@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
+DROP TABLE IF EXISTS Memberships;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
 
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS Customers (
 );
 
 -- Memberships table
-CREATE TABLE memberships (
+CREATE TABLE IF NOT EXISTS Memberships (
     membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -72,7 +73,7 @@ INSERT INTO Customers (first_name, last_name, email, password, phone_number, rew
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
 
 -- For memberships table
-INSERT INTO memberships (customer_id) VALUES (1);
+INSERT INTO Memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 
