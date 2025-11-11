@@ -66,7 +66,11 @@ def close_connection(exception):
         db.close()
 
 # ============= PAGE ROUTES =============
-        
+
+@app.route("/checkout", methods=["GET"])
+def get_checkout_page():
+    return render_template("selfcheckout.html")
+
 # get the HTML page        
 @app.route("/", methods=["GET"])
 def get_home_page():

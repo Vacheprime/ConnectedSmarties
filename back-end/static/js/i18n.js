@@ -280,3 +280,5 @@ function toggleLanguage() {
 document.addEventListener("DOMContentLoaded", () => {
   updatePageLanguage()
 })
+
+export { setLanguage, getCurrentLanguage, updatePageLanguage }
