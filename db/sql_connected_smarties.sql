@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS Products (
 );
 
 -- Create the Sensors table
+CREATE TABLE IF NOT EXISTS Purchases ( 
+    receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL, 
+    date TEXT DEFAULT CURRENT_TIMESTAMP, 
+    total_amount REAL DEFAULT 0, 
+    items_json TEXT, 
+    FOREIGN KEY(customer_id) REFERENCES Customers(customer_id) 
+);
+
+-- Create the Sensors table
 CREATE TABLE IF NOT EXISTS Sensors (
     sensor_id INTEGER PRIMARY KEY AUTOINCREMENT,
     sensor_type TEXT NOT NULL,
@@ -80,6 +90,28 @@ INSERT INTO Admins (email, password) VALUES
 ('lalinglabrador@gmail.com', 'Password123!'),
 ('donutrallyr@gmail.com', 'Password123!'),
 ('nneflasflorencee@gmail.com', 'Password123!');
+
+-- For the Purchases table
+
+
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(1, 16.98, '[{"product_id": 2, "name": "Tropical Mango Smoothie 500ml", "qty": 2, "price": 6.99},
+             {"product_id": 5, "name": "Fresh Pineapple", "qty": 1, "price": 5.99}]'),
+(1, 9.98, '[{"product_id": 3, "name": "Dark Roast Coffee Beans 1kg", "qty": 1, "price": 14.99}]');
+
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(2, 14.98, '[{"product_id": 6, "name": "Avocado Toast Pack", "qty": 1, "price": 9.99},
+             {"product_id": 7, "name": "Coconut Water 1L", "qty": 1, "price": 4.99}]');
+             
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(3, 17.97, '[{"product_id": 1, "name": "Organic Apple Juice 1L", "qty": 1, "price": 4.99},
+             {"product_id": 4, "name": "Whole Grain Bread", "qty": 2, "price": 3.99},
+             {"product_id": 10, "name": "Green Tea Bags 25ct", "qty": 1, "price": 4.99}]'),
+(3, 12.98, '[{"product_id": 8, "name": "Chocolate Chip Cookies", "qty": 1, "price": 7.99},
+             {"product_id": 9, "name": "Vanilla Yogurt 4-pack", "qty": 1, "price": 5.99}]');
 
 -- Insert both sensors
 INSERT INTO Sensors (sensor_type, `location`)

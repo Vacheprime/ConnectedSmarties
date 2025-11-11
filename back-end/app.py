@@ -270,7 +270,7 @@ def account():
     """, (session["user_id"],))
     purchases = cursor.fetchall()
 
-    return render_template("account.html", user=user, purchases=purchases)
+    return render_template("customer_account.html", user=user, purchases=purchases)
 
 @app.route("/join-membership", methods=["POST"])
 def join_membership():
