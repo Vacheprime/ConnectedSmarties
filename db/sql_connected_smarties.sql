@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
+DROP TABLE IF EXISTS Memberships;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
 
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS Customers (
 );
 
 -- Memberships table
-CREATE TABLE memberships (
+CREATE TABLE IF NOT EXISTS Memberships (
     membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -42,6 +43,16 @@ CREATE TABLE IF NOT EXISTS Products (
     available_stock INTEGER DEFAULT 0,
     category TEXT,
     points_worth INTEGER DEFAULT 0
+);
+
+-- Create the Sensors table
+CREATE TABLE IF NOT EXISTS Purchases ( 
+    receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL, 
+    date TEXT DEFAULT CURRENT_TIMESTAMP, 
+    total_amount REAL DEFAULT 0, 
+    items_json TEXT, 
+    FOREIGN KEY(customer_id) REFERENCES Customers(customer_id) 
 );
 
 -- Create the Sensors table
@@ -72,13 +83,35 @@ INSERT INTO Customers (first_name, last_name, email, password, phone_number, rew
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
 
 -- For memberships table
-INSERT INTO memberships (customer_id) VALUES (1);
+INSERT INTO Memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 
 ('lalinglabrador@gmail.com', 'Password123!'),
 ('donutrallyr@gmail.com', 'Password123!'),
 ('nneflasflorencee@gmail.com', 'Password123!');
+
+-- For the Purchases table
+
+
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(1, 16.98, '[{"product_id": 2, "name": "Tropical Mango Smoothie 500ml", "qty": 2, "price": 6.99},
+             {"product_id": 5, "name": "Fresh Pineapple", "qty": 1, "price": 5.99}]'),
+(1, 9.98, '[{"product_id": 3, "name": "Dark Roast Coffee Beans 1kg", "qty": 1, "price": 14.99}]');
+
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(2, 14.98, '[{"product_id": 6, "name": "Avocado Toast Pack", "qty": 1, "price": 9.99},
+             {"product_id": 7, "name": "Coconut Water 1L", "qty": 1, "price": 4.99}]');
+             
+INSERT INTO Purchases (customer_id, total_amount, items_json)
+VALUES 
+(3, 17.97, '[{"product_id": 1, "name": "Organic Apple Juice 1L", "qty": 1, "price": 4.99},
+             {"product_id": 4, "name": "Whole Grain Bread", "qty": 2, "price": 3.99},
+             {"product_id": 10, "name": "Green Tea Bags 25ct", "qty": 1, "price": 4.99}]'),
+(3, 12.98, '[{"product_id": 8, "name": "Chocolate Chip Cookies", "qty": 1, "price": 7.99},
+             {"product_id": 9, "name": "Vanilla Yogurt 4-pack", "qty": 1, "price": 5.99}]');
 
 -- Insert both sensors
 INSERT INTO Sensors (sensor_type, `location`)

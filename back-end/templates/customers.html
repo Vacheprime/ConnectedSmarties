@@ -15,7 +15,13 @@
     <div class="container">
         <header>
             <nav class="navbar">
-                <div class="nav-brand">ConnectedSmarties</div>
+                <div class="nav-left">
+                    <button id="logout-btn" class="btn btn-outline-danger me-3" onclick="logoutUser()"
+                        data-i18n="logout">
+                        Logout
+                    </button>
+                    <div class="nav-brand">ConnectedSmarties</div>
+                </div>
                 <ul class="nav-menu">
                     <!-- Updated navigation links to use Flask routes -->
                     <li><a href="/" data-i18n="navHome">Home</a></li>
@@ -116,6 +122,6 @@
     <!-- Added i18n.js script -->
     <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/customer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/customers.js') }}"></script>
 </body>
 </html>

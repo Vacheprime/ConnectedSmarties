@@ -1,9 +1,14 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
+import sqlite3, sys, os
+from functools import wraps
 from flask_cors import CORS
-import sqlite3
-import os
-import sys
+from .password_reset import password_reset_bp
+from models.customer_model import Customer
+from models.product_model import Product
+from models.exceptions.database_insert_exception import DatabaseInsertException
+from models.exceptions.database_delete_exception import DatabaseDeleteException
+from models.exceptions.database_read_exception import DatabaseReadException
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -118,8 +123,14 @@ def get_checkout_page():
 # get the HTML page        
 @app.route("/", methods=["GET"])
 def get_login():
-    # Note: by default, Flask looks for HTML files inside folder named templates
-    return render_template('login.html')
+    # If user is already logged in
+    if "user_id" in session:
+        if session.get("role") == "admin":
+            return redirect(url_for("get_admin_home"))
+        elif session.get("role") == "customer":
+            return redirect(url_for("account"))
+    
+    return render_template("login.html")
 
 @app.route("/reset_password", methods=["GET"])
 def get_reset_password():
@@ -172,7 +183,7 @@ def login():
     if customer:
         session["role"] = "customer"
         session["user_id"] = customer["customer_id"]
-        return jsonify({"redirect": "/dashboard-customer"})
+        return jsonify({"redirect": "/account"})
 
     return jsonify({"error": "Invalid email or password"}), 401
 
@@ -203,9 +214,19 @@ def register_customer():
     # Note: if you got this error,
     #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
     #       run on another port by typing this command flask run --port=5001
-    try:
-        data = request.get_json()
-        
+    data = request.get_json()
+    
+    # Validate the input
+    errors = validate_customer(data)
+    if errors:
+        print("Returning validation errors to client...") 
+        return jsonify({"success": False, "errors": errors}), 400
+    
+    # Create the customer object
+    customer = Customer(data.get("first_name"),data.get("last_name"),data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
+
+    # Insert the customer
+    try:        
         # Validate the input
         errors = validate_customer(data)
         if errors:
@@ -217,7 +238,8 @@ def register_customer():
         cursor = conn.cursor() # to allow execute sql statement
         
         # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, phone_number, rewards_points) VALUES (?, ?, ?, ?, ?) ', (data["first_name"], data["last_name"], data["email"], data["phone_number"], data["rewards_points"]))
+        cursor.execute('INSERT INTO Customers (first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ', 
+        (data["first_name"], data["last_name"], data["email"], data["phone_number"],  data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0)))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Customer added successfully'}), 200
@@ -236,6 +258,65 @@ def delete_customer(customer_id):
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# ============= CUSTOMER ACCOUNT ROUTES =============
+
+@app.route("/account")
+def account():
+    if "user_id" not in session:
+        return redirect("/")
+
+    db = get_db()
+    cursor = db.cursor()
+
+    # Fetch user info + membership
+    cursor.execute("""
+        SELECT c.first_name, c.last_name, c.email, c.rewards_points, 
+               m.membership_number, m.join_date
+        FROM Customers c
+        LEFT JOIN memberships m ON c.customer_id = m.customer_id
+        WHERE c.customer_id = ?
+    """, (session["user_id"],))
+    user = cursor.fetchone()
+
+    # Fetch purchase history
+    cursor.execute("""
+        SELECT receipt_id, date, total_amount
+        FROM Purchases
+        WHERE customer_id = ?
+        ORDER BY date DESC
+    """, (session["user_id"],))
+    purchases = cursor.fetchall()
+
+    return render_template("customer_account.html", user=user, purchases=purchases)
+
+@app.route("/join-membership", methods=["POST"])
+def join_membership():
+    if "user_id" not in session:
+        return jsonify({"error": "You must be logged in first."}), 403
+
+    db = get_db()
+    cursor = db.cursor()
+
+    user_id = session["user_id"]
+
+    # Check if already has membership
+    cursor.execute("SELECT membership_number FROM memberships WHERE customer_id = ?", (user_id,))
+    existing = cursor.fetchone()
+    if existing:
+        return jsonify({"error": "Already a member."}), 400
+
+    # Create new membership
+    cursor.execute("INSERT INTO memberships (customer_id) VALUES (?)", (user_id,))
+    db.commit()
+
+    cursor.execute("UPDATE Customers SET has_membership = TRUE WHERE customer_id = ?", (user_id,))
+    db.commit()
+
+    cursor.execute("SELECT membership_number FROM memberships WHERE customer_id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    return jsonify({"success": True, "membership_number": row["membership_number"]})
 
 # ============= PRODUCT API ROUTES =============
 

@@ -112,6 +112,7 @@ const translations = {
     sendResetEmail: "Send Reset Email",
     rememberedPassword: "Remembered your password?",
     backToSignIn: "Back to Sign In",
+    logout: "Logout",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
@@ -231,6 +232,7 @@ const translations = {
     sendResetEmail: "Envoyer le Lien de Réinitialisation",
     rememberedPassword: "Vous vous souvenez de votre mot de passe?",
     backToSignIn: "Retour à la Connexion",
+    logout: "Se déconnecter",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",

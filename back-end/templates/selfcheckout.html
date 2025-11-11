@@ -15,7 +15,13 @@
     <div class="app-container">
         <header>
             <nav class="navbar">
-                <div class="nav-brand">ConnectedSmarties</div>
+                <div class="nav-left">
+                    <button id="logout-btn" class="btn btn-outline-danger me-3" onclick="logoutUser()"
+                        data-i18n="logout">
+                        Logout
+                    </button>
+                    <div class="nav-brand">ConnectedSmarties</div>
+                </div>
                 <ul class="nav-menu">
                     <li><a href="/" data-i18n="navHome">Home</a></li>
                     <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>

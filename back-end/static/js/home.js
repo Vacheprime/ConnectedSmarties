@@ -230,6 +230,19 @@ async function loadThresholds() {
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+
+  // Initialize all fans to OFF (Deactivated)
+  window.fanStatuses = {
+    1: "off",
+    2: "off"
+  };
+
+  // Make sure UI starts correctly
+  updateFanUI(1);
+  updateFanUI(2);
+
+  // Fetch sensor data immediately and then every 5s
+  
   initHumidityChart()
   loadThresholds()
   fetchSensorData()
@@ -244,3 +257,20 @@ window.onclick = (event) => {
     closeThresholdModal()
   }
 }
+
+// === LOGOUT ===
+function logoutUser() {
+    fetch("/logout")
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                window.location.href = "/";
+            }
+        })
+        .catch(err => console.error("Logout failed:", err));
+}
+
+
+
+
