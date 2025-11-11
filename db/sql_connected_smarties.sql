@@ -24,6 +24,14 @@ CREATE TABLE IF NOT EXISTS Customers (
     rewards_points INTEGER DEFAULT 0
 );
 
+-- Memberships table
+CREATE TABLE memberships (
+    membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER UNIQUE,
+    join_date TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
 -- Create the products table
 CREATE TABLE IF NOT EXISTS Products (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,6 +70,9 @@ VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'Password123!', '123 45
 
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
+
+-- For memberships table
+INSERT INTO memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 
