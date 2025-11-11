@@ -16,14 +16,26 @@ try:
     from validators import validate_customer, validate_product
     from mqtt_service import MQTTService
     from utils.email_service import EmailService
+    from password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
+    from models.customer_model import Customer
+    from models.product_model import Product
+    from models.exceptions.database_insert_exception import DatabaseInsertException
+    from models.exceptions.database_delete_exception import DatabaseDeleteException
+    from models.exceptions.database_read_exception import DatabaseReadException
 except ImportError:
     from .validators import validate_customer, validate_product
     from .mqtt_service import MQTTService
     from .utils.email_service import EmailService
+    from .password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
+    from models.customer_model import Customer
+    from models.product_model import Product
+    from models.exceptions.database_insert_exception import DatabaseInsertException
+    from models.exceptions.database_delete_exception import DatabaseDeleteException
+    from models.exceptions.database_read_exception import DatabaseReadException
 
 app = Flask(__name__)
 CORS(app)
@@ -56,6 +68,8 @@ def check_temperature_threshold(sensor_id: int, temperature: float, location: st
         temperature (float): Current temperature reading
         location (str): Location of the sensor (e.g., "Frig1")
     """
+    global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+    
     if temperature > TEMP_THRESHOLD_HIGH:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C > {TEMP_THRESHOLD_HIGH}°C")
         email_service.send_threshold_alert(location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
@@ -85,6 +99,8 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+from functools import wraps
+
 def login_required(role=None):
     """Decorator to protect routes based on session role."""
     def decorator(f):
@@ -99,7 +115,11 @@ def login_required(role=None):
     return decorator
 
 # ============= PAGE ROUTES =============
-        
+
+@app.route("/checkout", methods=["GET"])
+def get_checkout_page():
+    return render_template("selfcheckout.html")
+
 # get the HTML page        
 @app.route("/", methods=["GET"])
 def get_login():
@@ -114,12 +134,10 @@ def get_login():
 
 @app.route("/reset_password", methods=["GET"])
 def get_reset_password():
-    # Note: by default, Flask looks for HTML files inside folder named templates
     return render_template('reset_password.html')
 
 @app.route("/register", methods=["GET"])
 def get_register_page():
-    # Note: by default, Flask looks for HTML files inside folder named templates
     return render_template('register.html')
 
 @app.route("/home", methods=["GET"])
@@ -141,6 +159,10 @@ def get_products_page():
 @login_required(role="admin")
 def get_reports_page():
     return render_template('reports.html')
+
+@app.route('/selfcheckout', methods=['GET'])
+def get_selfcheckout_page():
+    return render_template('selfcheckout.html')
 
 # ============= LOGIN ROUTES =============
 @app.route("/login", methods=["POST"])
@@ -169,10 +191,6 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('get_login'))
-
-@app.route('/selfcheckout', methods=['GET'])
-def get_selfcheckout_page():
-    return render_template('selfcheckout.html')
 
 # ============= CUSTOMER API ROUTES =============
 
@@ -472,6 +490,45 @@ def get_sensor_values(sensor_id):
         print(f"ERROR: Failed to fetch sensor values: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= THRESHOLD API ROUTES =============
+
+@app.route('/api/threshold', methods=['GET'])
+def get_threshold():
+    """Get current temperature thresholds."""
+    try:
+        return jsonify({
+            'high_threshold': TEMP_THRESHOLD_HIGH,
+            'low_threshold': TEMP_THRESHOLD_LOW
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get thresholds: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/threshold', methods=['POST'])
+def update_threshold():
+    """Update temperature thresholds."""
+    global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+    try:
+        data = request.get_json()
+        
+        if 'high_threshold' in data:
+            TEMP_THRESHOLD_HIGH = float(data['high_threshold'])
+        if 'low_threshold' in data:
+            TEMP_THRESHOLD_LOW = float(data['low_threshold'])
+        
+        # Update the threshold callback with new values
+        mqtt_service.set_threshold_callback(check_temperature_threshold)
+        
+        print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
+        return jsonify({
+            'message': 'Thresholds updated successfully',
+            'high_threshold': TEMP_THRESHOLD_HIGH,
+            'low_threshold': TEMP_THRESHOLD_LOW
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to update thresholds: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= FAN CONTROL ROUTES =============
 
 @app.route('/fan/on', methods=['GET', 'POST'])
@@ -524,6 +581,35 @@ def turn_fan_off():
         return jsonify({'message': f'Fan turned off for {location}'}), 200
     except Exception as e:
         print(f"ERROR: Failed to turn off fan: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ============= PASSWORD RESET API ROUTES =============
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """Send password reset email."""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+        
+        # Check if email exists in database (Admin or Customer)
+        admin = query_db("SELECT * FROM Admins WHERE email = ?", (email,), one=True)
+        customer = query_db("SELECT * FROM Customers WHERE email = ?", (email,), one=True)
+        
+        if not admin and not customer:
+            # For security, don't reveal if email exists or not
+            return jsonify({'message': 'If an account exists with this email, a reset link has been sent.'}), 200
+        
+        # TODO: Implement actual password reset email logic here
+        # For now, just return success message
+        print(f"INFO: Password reset requested for {email}")
+        
+        return jsonify({'message': 'Password reset email sent successfully'}), 200
+    except Exception as e:
+        print(f"ERROR: Failed to send reset email: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= HELPER FUNCTIONS =============
