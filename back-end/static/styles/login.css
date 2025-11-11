@@ -1,97 +1,176 @@
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+/* Login card styles */
+.login-card {
+  background-color: var(--color-card-bg, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  max-width: 450px;
+  width: 100%;
+  margin: 2rem auto;
 }
 
-.login-card, .register-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px var(--card-shadow-lighter);
-  padding: 40px 35px;
+.logo {
   text-align: center;
-  margin-top: 10rem;
-  margin-bottom: 5rem;
-  width: 30rem;
+  margin-bottom: 1.5rem;
 }
 
 .logo h2 {
-  color: var(--color-primary); 
-  margin-bottom: 25px;
+  color: var(--color-primary, #3b82f6);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
 }
 
-h3 {
-  color: var(--color-text-normal);
+.login-card h3 {
+  text-align: center;
+  color: var(--color-text, #1f2937);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .form-group {
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-label {
-  font-size: 14px;
+.form-group label {
+  color: var(--color-text, #1f2937);
   font-weight: 500;
-  display: block;
-  margin-bottom: 6px;
-  color: var(--color-text-normal);
+  font-size: 0.95rem;
 }
 
-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--color-button-normal);
-  border-radius: 10px;
-  outline: none;
-  font-size: 14px;
+.form-group input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  font-size: 1rem;
   transition: border-color 0.2s;
 }
 
-input:focus {
-  border-color: var(--color-primary);
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary, #3b82f6);
+}
+
+/* Password input wrapper for toggle button */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #6b7280);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--color-primary, #3b82f6);
+}
+
+.password-toggle i {
+  font-size: 1.1rem;
 }
 
 .forgot-password {
-  display: block;
-  text-align: right;
-  font-size: 13px;
-  color: var(--color-primary);
+  color: var(--color-primary, #3b82f6);
+  font-size: 0.9rem;
   text-decoration: none;
-  margin-top: 5px;
+  align-self: flex-end;
+  margin-top: -0.5rem;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
 }
 
 .btn-primary {
-  width: 100%;
-  padding: 12px;
-  background: var(--color-primary);
-  color: #fff;
+  background-color: var(--color-primary, #3b82f6);
+  color: white;
+  padding: 0.875rem;
   border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 15px;
+  border-radius: 8px;
+  font-size: 1rem;
   font-weight: 600;
-  transition: background 0.3s;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 0.5rem;
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background-color: var(--color-primary-dark, #2563eb);
 }
 
 .register-text {
-  font-size: 14px;
-  color: var(--color-text-muted);
-  margin-top: 15px;
+  text-align: center;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.95rem;
+  margin-top: 1rem;
 }
 
 .register-text a {
-  color: var(--color-primary);
-  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
   text-decoration: none;
+  font-weight: 600;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
 }
 
 footer {
-  margin-top: 25px;
-  font-size: 12px;
-  color: var(--color-text-light);
-  box-shadow: none;
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+footer p {
+  color: var(--color-text-muted, #9ca3af);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .logo h2 {
+    font-size: 1.5rem;
+  }
+
+  .login-card h3 {
+    font-size: 1.3rem;
+  }
 }

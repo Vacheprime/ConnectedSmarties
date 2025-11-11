@@ -1,62 +1,135 @@
-.control-grid {
+
+/* Dashboard layout for single row */
+.dashboard-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1fr 1fr 2fr 2fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  align-items: start;
 }
 
-.sensor-card,
-.fan-card {
+/* Base dashboard card styles */
+.dashboard-card {
   background-color: var(--color-background-light);
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
 }
 
-.sensor-card h2,
-.fan-card h2 {
+/* Humidity Chart Card */
+.humidity-chart-card {
+  min-height: 350px;
+}
+
+.humidity-chart-card h3 {
   color: var(--color-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
 }
 
-.sensor-readings {
+#humidity-chart-container {
+  flex: 1;
+  min-height: 250px;
+}
+
+/* Threshold Card */
+.threshold-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  min-height: 350px;
 }
 
-.reading {
+.email-status-section h3,
+.threshold-section h3 {
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.email-indicator {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 1rem;
-  background-color: var(--color-background-card);
+  background-color: var(--color-success);
+  color: white;
   border-radius: var(--border-radius-small);
+  font-weight: 600;
 }
 
-.reading-icon {
-  font-size: 2rem;
+.email-indicator i {
+  font-size: 1.5rem;
 }
 
-.reading-info {
+.threshold-display {
+  background-color: var(--color-background-card);
+  padding: 1rem;
+  border-radius: var(--border-radius-small);
+  margin-bottom: 1rem;
+}
+
+.threshold-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.threshold-item label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.threshold-item span {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Fridge Card */
+.fridge-card {
+  min-height: 350px;
+}
+
+.fridge-title {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.fridge-monitors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
   flex: 1;
 }
 
-.reading-label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0.25rem;
+.monitor-card {
+  background-color: var(--color-background-card);
+  padding: 1rem;
+  border-radius: var(--border-radius-small);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.reading-value {
-  display: block;
-  font-size: 1.75rem;
-  font-weight: 700;
+.monitor-card h3 {
   color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
+/* Sensor status indicator */
 .sensor-status {
   display: flex;
   align-items: center;
@@ -66,6 +139,7 @@
   border-radius: var(--border-radius-small);
   font-size: 0.9rem;
   color: var(--color-text-muted);
+  margin-top: 0.5rem;
 }
 
 .status-dot {
@@ -86,147 +160,134 @@
   }
 }
 
-.fan-card {
-  display: flex;
-  flex-direction: column;
+/* Compact Fan Control */
+.fan-control-compact {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-button-normal);
+  width: 100%;
 }
 
-.fan-visual {
-  text-align: center;
-  padding: 2rem 0;
-  margin-bottom: 1.5rem;
-}
-
-.fan-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
-  transition: transform 0.3s;
-}
-
-.fan-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.fan-status-text {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.fan-status-text.on {
-  color: var(--color-success);
-}
-
-.fan-controls {
-  display: flex;
-  gap: 1rem;
-}
-
-.fan-controls button {
-  flex: 1;
-}
-
-/* Updated layout for fridge sections */
-.fridges-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.fridge-section {
-  background-color: var(--color-background-light);
-  padding: 2rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-}
-
-.fridge-title {
-  color: var(--color-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  text-align: center;
-  font-weight: 700;
-}
-
-.fridge-monitors {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.monitor-card {
-  background-color: var(--color-background-card);
-  padding: 1.5rem;
-  border-radius: var(--border-radius-small);
+.fan-visual-compact {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 0.75rem;
 }
 
-.monitor-card h3 {
+.fan-visual-compact img {
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.fan-controls-compact {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.fan-controls-compact .btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-content {
+  background-color: var(--color-background-light);
+  margin: 10% auto;
+  padding: 0;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-button-normal);
+}
+
+.modal-header h2 {
+  margin: 0;
   color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+.close {
+  color: var(--color-text-muted);
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close:hover {
+  color: var(--color-text-normal);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body .form-group {
   margin-bottom: 1rem;
-  font-size: 1.1rem;
+}
+
+.modal-body .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-normal);
   font-weight: 600;
 }
 
-/* Updated layout to display all cards in one row */
-.all-cards-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+.modal-body .form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-button-normal);
+  border-radius: var(--border-radius-small);
+  font-size: 1rem;
 }
 
-/* Responsive layout for smaller screens */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--color-button-normal);
+}
+
+/* Responsive adjustments */
 @media (max-width: 1400px) {
-  .all-cards-container {
+  .dashboard-row {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 900px) {
-  .all-cards-container {
+  .dashboard-row {
     grid-template-columns: 1fr;
   }
-}
 
-/* Updated fan section to fit in the row layout */
-.fan-section {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Updated fan card styling */
-.fan-card {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  justify-content: space-between;
-}
-
-.fan-visual {
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  align-items: center;
-  padding: 2rem 0;
-  margin-bottom: 1.5rem;
-}
-
-#electric_fan {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+  .fridge-monitors {
+    grid-template-columns: 1fr;
+  }
 }

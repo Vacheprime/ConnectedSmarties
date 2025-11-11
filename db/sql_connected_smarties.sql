@@ -1,7 +1,15 @@
+DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
+
+-- Create the admin table 
+CREATE TABLE IF NOT EXISTS Admins (
+  admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL
+);
 
 -- Create the customers table
 CREATE TABLE IF NOT EXISTS Customers (
@@ -9,11 +17,19 @@ CREATE TABLE IF NOT EXISTS Customers (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    phone_number TEXT UNIQUE,
-    qr_identification TEXT,
+    password VARCHAR(255) NOT NULL,
+    phone_number TEXT UNIQUE NOT NULL,
+    qr_identification VARCHAR(255) DEFAULT NULL,
     has_membership BOOLEAN DEFAULT FALSE,
     rewards_points INTEGER DEFAULT 0
+);
+
+-- Memberships table
+CREATE TABLE memberships (
+    membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER UNIQUE,
+    join_date TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
 
 -- Create the products table
@@ -47,13 +63,22 @@ CREATE TABLE IF NOT EXISTS SensorDataPoints (
 
 -- For the Customers table
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
-VALUES ('Ishilia Gilcedes', 'Labrador', 'lalinglabrador@gmail.com', 'password123' ,'5145010503', 8);
+VALUES ('Ishilia Gilcedes', 'Labrador', 'lalinglabrador@gmail.com', 'Password123!' ,'5145010503', 8);
 
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
-VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'password123', '123 456 789', 100);
+VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'Password123!', '123 456 789', 100);
 
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
-VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'password123' ,'5142246080', 5);
+VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
+
+-- For memberships table
+INSERT INTO memberships (customer_id) VALUES (1);
+
+-- For the Admins table
+INSERT INTO Admins (email, password) VALUES 
+('lalinglabrador@gmail.com', 'Password123!'),
+('donutrallyr@gmail.com', 'Password123!'),
+('nneflasflorencee@gmail.com', 'Password123!');
 
 -- Insert both sensors
 INSERT INTO Sensors (sensor_type, `location`)
