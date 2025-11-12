@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS Memberships (
     membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 
 -- Create the products table
@@ -47,21 +47,21 @@ CREATE TABLE IF NOT EXISTS Products (
 -- Create the Payments table
 CREATE TABLE IF NOT EXISTS Payments ( 
     payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL, 
+    customer_id INTEGER NOT NULL DEFAULT 0, 
     `date` TEXT DEFAULT CURRENT_TIMESTAMP, 
     total_paid REAL DEFAULT 0,
     reward_points_won INTEGER DEFAULT 0,
-    FOREIGN KEY(customer_id) REFERENCES Customers(customer_id) 
+    FOREIGN KEY(customer_id) REFERENCES Customers(customer_id) ON DELETE SET DEFAULT
 );
 
 -- Create the PaymentProduct table
 CREATE TABLE IF NOT EXISTS PaymentProducts (
     payment_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL DEFAULT 0,
     product_amount INTEGER NOT NULL,
     PRIMARY KEY (payment_id, product_id),
-    FOREIGN KEY (payment_id) REFERENCES Payments(payment_id),
-    FOREIGN KEY (product_id) REFERENCES Products(product_id)
+    FOREIGN KEY (payment_id) REFERENCES Payments(payment_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE SET DEFAULT
 );
 
 -- Create the Sensors table
@@ -87,15 +87,19 @@ CREATE TABLE IF NOT EXISTS InventoryBatches (
     product_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
     received_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES Products(product_id)
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
 );
 
 -- Create the ProductInventory table
 CREATE TABLE IF NOT EXISTS ProductInventory (
     product_id INTEGER PRIMARY KEY,
     total_stock INTEGER NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES Products(product_id)
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
 );
+
+-- Insert default value for customers
+INSERT INTO Customers (customer_id, first_name, last_name, email, password, phone_number, rewards_points)
+VALUES (0, 'DEFAULT', 'CUSTOMER', 'default@example.com', 'defaultpassword', '0000000000', 0);
 
 -- For the Customers table
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
@@ -143,6 +147,10 @@ INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 (2, 'humidity', '70.4', '2025-10-24 18:10:00'),
 (2, 'temperature', '4.9', '2025-10-24 18:15:00'),
 (2, 'humidity', '70.0', '2025-10-24 18:15:00');
+
+-- Insert default value for product
+INSERT INTO Products (product_id, name, price, epc, upc, category, points_worth) VALUES
+(0, 'UNDEFINED PRODUCT', 0.00, 'DEFAULTEPC', 000000000000, 'Default', 0);
 
 -- Insert for Products table
 INSERT INTO Products (name, price, epc, upc, category, points_worth) VALUES
