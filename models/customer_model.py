@@ -62,6 +62,35 @@ class Customer(BaseModel):
 			"has_membership": self.has_membership,
 			"rewards_points": self.rewards_points
 		}
+	
+
+	@classmethod
+	def _increase_customer_points(cls, customer_id: int, points: int, cursor: sqlite3.Cursor) -> None:
+		"""
+		Increases the reward points of a customer by a specified amount.
+
+		Args:
+			customer_id (int): The ID of the customer whose points are to be increased.
+			points (int): The number of points to add to the customer's balance.
+			cursor (sqlite3.Cursor): The database cursor to use for the operation.
+
+		Raises:
+			DatabaseInsertException: If an error occurs during database update.
+		"""
+
+		sql = f"""
+		UPDATE {cls.DB_TABLE}
+		SET rewards_points = rewards_points + :points
+		WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {
+			"customer_id": customer_id,
+			"points": points
+		}
+
+		# Execute
+		cursor.execute(sql, sql_values)
 
 
 	@staticmethod
