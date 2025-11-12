@@ -44,6 +44,15 @@ function loadCustomerPoints() {
   updateTotals()
 }
 
+async function manuallyScanItem() {
+  const input = document.getElementById("scan-input")
+  const code = input.value.trim()
+  if (code) {
+    await scanItem(code)
+    input.value = ""
+  }
+}
+
 // Scan an item by UPC or EPC
 async function scanItem(code) {
   if (!code) {
@@ -295,3 +304,13 @@ window.addEventListener(
   },
   /* useCapture */ true,
 )
+
+// Expose functions to global scope for button onclick handlers
+if (typeof window !== "undefined") {
+  window.checkout = {
+    clearCart,
+    processPayment,
+    scanItem,
+    manuallyScanItem
+  }
+}
