@@ -158,10 +158,7 @@ INSERT INTO Products (name, price, epc, upc, category, points_worth) VALUES
 ('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 'Beverages', 10);
 
 
--- Insert adjusted ProductInventory (initial stock minus sold quantities)
--- initial stocks assumed from original seeds: 
--- 1:120, 2:80, 3:60, 4:200, 5:150, 6:90, 7:180, 8:130, 9:110, 10:170
--- sold: 1->1, 2->2, 3->1, 4->2, 5->1, 6->1, 7->1, 8->1, 9->1, 10->1
+-- Insert for ProductInventory table
 INSERT INTO ProductInventory (product_id, total_stock) VALUES
 (1, 119),
 (2, 78),

@@ -5,6 +5,8 @@ from .exceptions.database_read_exception import DatabaseReadException
 from .exceptions.database_delete_exception import DatabaseDeleteException
 from contextlib import closing
 import sqlite3
+import string
+import secrets
 
 class Customer(BaseModel):
 	"""
@@ -21,7 +23,9 @@ class Customer(BaseModel):
         rewards_points (int): Customer's reward points balance.
 	"""
 	DB_TABLE = "Customers"
-	"""
+	
+	def __init__(self, first_name, last_name, email, password, phone_number=None, qr_identification=None, has_membership=False, rewards_points=0):
+		"""
         Constructor for a new Customer.
         
         Args:
@@ -32,8 +36,7 @@ class Customer(BaseModel):
         
         Returns:
             None
-    """
-	def __init__(self, first_name, last_name, email, password=None, phone_number=None, qr_identification=None, has_membership=False, rewards_points=0):
+    	"""
 		super().__init__(Customer.DB_TABLE)
 		self.customer_id = None
 		self.first_name = first_name
@@ -44,6 +47,8 @@ class Customer(BaseModel):
 		self.qr_identification = qr_identification
 		self.has_membership = has_membership
 		self.rewards_points = rewards_points
+		self.qr_identification = Customer.rand_alnum(10)
+
 
 	def to_dict(self) -> dict:
 		return {
@@ -60,6 +65,15 @@ class Customer(BaseModel):
 
 
 	@staticmethod
+	def rand_alnum(n=10):
+		"""
+		Generate a random alphanumeric string of length n.
+		"""
+		alphabet = string.ascii_letters + string.digits
+		return ''.join(secrets.choice(alphabet) for _ in range(n))
+
+
+	@staticmethod
 	def insertCustomer(customer):
 		"""
         Insert a new customer into the database.
@@ -72,7 +86,7 @@ class Customer(BaseModel):
         """
 
 		# Define the insert statement and values
-		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, has_membership ,rewards_points)
+		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points)
 			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :has_membership, :rewards_points);
 		"""
 		sql_values = {
@@ -83,7 +97,8 @@ class Customer(BaseModel):
 			"phone_number": customer.phone_number,
 			"qr_identification": customer.qr_identification,
 			"has_membership": customer.has_membership,
-			"rewards_points": customer.rewards_points
+			"rewards_points": customer.rewards_points,
+			"qr_identification": customer.qr_identification
 		}
 
 		# Get the connection and cursor
