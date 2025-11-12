@@ -306,10 +306,8 @@ export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
-  window.i18n = {
-    setLanguage,
-    getCurrentLanguage,
-    updatePageLanguage,
-    toggleLanguage
-  }
+  window.setLanguage = setLanguage
+  window.getCurrentLanguage = getCurrentLanguage
+  window.updatePageLanguage = updatePageLanguage
+  window.toggleLanguage = toggleLanguage
 }
