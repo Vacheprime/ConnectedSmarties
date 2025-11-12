@@ -22,7 +22,10 @@ const translations = {
     activated: "Activated",
     turnOn: "Turn ON",
     turnOff: "Turn OFF",
-    humidityChart: "Humidity Dashboard",
+    ambientContext: "Ambient Context",
+    noMotion: "No motion detected",
+    max: "max",
+    min: "min",
     emailStatus: "Email Status",
     emailSent: "Email Sent",
     thresholdSettings: "Threshold Settings",
@@ -98,6 +101,7 @@ const translations = {
     clearCart: "Clear Cart",
     noItems: "No items scanned yet",
     scanToBegin: "Scan an item to begin",
+    remove: "Remove", // Added remove button translation
 
     // Login/Register
     signIn: "Sign In",
@@ -143,7 +147,10 @@ const translations = {
     activated: "Activé",
     turnOn: "Allumer",
     turnOff: "Éteindre",
-    humidityChart: "Tableau de Bord Humidité",
+    ambientContext: "Contexte Ambiant",
+    noMotion: "Aucun mouvement détecté",
+    max: "max",
+    min: "min",
     emailStatus: "Statut Email",
     emailSent: "Email Envoyé",
     thresholdSettings: "Paramètres de Seuil",
@@ -219,6 +226,7 @@ const translations = {
     clearCart: "Vider le Panier",
     noItems: "Aucun article scanné",
     scanToBegin: "Scannez un article pour commencer",
+    remove: "Retirer", 
 
     // Login/Register
     signIn: "Se Connecter",

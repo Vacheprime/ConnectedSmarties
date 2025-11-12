@@ -92,7 +92,21 @@ async function fetchSensorData() {
       updateThermometer(sensor2Temp, 2)
       updateHumidityGauge(sensor2Humidity, 2)
 
-      updateHumidityChart(sensor1Humidity, sensor2Humidity)
+      updateAmbientContext({
+        motion: { detected: false, device: "e500000001/3", time: new Date().toLocaleTimeString() },
+        temperature: {
+          current: (sensor1Temp + sensor2Temp) / 2,
+          max: Math.max(sensor1Temp, sensor2Temp),
+          min: Math.min(sensor1Temp, sensor2Temp),
+        },
+        humidity: {
+          current: Math.round((sensor1Humidity + sensor2Humidity) / 2),
+          max: Math.max(sensor1Humidity, sensor2Humidity),
+          min: Math.min(sensor1Humidity, sensor2Humidity),
+        },
+        light: { current: 810, max: 896, min: 724 },
+        battery: { current: null, max: null, min: null },
+      })
 
       document.getElementById("sensor1-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
       document.getElementById("sensor1-humidity-status").innerHTML =
@@ -224,8 +238,51 @@ async function loadThresholds() {
   }
 }
 
+function initAmbientContext() {
+  // Fetch ambient context data from Pareto Anywhere or API
+  // For now, we'll use placeholder data since Pareto Anywhere is not installed
+  updateAmbientContext({
+    motion: { detected: false, device: "e500000001/3", time: "14:11:51" },
+    temperature: { current: 30.0, max: 32.0, min: 28.0 },
+    humidity: { current: 27, max: 33, min: 21 },
+    light: { current: 810, max: 896, min: 724 },
+    battery: { current: null, max: null, min: null },
+  })
+}
+
+function updateAmbientContext(data) {
+  // Update motion
+  const motionStatus = document.getElementById("motion-status")
+  if (motionStatus) {
+    motionStatus.textContent = data.motion.detected ? "Motion detected" : "No motion detected"
+  }
+
+  // Update temperature
+  document.getElementById("ambient-temp").textContent = data.temperature.current.toFixed(1)
+  document.getElementById("temp-max").textContent = data.temperature.max.toFixed(1) + "°C"
+  document.getElementById("temp-min").textContent = data.temperature.min.toFixed(1) + "°C"
+
+  // Update humidity
+  document.getElementById("ambient-humidity").textContent = data.humidity.current
+  document.getElementById("humidity-max").textContent = data.humidity.max + "%"
+  document.getElementById("humidity-min").textContent = data.humidity.min + "%"
+
+  // Update light
+  document.getElementById("ambient-light").textContent = data.light.current
+  document.getElementById("light-max").textContent = data.light.max + " lux"
+  document.getElementById("light-min").textContent = data.light.min + " lux"
+
+  // Update battery (if available)
+  if (data.battery.current !== null) {
+    document.getElementById("ambient-battery").textContent = data.battery.current
+    document.getElementById("battery-max").textContent = data.battery.max + " "
+    document.getElementById("battery-min").textContent = data.battery.min + " "
+  }
+}
+
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+  initAmbientContext() // Initialize ambient context instead of humidity chart
 
   // Initialize all fans to OFF (Deactivated)
   window.fanStatuses = {
