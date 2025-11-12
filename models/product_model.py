@@ -30,6 +30,7 @@ class Product(BaseModel):
             "epc": self.epc,
             "upc": self.upc,
             "category": self.category,
+            "available_stock": self.get_inventory(self.product_id),
             "points_worth": self.points_worth
         }
     
