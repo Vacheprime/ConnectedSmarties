@@ -32,7 +32,7 @@ def validate_customer(data):
 def validate_product(data):
     errors = []
     
-    required_fields = ["name", "price", "epc", "upc", "available_stock", "category", "points_worth"]
+    required_fields = ["name", "price", "epc", "upc", "category", "points_worth"]
     
     if not data.get("name") or not data.get("price") or not data.get("epc"):
         errors.append("Field is missing, must require the following fields: name, price, epc.")
@@ -52,14 +52,6 @@ def validate_product(data):
             errors.append("Price cannot be negative")
     except ValueError:
         errors.append("Price must be a valid number")
-        
-    # Stock Validation
-    try:
-        stock = int(data.get("available_stock", 0))
-        if stock < 0:
-            errors.append("Stock cannot be negative")
-    except ValueError:
-        errors.append("Stock must be a valid integer")
         
     # UPC Validation (must be exactly 12 digits)
     upc = str(data.get("upc", "")).strip()
