@@ -192,6 +192,7 @@ class Customer(BaseModel):
 
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:
+				cursor.execute("PRAGMA foreign_keys = ON;") # Ensure foreign key constraints are enforced
 				cursor.execute(sql, sql_values)
 			except Exception as e:
 				raise DatabaseDeleteException(f"An unexpected error occured while deleting customer with ID {customer_id}: {e}")
