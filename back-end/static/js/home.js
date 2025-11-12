@@ -273,4 +273,5 @@ if (typeof window !== "undefined") {
   window.openThresholdModal = openThresholdModal
   window.closeThresholdModal = closeThresholdModal
   window.saveThreshold = saveThreshold
+  window.logoutUser = logoutUser
 }
