@@ -9,15 +9,15 @@ import sqlite3
 class Product(BaseModel):
 
     DB_TABLE = "Products"
+    INVENTORY_TABLE = "ProductInventory"
 
-    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, available_stock: int = 0, points_worth: int = 0):
+    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0):
         super().__init__(Product.DB_TABLE)
         self.product_id = None
         self.name = name
         self.price = price
         self.epc = epc
         self.upc = upc
-        self.available_stock = available_stock
         self.category = category
         self.points_worth = points_worth
 
@@ -29,18 +29,113 @@ class Product(BaseModel):
             "price": self.price,
             "epc": self.epc,
             "upc": self.upc,
-            "available_stock": self.available_stock,
             "category": self.category,
             "points_worth": self.points_worth
         }
     
 
     @classmethod
+    def increase_inventory(cls, product_id: int, quantity: int) -> None:
+        # Check if product exists
+        product = cls.fetch_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product with ID {product_id} does not exist.")
+        
+        if quantity <= 0:
+            raise ValueError("Quantity to increase must be a positive integer.")
+        
+        sql = f"""
+        INSERT INTO {cls.INVENTORY_TABLE} (product_id, total_stock)
+        VALUES (:product_id, :total_stock)
+        ON CONFLICT(product_id) DO UPDATE SET total_stock = total_stock + :total_stock;
+        """
+
+        sql_values = {
+            "product_id": product_id,
+            "total_stock": quantity
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Execute
+                cursor.execute(sql, sql_values)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while increasing product inventory: {e}")
+            
+    
+    @classmethod
+    def decrease_inventory(cls, product_id: int, quantity: int) -> None:
+        # Check if product exists
+        product = cls.fetch_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product with ID {product_id} does not exist.")
+        
+        if quantity <= 0:
+            raise ValueError("Quantity to decrease must be a positive integer.")
+        
+        # Get current stock
+        current_stock = cls.get_inventory(product_id)
+
+        if current_stock < quantity:
+            quantity = current_stock  # Set to remove all available stock
+        
+        sql = f"""
+        UPDATE {cls.INVENTORY_TABLE}
+        SET total_stock = total_stock - :total_stock
+        WHERE product_id = :product_id AND total_stock >= :total_stock;
+        """
+
+        sql_values = {
+            "product_id": product_id,
+            "total_stock": quantity
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Execute
+                cursor.execute(sql, sql_values)
+                if cursor.rowcount == 0:
+                    raise ValueError("Insufficient stock to decrease by the specified quantity.")
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while decreasing product inventory: {e}")
+    
+
+    @classmethod
+    def get_inventory(cls, product_id: int) -> int:
+        product = cls.fetch_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product with ID {product_id} does not exist.")
+
+        sql = f"""
+        SELECT total_stock FROM {cls.INVENTORY_TABLE} WHERE product_id = :product_id;
+        """
+
+        sql_values = {"product_id": product_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                
+                # Execute
+                cursor.execute(sql, sql_values)
+
+                # Fetch one
+                row = cursor.fetchone()
+                if row is None:
+                    return 0  # No inventory record found
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching product inventory: {e}")
+        
+        return int(row["total_stock"])
+    
+
+    @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, available_stock, category, points_worth)
+        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth)
         VALUES
-        (:name, :price, :epc, :upc, :available_stock, :category, :points_worth);
+        (:name, :price, :epc, :upc, :category, :points_worth);
         """
 
         sql_values = {
@@ -48,7 +143,6 @@ class Product(BaseModel):
             "price": product.price,
             "epc": product.epc,
             "upc": product.upc,
-            "available_stock": product.available_stock,
             "category": product.category,
             "points_worth": product.points_worth
         }
@@ -91,7 +185,6 @@ class Product(BaseModel):
                 row["epc"],
                 int(row["upc"]),
                 row["category"],
-                row["available_stock"],
                 row["points_worth"]
             )
             # Set ID
@@ -123,6 +216,10 @@ class Product(BaseModel):
             except Exception as e:
                 raise DatabaseReadException(f"An unexpected error occurred while fetching the product with ID {product_id}: {e}")
     
+        # Return if no results
+        if row is None:
+            return None
+        
         # Map row to Product
         product = Product(
             row["name"],
@@ -130,13 +227,10 @@ class Product(BaseModel):
             row["epc"],
             int(row["upc"]),
             row["category"],
-            row["available_stock"],
             row["points_worth"]
         )
         # Set ID
         product.product_id = int(row["product_id"])
 
         return product
-
-
-        
+    
