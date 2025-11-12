@@ -2,7 +2,6 @@ from __future__ import annotations
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from .exceptions.database_read_exception import DatabaseReadException
-from .exceptions.database_delete_exception import DatabaseDeleteException
 from contextlib import closing
 import sqlite3
 
@@ -10,6 +9,7 @@ class Product(BaseModel):
 
     DB_TABLE = "Products"
     INVENTORY_TABLE = "ProductInventory"
+    INVENTORY_BATCH_TABLE = "InventoryBatches"
 
     def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0):
         super().__init__(Product.DB_TABLE)
@@ -35,7 +35,7 @@ class Product(BaseModel):
     
 
     @classmethod
-    def increase_inventory(cls, product_id: int, quantity: int) -> None:
+    def add_inventory_batch(cls, product_id: int, quantity: int) -> None:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -44,27 +44,35 @@ class Product(BaseModel):
         if quantity <= 0:
             raise ValueError("Quantity to increase must be a positive integer.")
         
-        sql = f"""
+        # Insert a new inventory batch and update total stock in ProductInventory inside one transaction
+        sql_insert_batch = f"""
+        INSERT INTO {cls.INVENTORY_BATCH_TABLE} (product_id, quantity)
+        VALUES (:product_id, :quantity);
+        """
+
+        sql_upsert_inventory = f"""
         INSERT INTO {cls.INVENTORY_TABLE} (product_id, total_stock)
-        VALUES (:product_id, :total_stock)
-        ON CONFLICT(product_id) DO UPDATE SET total_stock = total_stock + :total_stock;
+        VALUES (:product_id, :quantity)
+        ON CONFLICT(product_id) DO UPDATE SET total_stock = total_stock + :quantity;
         """
 
         sql_values = {
             "product_id": product_id,
-            "total_stock": quantity
+            "quantity": quantity
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
-                # Execute
-                cursor.execute(sql, sql_values)
+                # Insert batch record
+                cursor.execute(sql_insert_batch, sql_values)
+                # Upsert inventory total_stock
+                cursor.execute(sql_upsert_inventory, sql_values)
             except Exception as e:
-                raise DatabaseInsertException(f"An unexpected error occurred while increasing product inventory: {e}")
-            
+                # Any failure should be reported as an insert error (transaction will roll back)
+                raise DatabaseInsertException(f"An unexpected error occurred while adding inventory batch: {e}")
     
     @classmethod
-    def decrease_inventory(cls, product_id: int, quantity: int) -> None:
+    def _decrease_inventory(cls, product_id: int, quantity: int, cursor: sqlite3.Cursor) -> None:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -90,14 +98,8 @@ class Product(BaseModel):
             "total_stock": quantity
         }
 
-        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
-            try:
-                # Execute
-                cursor.execute(sql, sql_values)
-                if cursor.rowcount == 0:
-                    raise ValueError("Insufficient stock to decrease by the specified quantity.")
-            except Exception as e:
-                raise DatabaseInsertException(f"An unexpected error occurred while decreasing product inventory: {e}")
+        # Execute
+        cursor.execute(sql, sql_values)
     
 
     @classmethod
@@ -233,4 +235,3 @@ class Product(BaseModel):
         product.product_id = int(row["product_id"])
 
         return product
-    
