@@ -325,19 +325,16 @@ def get_products_api():
     """Alias for /products/data to match frontend API calls."""
     return get_products()
 
+
 @app.route('/products/data', methods=['GET'])
 def get_products():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        products = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(products)
-    except Exception as e:
+        products = Product.fetch_all_products()
+        products_list = [product.to_dict() for product in products]
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_by_id(product_id):
@@ -361,27 +358,26 @@ def register_product_api():
     """Alias for /products/add to match frontend API calls."""
     return register_product()
 
+
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
+    data = request.get_json()
+    # Validate the input
+    errors = validate_product(data)
+    if errors:
+        print("Returning validation errors to client...") 
+        return jsonify({'errors': errors}), 400
+    
+    # Create the product object
+    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"))
     try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_product(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
-        
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-
-        cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
-        conn.commit()
-        conn.close()
+        # Insert the product
+        Product.insert_product(product)
         return jsonify({'message': 'Product added successfully'}), 200
-    except Exception as e:
+    except DatabaseInsertException as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product_api(product_id):
