@@ -148,7 +148,7 @@ class Customer(BaseModel):
 	@classmethod
 	def fetch_all_customers(cls) -> list[Customer]:
 		sql = f"""
-		SELECT * FROM {cls.DB_TABLE};
+		SELECT * FROM {cls.DB_TABLE} WHERE customer_id != 0;
 		"""
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:

@@ -52,6 +52,7 @@ const translations = {
     loadingCustomers: "Loading customers...",
     edit: "Edit",
     delete: "Delete",
+    password: "Password",
 
     // Products page
     productsTitle: "Product Management",
@@ -172,6 +173,7 @@ const translations = {
     loadingCustomers: "Chargement des clients...",
     edit: "Modifier",
     delete: "Supprimer",
+    password: "Mot de Passe",
 
     // Products page
     productsTitle: "Gestion des Produits",

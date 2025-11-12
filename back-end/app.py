@@ -197,23 +197,15 @@ def logout():
 @app.route('/customers/data', methods=['GET'])
 def get_customers():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Customers')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        customers = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(customers)
-    except Exception as e:
+        customers = Customer.fetch_all_customers()
+        customers_list = [customer.to_dict() for customer in customers]
+        return jsonify(customers_list), 200
+    except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
 
 # need a method to add customer
 @app.route('/customers/add', methods=['POST'])
 def register_customer():
-    # Note: if you got this error,
-    #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
-    #       run on another port by typing this command flask run --port=5001
     data = request.get_json()
     
     # Validate the input
@@ -223,27 +215,12 @@ def register_customer():
         return jsonify({"success": False, "errors": errors}), 400
     
     # Create the customer object
-    customer = Customer(data.get("first_name"),data.get("last_name"),data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
+    customer = Customer(data.get("first_name"), data.get("last_name"), data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
 
     # Insert the customer
-    try:        
-        # Validate the input
-        errors = validate_customer(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
-        
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-        
-        # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ', 
-        (data["first_name"], data["last_name"], data["email"], data["phone_number"],  data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0)))
-        conn.commit()
-        conn.close()
+    try:                
+        Customer.insertCustomer(customer)
         return jsonify({'message': 'Customer added successfully'}), 200
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
