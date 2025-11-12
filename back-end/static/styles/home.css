@@ -1,3 +1,4 @@
+/* Removed duplicate and conflicting CSS rules, organized styles properly */
 
 /* Dashboard layout for single row */
 .dashboard-row {
@@ -18,22 +19,142 @@
   flex-direction: column;
 }
 
-/* Humidity Chart Card */
-.humidity-chart-card {
+/* Updated Ambient Context Card styles (formerly humidity-chart-card) */
+.ambient-context-card {
   min-height: 350px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 100%);
+  color: white;
 }
 
-.humidity-chart-card h3 {
-  color: var(--color-primary);
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
+.ambient-context-card h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
 }
 
-#humidity-chart-container {
-  flex: 1;
-  min-height: 250px;
+#ambient-context-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Ambient Context Rows */
+.ambient-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ambient-row:last-child {
+  border-bottom: none;
+}
+
+/* Motion row has special layout */
+.motion-row {
+  grid-template-columns: 80px 2fr 1fr;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Icon column */
+.ambient-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.temp-row .ambient-icon,
+.light-row .ambient-icon {
+  color: #ff6b35;
+}
+
+.humidity-row .ambient-icon {
+  color: #e0e0e0;
+}
+
+.motion-row .ambient-icon {
+  color: white;
+}
+
+.battery-row .ambient-icon {
+  color: #e0e0e0;
+}
+
+/* Value column */
+.ambient-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: 2.5rem;
+  font-weight: 300;
+}
+
+.motion-row .ambient-value {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.value-large {
+  font-size: 2.5rem;
+  font-weight: 300;
+}
+
+.temp-row .value-large,
+.light-row .value-large {
+  color: #ff6b35;
+}
+
+.unit {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Min/Max column */
+.ambient-minmax {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.minmax-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.max-value {
+  font-weight: 600;
+}
+
+.temp-row .max-value,
+.light-row .max-value {
+  color: #ff6b35;
+}
+
+.temp-row .min-value,
+.light-row .min-value {
+  color: #ff6b35;
+}
+
+.minmax-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+/* Motion meta info */
+.ambient-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Threshold Card */
