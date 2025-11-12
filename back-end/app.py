@@ -386,6 +386,7 @@ def update_product_api(product_id):
 
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
+    """
     try:
         data = request.get_json()
         
@@ -407,6 +408,40 @@ def update_product(product_id):
         return jsonify({'message': 'Product updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    """
+    data = request.get_json()
+
+    # Validate the input
+    errors = validate_product(data)
+    if errors:
+        return jsonify({'errors': errors}), 400
+    
+    try:
+        # Get the product
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Update product fields
+        product.name = data.get("name")
+        product.price = float(data.get("price"))
+        product.epc = data.get("epc")
+        product.upc = int(data.get("upc"))
+        product.category = data.get("category")
+        product.points_worth = data.get("points_worth")
+
+        # Save the updated product
+        Product.update_product(product)
+
+        # Return success response
+        return jsonify({'message': 'Product updated successfully'}), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    except DatabaseInsertException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to update product: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
 def delete_product_api(product_id):
@@ -416,13 +451,19 @@ def delete_product_api(product_id):
 @app.route('/products/delete/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM Products WHERE product_id = ?', (product_id,))
-        conn.commit()
-        conn.close()
+        # Check if product exists
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Delete the product
+        Product.delete_product(product_id)
+        
         return jsonify({'message': 'Product deleted successfully'}), 200
+    except DatabaseDeleteException as e:
+        return jsonify({'error': str(e)}), 500
     except Exception as e:
+        print(f"ERROR: Failed to delete product: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= SENSOR API ROUTES =============
