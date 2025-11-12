@@ -4,6 +4,40 @@
   gap: 2rem;
 }
 
+/* Password input wrapper for toggle button */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #6b7280);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--color-primary, #3b82f6);
+}
+
+.password-toggle i {
+  font-size: 1.1rem;
+}
+
 .form-section,
 .database-section {
   background-color: var(--color-background-light);

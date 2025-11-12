@@ -1,10 +1,6 @@
-import { Chart } from "@/components/ui/chart"
-const fanStatus = "off"
+import { showToast } from './notifications.js';
 
-// Declare showToast function or import it from notifications.js
-function showToast(title, message, type) {
-  console.log(`Title: ${title}, Message: ${message}, Type: ${type}`)
-}
+const fanStatus = "off"
 
 let humidityChart = null
 
@@ -287,6 +283,20 @@ function updateAmbientContext(data) {
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
   initAmbientContext() // Initialize ambient context instead of humidity chart
+
+  // Initialize all fans to OFF (Deactivated)
+  window.fanStatuses = {
+    1: "off",
+    2: "off"
+  };
+
+  // Make sure UI starts correctly
+  updateFanUI(1);
+  updateFanUI(2);
+
+  // Fetch sensor data immediately and then every 5s
+  
+  initHumidityChart()
   loadThresholds()
   fetchSensorData()
   // Update sensor data every 5 seconds
@@ -299,4 +309,12 @@ window.onclick = (event) => {
   if (event.target === modal) {
     closeThresholdModal()
   }
+}
+
+// Export to global scope
+if (typeof window !== "undefined") {
+  window.controlFan = controlFan
+  window.openThresholdModal = openThresholdModal
+  window.closeThresholdModal = closeThresholdModal
+  window.saveThreshold = saveThreshold
 }

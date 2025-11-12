@@ -1,3 +1,5 @@
+import { showToast } from "./notifications.js"
+
 // Load products from database
 async function loadProducts() {
   try {
@@ -10,7 +12,7 @@ async function loadProducts() {
     }
   } catch (error) {
     console.error("Error loading products:", error)
-    window.showToast("Database Error", "Failed to load products", "error")
+    showToast("Database Error", "Failed to load products", "error")
     document.getElementById("products-tbody").innerHTML =
       '<tr><td colspan="9" class="loading">Error loading products</td></tr>'
   }
@@ -78,14 +80,6 @@ function validateProduct(data) {
     errors.push("Price cannot be negative and cannot exceed 999.99");
   }
 
-  // Stock
-  const stock = parseInt(data.available_stock);
-  if (isNaN(stock)) {
-    errors.push("Stock must be a valid integer.");
-  } else if (stock < 0) {
-    errors.push("Stock cannot be negative.");
-  }
-
   // UPC
   const upc = String(data.upc || "").trim();
   if (!upcPattern.test(upc)) {
@@ -116,7 +110,6 @@ async function saveProduct(event) {
     price: formData.get("price").trim(),
     epc: formData.get("epc").trim(),
     upc: formData.get("upc").trim(),
-    available_stock: formData.get("available_stock").trim() || "0",
     category: formData.get("category").trim(),
     points_worth: formData.get("points_worth").trim() || "0",
   };
@@ -145,7 +138,7 @@ async function saveProduct(event) {
     if (response.ok) {
       const result = await response.json()
       const action = isEdit ? "edited" : "created"
-      window.showToast("Success", `Product successfully ${action}!`, "success")
+      showToast("Success", `Product successfully ${action}!`, "success")
       resetForm()
       loadProducts()
     } else {
@@ -154,7 +147,7 @@ async function saveProduct(event) {
     }
   } catch (error) {
     console.error("Error saving product:", error)
-    window.showToast("Error", error.message, "error")
+    showToast("Error", error.message, "error")
   }
 }
 
@@ -171,7 +164,6 @@ async function editProduct(productId) {
       document.getElementById("price").value = product.price
       document.getElementById("epc").value = product.epc
       document.getElementById("upc").value = product.upc || ""
-      document.getElementById("available_stock").value = product.available_stock || 0
       document.getElementById("category").value = product.category || ""
       document.getElementById("points_worth").value = product.points_worth || 0
 
@@ -186,7 +178,7 @@ async function editProduct(productId) {
     }
   } catch (error) {
     console.error("Error loading product:", error)
-    window.showToast("Error", error.message, "error")
+    showToast("Error", error.message, "error")
   }
 }
 
@@ -202,7 +194,7 @@ async function deleteProduct(productId) {
     })
 
     if (response.ok) {
-      window.showToast("Success", "Product successfully deleted!", "success")
+      showToast("Success", "Product successfully deleted!", "success")
       loadProducts()
     } else {
       const error = await response.json()
@@ -210,7 +202,7 @@ async function deleteProduct(productId) {
     }
   } catch (error) {
     console.error("Error deleting product:", error)
-    window.showToast("Error", error.message, "error")
+    showToast("Error", error.message, "error")
   }
 }
 
@@ -233,22 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
     priceInput.addEventListener("blur", () => {
       const value = priceInput.value
       if (value && Number.parseFloat(value) < 0) {
-        window.showToast("Validation Error", "Price must be a positive number", "error")
+        showToast("Validation Error", "Price must be a positive number", "error")
       } else {
         window.clearFieldError("price")
-      }
-    })
-  }
-
-  // Real-time validation for stock
-  const stockInput = document.getElementById("available_stock")
-  if (stockInput) {
-    stockInput.addEventListener("blur", () => {
-      const value = stockInput.value
-      if (value && Number.parseInt(value) < 0) {
-        window.showToast("Validation Error", "Stock must be a non-negative number", "error")
-      } else {
-        window.clearFieldError("available_stock")
       }
     })
   }
@@ -279,4 +258,16 @@ function clearFieldError(fieldId) {
   if (errorElement) {
     errorElement.style.display = "none"
   }
+}
+
+// Expose functions to global scope
+if (typeof window !== "undefined") {
+  window.saveProduct = saveProduct
+  window.editProduct = editProduct
+  window.deleteProduct = deleteProduct
+  window.resetForm = resetForm
+  window.clearFieldError = clearFieldError
+  window.showFieldError = showFieldError
+  window.clearAllErrors = clearAllErrors
+  window.loadProducts = loadProducts
 }

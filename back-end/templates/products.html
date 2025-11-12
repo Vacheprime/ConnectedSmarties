@@ -12,10 +12,16 @@
 <body>
     <div id="alert-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 500px;"></div>
     
-    <div class="container">
+    <div class="app-container">
         <header>
             <nav class="navbar">
-                <div class="nav-brand">ConnectedSmarties</div>
+                <div class="nav-left">
+                    <button id="logout-btn" class="btn btn-outline-danger me-3" onclick="logoutUser()"
+                        data-i18n="logout">
+                        Logout
+                    </button>
+                    <div class="nav-brand">ConnectedSmarties</div>
+                </div>
                 <ul class="nav-menu">
                     <!-- Updated navigation links to use Flask routes -->
                     <li><a href="/" data-i18n="navHome">Home</a></li>
@@ -65,12 +71,6 @@
                             <label for="upc" data-i18n="upc">UPC</label>
                             <input type="text" id="upc" name="upc">
                             <span class="error-message" id="upc-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="available_stock" data-i18n="availableStock">Available Stock</label>
-                            <input type="number" id="available_stock" name="available_stock" min="0" value="0">
-                            <span class="error-message" id="available_stock-error"></span>
                         </div>
 
                         <div class="form-group">
@@ -130,10 +130,11 @@
         </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Added i18n.js script -->
-    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
-    <script src="../static/js/notifications.js"></script>
-    <script src="../static/js/products.js"></script>
+    <div id="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/products.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
 </body>
 </html>

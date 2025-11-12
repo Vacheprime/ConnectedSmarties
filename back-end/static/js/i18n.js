@@ -55,6 +55,7 @@ const translations = {
     loadingCustomers: "Loading customers...",
     edit: "Edit",
     delete: "Delete",
+    password: "Password",
 
     // Products page
     productsTitle: "Product Management",
@@ -116,6 +117,7 @@ const translations = {
     sendResetEmail: "Send Reset Email",
     rememberedPassword: "Remembered your password?",
     backToSignIn: "Back to Sign In",
+    logout: "Logout",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
@@ -178,6 +180,7 @@ const translations = {
     loadingCustomers: "Chargement des clients...",
     edit: "Modifier",
     delete: "Supprimer",
+    password: "Mot de Passe",
 
     // Products page
     productsTitle: "Gestion des Produits",
@@ -239,6 +242,7 @@ const translations = {
     sendResetEmail: "Envoyer le Lien de Réinitialisation",
     rememberedPassword: "Vous vous souvenez de votre mot de passe?",
     backToSignIn: "Retour à la Connexion",
+    logout: "Se déconnecter",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",
@@ -312,10 +316,8 @@ export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
-  window.i18n = {
-    setLanguage,
-    getCurrentLanguage,
-    updatePageLanguage,
-    toggleLanguage
-  }
+  window.setLanguage = setLanguage
+  window.getCurrentLanguage = getCurrentLanguage
+  window.updatePageLanguage = updatePageLanguage
+  window.toggleLanguage = toggleLanguage
 }

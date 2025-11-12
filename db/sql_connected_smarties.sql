@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
+DROP TABLE IF EXISTS Memberships;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
 
@@ -25,11 +26,11 @@ CREATE TABLE IF NOT EXISTS Customers (
 );
 
 -- Memberships table
-CREATE TABLE memberships (
+CREATE TABLE IF NOT EXISTS Memberships (
     membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 
 -- Create the products table
@@ -39,9 +40,28 @@ CREATE TABLE IF NOT EXISTS Products (
     price DECIMAL(5,2) NOT NULL,
     epc VARCHAR(64) NOT NULL CHECK(LENGTH(epc) > 0) UNIQUE,
     upc INTEGER NOT NULL,
-    available_stock INTEGER DEFAULT 0,
     category TEXT,
     points_worth INTEGER DEFAULT 0
+);
+
+-- Create the Payments table
+CREATE TABLE IF NOT EXISTS Payments ( 
+    payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL DEFAULT 0, 
+    `date` TEXT DEFAULT CURRENT_TIMESTAMP, 
+    total_paid REAL DEFAULT 0,
+    reward_points_won INTEGER DEFAULT 0,
+    FOREIGN KEY(customer_id) REFERENCES Customers(customer_id) ON DELETE SET DEFAULT
+);
+
+-- Create the PaymentProduct table
+CREATE TABLE IF NOT EXISTS PaymentProducts (
+    payment_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL DEFAULT 0,
+    product_amount INTEGER NOT NULL,
+    PRIMARY KEY (payment_id, product_id),
+    FOREIGN KEY (payment_id) REFERENCES Payments(payment_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE SET DEFAULT
 );
 
 -- Create the Sensors table
@@ -61,6 +81,26 @@ CREATE TABLE IF NOT EXISTS SensorDataPoints (
     FOREIGN KEY (sensor_id) REFERENCES Sensors(sensor_id)
 );
 
+-- Create the Inventory batch table
+CREATE TABLE IF NOT EXISTS InventoryBatches (
+    inventory_batch_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    received_date TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
+);
+
+-- Create the ProductInventory table
+CREATE TABLE IF NOT EXISTS ProductInventory (
+    product_id INTEGER PRIMARY KEY,
+    total_stock INTEGER NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
+);
+
+-- Insert default value for customers
+INSERT INTO Customers (customer_id, first_name, last_name, email, password, phone_number, rewards_points)
+VALUES (0, 'DEFAULT', 'CUSTOMER', 'default@example.com', 'defaultpassword', '0000000000', 0);
+
 -- For the Customers table
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
 VALUES ('Ishilia Gilcedes', 'Labrador', 'lalinglabrador@gmail.com', 'Password123!' ,'5145010503', 8);
@@ -72,7 +112,7 @@ INSERT INTO Customers (first_name, last_name, email, password, phone_number, rew
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
 
 -- For memberships table
-INSERT INTO memberships (customer_id) VALUES (1);
+INSERT INTO Memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 
@@ -108,15 +148,58 @@ INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 (2, 'temperature', '4.9', '2025-10-24 18:15:00'),
 (2, 'humidity', '70.0', '2025-10-24 18:15:00');
 
+-- Insert default value for product
+INSERT INTO Products (product_id, name, price, epc, upc, category, points_worth) VALUES
+(0, 'UNDEFINED PRODUCT', 0.00, 'DEFAULTEPC', 000000000000, 'Default', 0);
+
 -- Insert for Products table
-INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES
-('Organic Apple Juice 1L', 4.99, 'EPC001', 123456789012, 120, 'Beverages', 10),
-('Tropical Mango Smoothie 500ml', 6.99, 'EPC002', 123456789013, 80, 'Beverages', 15),
-('Dark Roast Coffee Beans 1kg', 14.99, 'EPC003', 123456789014, 60, 'Groceries', 30),
-('Whole Grain Bread', 3.99, 'EPC004', 123456789015, 200, 'Bakery', 8),
-('Fresh Pineapple', 5.99, 'EPC005', 123456789016, 150, 'Fruits', 12),
-('Avocado Toast Pack', 9.99, 'EPC006', 123456789017, 90, 'Snacks', 20),
-('Coconut Water 1L', 4.99, 'EPC007', 123456789018, 180, 'Beverages', 10),
-('Chocolate Chip Cookies', 7.99, 'EPC008', 123456789019, 130, 'Snacks', 16),
-('Vanilla Yogurt 4-pack', 5.99, 'EPC009', 123456789020, 110, 'Dairy', 12),
-('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 170, 'Beverages', 10);
+INSERT INTO Products (name, price, epc, upc, category, points_worth) VALUES
+('Organic Apple Juice 1L', 4.99, 'EPC001', 123456789012, 'Beverages', 10),
+('Tropical Mango Smoothie 500ml', 6.99, 'EPC002', 123456789013, 'Beverages', 15),
+('Dark Roast Coffee Beans 1kg', 14.99, 'EPC003', 123456789014, 'Groceries', 30),
+('Whole Grain Bread', 3.99, 'EPC004', 123456789015, 'Bakery', 8),
+('Fresh Pineapple', 5.99, 'EPC005', 123456789016, 'Fruits', 12),
+('Avocado Toast Pack', 9.99, 'EPC006', 123456789017, 'Snacks', 20),
+('Coconut Water 1L', 4.99, 'EPC007', 123456789018, 'Beverages', 10),
+('Chocolate Chip Cookies', 7.99, 'EPC008', 123456789019, 'Snacks', 16),
+('Vanilla Yogurt 4-pack', 5.99, 'EPC009', 123456789020, 'Dairy', 12),
+('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 'Beverages', 10);
+
+
+-- Insert for ProductInventory table
+INSERT INTO ProductInventory (product_id, total_stock) VALUES
+(1, 119),
+(2, 78),
+(3, 59),
+(4, 198),
+(5, 149),
+(6, 89),
+(7, 179),
+(8, 129),
+(9, 109),
+(10, 169);
+
+-- Insert for payments and payment products
+INSERT INTO Payments (payment_id, customer_id, total_paid, reward_points_won) VALUES
+(1, 1, 16.98, 42),
+(2, 1, 9.98, 30),
+(3, 2, 14.98, 30),
+(4, 3, 17.97, 36),
+(5, 3, 12.98, 28);
+
+INSERT INTO PaymentProducts (payment_id, product_id, product_amount) VALUES
+-- payment_id 1 
+(1, 2, 2),
+(1, 5, 1),
+-- payment_id 2 (customer 1)
+(2, 3, 1),
+-- payment_id 3 (customer 2)
+(3, 6, 1),
+(3, 7, 1),
+-- payment_id 4 (customer 3)
+(4, 1, 1),
+(4, 4, 2),
+(4, 10, 1),
+-- payment_id 5 (customer 3)
+(5, 8, 1),
+(5, 9, 1);

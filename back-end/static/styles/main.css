@@ -4,7 +4,7 @@
 :root {
   font-family: "Inter", Arial, sans-serif;
 
-  
+
   --color-primary: hsl(200, 85%, 65%);
   --color-primary-light: hsl(200, 85%, 75%);
   --color-primary-dark: hsl(200, 85%, 55%);
@@ -237,9 +237,14 @@ footer {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
 
-body, button, input, select, textarea {
+body,
+button,
+input,
+select,
+textarea {
   font-family: "Inter", Arial, sans-serif !important;
 }
+
 #toast-container {
   position: fixed !important;
   top: 1rem !important;
@@ -247,7 +252,11 @@ body, button, input, select, textarea {
   z-index: 99999 !important;
   display: block !important;
 }
-.toast { display: block !important; opacity: 1 !important; }
+
+.toast {
+  display: block !important;
+  opacity: 1 !important;
+}
 
 .toast.success {
   border-left-color: var(--color-success);
@@ -294,12 +303,18 @@ body, button, input, select, textarea {
   justify-content: center;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
 
 @keyframes slideInRight {
   from {
     transform: translateX(100px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -311,6 +326,7 @@ body, button, input, select, textarea {
     transform: translateX(0);
     opacity: 1;
   }
+
   to {
     transform: translateX(100px);
     opacity: 0;
