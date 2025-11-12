@@ -254,24 +254,10 @@ window.onclick = (event) => {
   }
 }
 
-// === LOGOUT ===
-function logoutUser() {
-    fetch("/logout")
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                window.location.href = "/";
-            }
-        })
-        .catch(err => console.error("Logout failed:", err));
-}
-
 // Export to global scope
 if (typeof window !== "undefined") {
   window.controlFan = controlFan
   window.openThresholdModal = openThresholdModal
   window.closeThresholdModal = closeThresholdModal
   window.saveThreshold = saveThreshold
-  window.logoutUser = logoutUser
 }
