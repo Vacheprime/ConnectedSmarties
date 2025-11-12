@@ -1,51 +1,53 @@
+import { showToast } from './notifications.js'
+
 // Load customers from database
-// async function loadCustomers() {
-//   try {
-//     const response = await fetch("/api/customers")
-//     if (response.ok) {
-//       const customers = await response.json()
-//       displayCustomers(customers)
-//     } else {
-//       throw new Error("Failed to load customers")
-//     }
-//   } catch (error) {
-//     console.error("Error loading customers:", error)
-//     showToast("Database Error", "Failed to load customers", "error")
-//     document.getElementById("customers-tbody").innerHTML =
-//       '<tr><td colspan="7" class="loading">Error loading customers</td></tr>'
-//   }
-// }
+async function loadCustomers() {
+  try {
+    const response = await fetch("/customers/data")
+    if (response.ok) {
+      const customers = await response.json()
+      displayCustomers(customers)
+    } else {
+      throw new Error("Failed to load customers")
+    }
+  } catch (error) {
+    console.error("Error loading customers:", error)
+    showToast("Database Error", "Failed to load customers", "error")
+    document.getElementById("customers-tbody").innerHTML =
+      '<tr><td colspan="7" class="loading">Error loading customers</td></tr>'
+  }
+}
 
-// // Display customers in table
-// function displayCustomers(customers) {
-//   const tbody = document.getElementById("customers-tbody")
+// Display customers in table
+function displayCustomers(customers) {
+  const tbody = document.getElementById("customers-tbody")
 
-//   if (customers.length === 0) {
-//     tbody.innerHTML = '<tr><td colspan="7" class="loading">No customers found</td></tr>'
-//     return
-//   }
+  if (customers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No customers found</td></tr>'
+    return
+  }
 
-//   tbody.innerHTML = customers
-//     .map(
-//       (customer) => `
-//         <tr>
-//             <td>${customer.customer_id}</td>
-//             <td>${customer.first_name}</td>
-//             <td>${customer.last_name}</td>
-//             <td>${customer.email}</td>
-//             <td>${customer.phone_number}</td>
-//             <td>${customer.rewards_points}</td>
-//             <td>
-//                 <button class="action-btn delete-btn" onclick="deleteCustomer(${customer.customer_id})">Delete</button>
-//             </td>
-//         </tr>
-//     `,
-//     )
-//     .join("")
-// }
+  tbody.innerHTML = customers
+    .map(
+      (customer) => `
+        <tr>
+            <td>${customer.customer_id}</td>
+            <td>${customer.first_name}</td>
+            <td>${customer.last_name}</td>
+            <td>${customer.email}</td>
+            <td>${customer.phone_number}</td>
+            <td>${customer.rewards_points}</td>
+            <td>
+                <button class="action-btn delete-btn" onclick="deleteCustomer(${customer.customer_id})">Delete</button>
+            </td>
+        </tr>
+    `,
+    )
+    .join("")
+}
 
 document.addEventListener('DOMContentLoaded', function() {
-  const passwordInput = document.getElementById('passwordInput');
+  const passwordInput = document.getElementById('password');
   const togglePasswordButton = document.getElementById('togglePassword');
   const eyeIcon = togglePasswordButton.querySelector('i');
 
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     eyeIcon.classList.toggle('bi-eye-slash');
   });
 });
+
 
 // Function to validate inputs for adding a Customer
 function validateCustomer(data) {
@@ -107,7 +110,7 @@ function validateCustomer(data) {
 // Add customer
 async function addCustomer(event) {
   event.preventDefault();
-  window.clearAllErrors()
+  clearAllErrors()
 
   const form = document.getElementById("customer-form");
   const formData = new FormData(form);
@@ -118,8 +121,6 @@ async function addCustomer(event) {
     email: formData.get("email")?.trim(),
     password: formData.get("password")?.trim(),
     phone_number: formData.get("phone_number")?.trim(),
-    qr_identification: formData.get("qr_identification" || "")?.trim(),
-    has_membership: formData.get("has_membership" || "false")?.trim(),
     rewards_points: formData.get("rewards_points" || "0")?.trim(),
   };
 
@@ -131,7 +132,7 @@ async function addCustomer(event) {
 
   // Submit data
   try {
-    const response = await fetch("/api/customers", {
+    const response = await fetch("/customers/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -143,14 +144,14 @@ async function addCustomer(event) {
       const result = await response.json();
       showToast("Success", "Customer successfully created!", "success");
       form.reset();
-      // loadCustomers();
+      loadCustomers();
     } else {
       const error = await response.json();
       throw new Error(error.error || "Failed to add customer");
     }
   } catch (error) {
     console.error("Error adding customer:", error);
-    window.showToast("Error", error.message, "error");
+    showToast("Error", error.message, "error");
   }
 }
 
@@ -184,35 +185,35 @@ function resetForm() {
   clearAllErrors()
 }
 
-// // Add real-time validation
-// document.addEventListener("DOMContentLoaded", () => {
-//   loadCustomers()
+// Add real-time validation
+document.addEventListener("DOMContentLoaded", () => {
+  loadCustomers()
 
-//   // Real-time validation
-//   const emailInput = document.getElementById("email")
-//   if (emailInput) {
-//     emailInput.addEventListener("blur", () => {
-//       const value = emailInput.value
-//       if (value && !validateEmail(value)) {
-//         showFieldError("email", "Please enter a valid email address")
-//       } else {
-//         clearFieldError("email")
-//       }
-//     })
-//   }
+  // Real-time validation
+  const emailInput = document.getElementById("email")
+  if (emailInput) {
+    emailInput.addEventListener("blur", () => {
+      const value = emailInput.value
+      if (value && !validateEmail(value)) {
+        showFieldError("email", "Please enter a valid email address")
+      } else {
+        clearFieldError("email")
+      }
+    })
+  }
 
-//   const phoneInput = document.getElementById("phone_number")
-//   if (phoneInput) {
-//     phoneInput.addEventListener("blur", () => {
-//       const value = phoneInput.value
-//       if (value && !validatePhone(value)) {
-//         showFieldError("phone_number", "Please enter a valid phone number")
-//       } else {
-//         clearFieldError("phone_number")
-//       }
-//     })
-//   }
-// })
+  const phoneInput = document.getElementById("phone_number")
+  if (phoneInput) {
+    phoneInput.addEventListener("blur", () => {
+      const value = phoneInput.value
+      if (value && !validatePhone(value)) {
+        showFieldError("phone_number", "Please enter a valid phone number")
+      } else {
+        clearFieldError("phone_number")
+      }
+    })
+  }
+})
 
 function clearAllErrors() {
   // Clear all errors logic here
@@ -244,4 +245,13 @@ function clearFieldError(fieldId) {
   if (field) {
     field.nextElementSibling.textContent = ""
   }
+}
+
+// Expose functions to global scope
+if (typeof window !== "undefined") {
+  window.displayCustomers = displayCustomers
+  window.addCustomer = addCustomer
+  window.deleteCustomer = deleteCustomer
+  window.resetForm = resetForm
+  window.loadCustomers = loadCustomers
 }

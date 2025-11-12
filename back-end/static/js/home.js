@@ -1,10 +1,6 @@
-import { Chart } from "@/components/ui/chart"
-const fanStatus = "off"
+import { showToast } from './notifications.js';
 
-// Declare showToast function or import it from notifications.js
-function showToast(title, message, type) {
-  console.log(`Title: ${title}, Message: ${message}, Type: ${type}`)
-}
+const fanStatus = "off"
 
 let humidityChart = null
 
@@ -258,19 +254,10 @@ window.onclick = (event) => {
   }
 }
 
-// === LOGOUT ===
-function logoutUser() {
-    fetch("/logout")
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                window.location.href = "/";
-            }
-        })
-        .catch(err => console.error("Logout failed:", err));
+// Export to global scope
+if (typeof window !== "undefined") {
+  window.controlFan = controlFan
+  window.openThresholdModal = openThresholdModal
+  window.closeThresholdModal = closeThresholdModal
+  window.saveThreshold = saveThreshold
 }
-
-
-
-

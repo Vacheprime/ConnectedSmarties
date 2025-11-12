@@ -30,6 +30,7 @@ class Product(BaseModel):
             "epc": self.epc,
             "upc": self.upc,
             "category": self.category,
+            "available_stock": self.get_inventory(self.product_id),
             "points_worth": self.points_worth
         }
     
@@ -160,7 +161,7 @@ class Product(BaseModel):
     @classmethod
     def fetch_all_products(cls) -> list[Product]:
         sql = f"""
-        SELECT * FROM {cls.DB_TABLE};
+        SELECT * FROM {cls.DB_TABLE} WHERE product_id != 0;
         """
 
         # Fetch DB data
@@ -235,3 +236,50 @@ class Product(BaseModel):
         product.product_id = int(row["product_id"])
 
         return product
+    
+
+    @classmethod
+    def update_product(cls, product: Product) -> None:
+        sql = f"""
+        UPDATE {cls.DB_TABLE}
+        SET name = :name,
+            price = :price,
+            epc = :epc,
+            upc = :upc,
+            category = :category,
+            points_worth = :points_worth
+        WHERE product_id = :product_id;
+        """
+
+        sql_values = {
+            "product_id": product.product_id,
+            "name": product.name,
+            "price": product.price,
+            "epc": product.epc,
+            "upc": product.upc,
+            "category": product.category,
+            "points_worth": product.points_worth
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Execute
+                cursor.execute(sql, sql_values)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while updating the product with ID {product.product_id}: {e}")
+    
+    @classmethod
+    def delete_product(cls, product_id: int) -> None:
+        sql = f"""
+        DELETE FROM {cls.DB_TABLE} WHERE product_id = :product_id;
+        """
+
+        sql_values = {"product_id": product_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Execute
+                cursor.execute("PRAGMA foreign_keys = ON;")  # Ensure foreign key constraints are enforced
+                cursor.execute(sql, sql_values)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while deleting the product with ID {product_id}: {e}")

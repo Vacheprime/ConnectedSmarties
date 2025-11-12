@@ -148,7 +148,7 @@ class Customer(BaseModel):
 	@classmethod
 	def fetch_all_customers(cls) -> list[Customer]:
 		sql = f"""
-		SELECT * FROM {cls.DB_TABLE};
+		SELECT * FROM {cls.DB_TABLE} WHERE customer_id != 0;
 		"""
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:
@@ -192,6 +192,7 @@ class Customer(BaseModel):
 
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:
+				cursor.execute("PRAGMA foreign_keys = ON;") # Ensure foreign key constraints are enforced
 				cursor.execute(sql, sql_values)
 			except Exception as e:
 				raise DatabaseDeleteException(f"An unexpected error occured while deleting customer with ID {customer_id}: {e}")

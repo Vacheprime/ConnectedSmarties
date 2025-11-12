@@ -28,7 +28,7 @@
                     <li><a href="/products" data-i18n="navProducts">Products</a></li>
                     <li><a href="/reports" data-i18n="navReports">Reports</a></li>
                     <li><a href="/selfcheckout" class="active" data-i18n="navSelfCheckout">Self-Checkout</a></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="window.i18n.toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
             </nav>
         </header>
@@ -108,6 +108,7 @@
     <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/selfcheckout.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
 </body>
 
 </html>
