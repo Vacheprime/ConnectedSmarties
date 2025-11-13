@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, g, jsonify, session, redirect
 import sqlite3, sys, os
 from functools import wraps
 from flask_cors import CORS
+
+from models.payment_model import Payment
 from .password_reset import password_reset_bp
 from models.customer_model import Customer
 from models.product_model import Product
@@ -215,7 +217,7 @@ def register_customer():
         return jsonify({"success": False, "errors": errors}), 400
     
     # Create the customer object
-    customer = Customer(data.get("first_name"), data.get("last_name"), data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
+    customer = Customer(data.get("first_name"), data.get("last_name"), data.get("email"), data.get("password"), data.get("phone_number"), rewards_points=data.get("rewards_points", 0))
 
     # Insert the customer
     try:                
@@ -242,30 +244,20 @@ def delete_customer(customer_id):
 def account():
     if "user_id" not in session:
         return redirect("/")
+    
+    try:
+        # Fetch customer
+        customer = Customer.fetch_customer_by_id(int(session["user_id"]))
 
-    db = get_db()
-    cursor = db.cursor()
+        if not customer:
+            redirect("/logout")
 
-    # Fetch user info + membership
-    cursor.execute("""
-        SELECT c.first_name, c.last_name, c.email, c.rewards_points, 
-               m.membership_number, m.join_date
-        FROM Customers c
-        LEFT JOIN memberships m ON c.customer_id = m.customer_id
-        WHERE c.customer_id = ?
-    """, (session["user_id"],))
-    user = cursor.fetchone()
-
-    # Fetch purchase history
-    cursor.execute("""
-        SELECT receipt_id, date, total_amount
-        FROM Purchases
-        WHERE customer_id = ?
-        ORDER BY date DESC
-    """, (session["user_id"],))
-    purchases = cursor.fetchall()
-
-    return render_template("customer_account.html", user=user, purchases=purchases)
+        # Fetch customer payments
+        payments = Payment.fetch_payment_by_customer_id(customer.customer_id)
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    
+    return render_template("customer_account.html", customer=customer, payments=payments)
 
 @app.route("/join-membership", methods=["POST"])
 def join_membership():
