@@ -1,11 +1,7 @@
+import { showToast } from "./notifications.js"
 // Self-checkout functionality
 let cart = []
 let customerPoints = 0
-
-// Declare necessary variables
-let showToast
-let updatePageLanguage
-let getCurrentLanguage
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
@@ -117,24 +113,6 @@ function renderCart() {
     .join("")
 }
 
-// Declare functions for showToast, updatePageLanguage, and getCurrentLanguage
-// showToast = (title, message, type) => {
-//   // Implementation of showToast
-//   console.log(`${title}: ${message}`)
-// }
-// updatePageLanguage = () => {
-//   // Implementation of updatePageLanguage
-//   console.log("Page language updated")
-// }
-// getCurrentLanguage = () => {
-//   // Implementation of getCurrentLanguage
-//   return "en" // Default to English
-// }
-// QR Code Scanner Listener — collect characters until Enter is pressed.
-// Capture all key input except when focus is on inputs/buttons/textareas/contenteditable
-// and ignore events with modifier keys to allow normal shortcuts.
-// Uses timer to distinguish between scanner (fast) and manual typing (slow).
-
 // Update totals
 function updateTotals() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -207,18 +185,10 @@ function processPayment() {
   updateTotals()
 }
 
-// Declare functions for showToast, updatePageLanguage, and getCurrentLanguage
-showToast = (title, message, type) => {
-  // Implementation of showToast
-  console.log(`${title}: ${message}`)
-}
-
-updatePageLanguage = () => {
-  // Implementation of updatePageLanguage
-  console.log("Page language updated")
-}
-
-getCurrentLanguage = () => {
-  // Implementation of getCurrentLanguage
-  return "en" // Default to English
+// Export functions to global scope
+if (typeof window !== "undefined") {
+  window.removeItem = removeItem
+  window.clearCart = clearCart
+  window.scanItem = scanItem
+  window.processPayment = processPayment
 }
