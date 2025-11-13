@@ -1,9 +1,14 @@
+PRAGMA foreign_keys=OFF;
+
 DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
-DROP TABLE IF EXISTS Memberships;
+DROP TABLE IF EXISTS Payments;
+DROP TABLE IF EXISTS PaymentProducts;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
+DROP TABLE IF EXISTS InventoryBatches;
+DROP TABLE IF EXISTS ProductInventory;
 
 -- Create the admin table 
 CREATE TABLE IF NOT EXISTS Admins (
@@ -21,16 +26,8 @@ CREATE TABLE IF NOT EXISTS Customers (
     password VARCHAR(255) NOT NULL,
     phone_number TEXT UNIQUE NOT NULL,
     qr_identification VARCHAR(255) DEFAULT NULL,
-    has_membership BOOLEAN DEFAULT FALSE,
-    rewards_points INTEGER DEFAULT 0
-);
-
--- Memberships table
-CREATE TABLE IF NOT EXISTS Memberships (
-    membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+    rewards_points INTEGER DEFAULT 0
 );
 
 -- Create the products table
@@ -111,8 +108,6 @@ VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'Password123!', '123 45
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
 
--- For memberships table
-INSERT INTO Memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 

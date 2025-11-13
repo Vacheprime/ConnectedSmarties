@@ -24,7 +24,7 @@ class Customer(BaseModel):
 	"""
 	DB_TABLE = "Customers"
 	
-	def __init__(self, first_name, last_name, email, password, phone_number=None, qr_identification=None, has_membership=False, rewards_points=0):
+	def __init__(self, first_name, last_name, email, password, phone_number=None, qr_identification=None, rewards_points=0):
 		"""
         Constructor for a new Customer.
         
@@ -45,8 +45,8 @@ class Customer(BaseModel):
 		self.password = password
 		self.phone_number = phone_number
 		self.qr_identification = qr_identification
-		self.has_membership = has_membership
 		self.rewards_points = rewards_points
+		self.join_date = None
 		self.qr_identification = Customer.rand_alnum(10)
 
 
@@ -58,8 +58,8 @@ class Customer(BaseModel):
 			"email": self.email,
 			"password": self.password,
    			"phone_number": self.phone_number,
+			"join_date": self.join_date,
 			"qr_identification": self.qr_identification,
-			"has_membership": self.has_membership,
 			"rewards_points": self.rewards_points
 		}
 	
@@ -115,8 +115,8 @@ class Customer(BaseModel):
         """
 
 		# Define the insert statement and values
-		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points)
-			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :has_membership, :rewards_points);
+		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, rewards_points)
+			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :rewards_points);
 		"""
 		sql_values = {
 			"first_name": customer.first_name,
@@ -125,7 +125,6 @@ class Customer(BaseModel):
    			"password": customer.password,
 			"phone_number": customer.phone_number,
 			"qr_identification": customer.qr_identification,
-			"has_membership": customer.has_membership,
 			"rewards_points": customer.rewards_points,
 			"qr_identification": customer.qr_identification
 		}
@@ -142,7 +141,56 @@ class Customer(BaseModel):
 				# Commit
 				connection.commit()
 			except Exception as e:
-				raise DatabaseInsertException(f"An unexpected error occured while inserting the customer: {e}")
+				raise DatabaseInsertException(f"An unexpected error occurred while inserting the customer: {e}")
+
+
+	@classmethod
+	def fetch_customer_by_id(cls, customer_id: int) -> Customer | None:
+		"""
+		Fetches a customer from the database by their ID.
+
+		Args:
+			customer_id (int): The ID of the customer to fetch.
+		Returns:
+			Customer | None: The Customer object if found, otherwise None.
+		"""
+		sql = f"""
+		SELECT * FROM {cls.DB_TABLE} WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {"customer_id": customer_id}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				# Set the return mode
+				cursor.row_factory = sqlite3.Row
+
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				row = cursor.fetchone()
+
+				if row is None:
+					return None
+
+				# Map row to customer object
+				customer = Customer(
+					row["first_name"],
+					row["last_name"],
+					row["email"],
+					row["password"],
+					row["phone_number"],
+					row["qr_identification"],
+					int(row["rewards_points"])
+				)
+				customer.join_date = row["join_date"]
+				customer.customer_id = int(row["customer_id"])
+
+				return customer
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occured while fetching customer with ID {customer_id}: {e}")
 
 
 	@classmethod
@@ -173,10 +221,10 @@ class Customer(BaseModel):
 				row["password"],
 				row["phone_number"],
 				row["qr_identification"],
-				row["has_membership"],
 				row["rewards_points"]
 			)
 			customer.customer_id = int(row["customer_id"])
+			customer.join_date = row["join_date"]
 			customers.append(customer)
 
 		return customers
