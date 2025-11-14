@@ -36,22 +36,46 @@
         <p>Email: {{ customer.email }}</p>
         <p>Rewards Points: {{ customer.rewards_points }}</p>
 
-        
+
         <p><strong>Membership #:</strong> {{ customer.qr_identification }}</p>
         <p>Joined: {{ customer.join_date }}</p>
 
         <hr>
         <h3>Purchase History</h3>
         {% if payments %}
-        <ul>
+        <ul class="list-group">
           {% for payment in payments %}
-          <li>{{ payment.date }} — Receipt #{{ payment.payment_id }} — ${{ payment.total_paid }}</li>
+          <li class="list-group-item receipt-item" data-payment-id="{{ payment.payment_id }}" style="cursor:pointer;">
+            {{ payment.date }} — Receipt #{{ payment.payment_id }} — ${{ payment.total_paid }}
+          </li>
           {% endfor %}
         </ul>
         {% else %}
         <p>No purchases yet.</p>
         {% endif %}
+
+        <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+              <div class="modal-header">
+                <h5 class="modal-title">Receipt Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+
+              <div class="modal-body">
+
+                <div id="receipt-content">Loading...</div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
       </div>
+
     </main>
 
     <footer>
@@ -59,23 +83,12 @@
     </footer>
   </div>
 
-  <script>
-    document.getElementById("membership-form")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/join-membership", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        showToast("Membership Created", "Welcome to ConnectedSmarties Rewards!", "success");
-        setTimeout(() => location.reload(), 2000);
-      } else {
-        showToast("Error", data.error || "Unable to join membership", "error");
-      }
-    });
-  </script>
+  <!-- customer that makes account makes them a member already -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/purchase_modal.js') }}"></script>
 </body>
 
 </html>
