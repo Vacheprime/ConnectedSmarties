@@ -110,6 +110,13 @@ class Payment(BaseModel):
                 raise DatabaseReadException(f"An unexpected error occurred while fetching payments: {e}")
 
         return payments
+    
+    @classmethod
+    def get_payment_from_list(cls, payments: list, payment_id: int):
+        for p in payments:
+            if p.payment_id == payment_id:
+                return p
+        return None
 
 
     @classmethod

@@ -435,6 +435,41 @@ def delete_product(product_id):
         print(f"ERROR: Failed to delete product: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= RECEIPT DETAILS =============
+@app.get("/receipt-details/<int:payment_id>")
+def receipt_details(payment_id):
+
+    customer_id = session.get("customer_id")  # adjust if needed
+
+    # Fetch all payments for the customer (you already use this in the profile page)
+    all_payments = Payment.fetch_payment_by_customer_id(customer_id)
+
+    # Find the exact payment
+    payment = Payment.get_payment_from_list(all_payments, payment_id)
+
+    if not payment:
+        return jsonify(success=False, error="Payment not found")
+
+    # Format product list
+    products = [
+        {
+            "name": product.name,
+            "quantity": quantity,
+            "price": float(product.price)
+        }
+        for product, quantity in payment.products
+    ]
+
+    return jsonify(
+        success=True,
+        payment_id=payment.payment_id,
+        date=str(payment.date),
+        total=float(payment.total_paid),
+        points=payment.get_reward_points_won(),
+        products=products
+    )
+
+
 # ============= SENSOR API ROUTES =============
 
 @app.route('/api/sensors', methods=['GET'])
