@@ -68,7 +68,7 @@ const translations = {
     availableStock: "Available Stock",
     category: "Category",
     pointsWorth: "Points Worth",
-    producerCompany: "Produer Company",
+    producerCompany: "Producer Company",
     addProduct: "Add Product",
     productDatabase: "Product Database",
     name: "Name",
