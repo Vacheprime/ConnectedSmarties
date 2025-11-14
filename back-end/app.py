@@ -1,6 +1,7 @@
 # THIS CODE IS USED TO RECEIVE FORM DATA FROM THE HTML 
 from flask import Flask, render_template, request, g, jsonify, session, redirect, url_for
 import sqlite3, sys, os
+from datetime import datetime, date
 from functools import wraps
 from flask_cors import CORS
 
@@ -439,36 +440,40 @@ def delete_product(product_id):
 @app.get("/receipt-details/<int:payment_id>")
 def receipt_details(payment_id):
 
-    customer_id = session.get("customer_id")  # adjust if needed
-
-    # Fetch all payments for the customer (you already use this in the profile page)
+    customer_id = session.get("user_id")
     all_payments = Payment.fetch_payment_by_customer_id(customer_id)
-
+    
+    print("---- DEBUG ----")
+    print("Payment ID requested:", payment_id)
+    print("Payments available:", [p.payment_id for p in all_payments])
+    
     # Find the exact payment
     payment = Payment.get_payment_from_list(all_payments, payment_id)
 
     if not payment:
         return jsonify(success=False, error="Payment not found")
 
+    payment_date = payment.date
+    if isinstance(payment_date, (datetime, date)):
+        payment_date = payment_date.isoformat()
+
     # Format product list
-    products = [
+    product_list = [
         {
             "name": product.name,
-            "quantity": quantity,
+            "quantity": int(quantity),
             "price": float(product.price)
         }
         for product, quantity in payment.products
     ]
 
-    return jsonify(
-        success=True,
-        payment_id=payment.payment_id,
-        date=str(payment.date),
-        total=float(payment.total_paid),
-        points=payment.get_reward_points_won(),
-        products=products
-    )
-
+    return jsonify({
+        "success": True,
+        "date": payment.date,
+        "total": float(payment.total_paid),
+        "points": int(payment.get_reward_points_won()),
+        "products": product_list
+    })
 
 # ============= SENSOR API ROUTES =============
 

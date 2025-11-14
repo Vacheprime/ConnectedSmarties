@@ -14,7 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
 async function openReceiptModal(paymentId) {
     try {
         const res = await fetch(`/receipt-details/${paymentId}`);
-        const data = await res.json();
+
+        const raw = await res.text();
+        console.log("RAW RESPONSE:", raw);
+        const data = JSON.parse(raw);
+
 
         if (!data.success) {
             showToast("Error", "Unable to load receipt details", "error");

@@ -111,13 +111,19 @@ class Payment(BaseModel):
 
         return payments
     
-    @classmethod
-    def get_payment_from_list(cls, payments: list, payment_id: int):
+    # @classmethod
+    # def get_payment_from_list(cls, payments: list, payment_id: int):
+    #     for p in payments:
+    #         if p.payment_id == payment_id:
+    #             return p
+    #     return None
+
+    @staticmethod
+    def get_payment_from_list(payments, payment_id):
         for p in payments:
-            if p.payment_id == payment_id:
+            if int(p.payment_id) == int(payment_id):
                 return p
         return None
-
 
     @classmethod
     def insert_payment(cls, payment: Payment) -> None:
