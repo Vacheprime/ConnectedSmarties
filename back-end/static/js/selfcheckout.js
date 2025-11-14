@@ -1,20 +1,7 @@
-import { showToast } from './notifications.js';
-import { updatePageLanguage, getCurrentLanguage } from './i18n.js';
-
+import { showToast } from "./notifications.js"
 // Self-checkout functionality
 let cart = []
 let customerPoints = 0
-
-// Declare necessary variables
-//let showToast
-//let updatePageLanguage
-//let getCurrentLanguage
-
-// QR scanner buffer
-let scannerBuffer = ""
-let scannerTimeout = null
-let firstKeyEvent = null
-const SCANNER_TIMEOUT_MS = 50 // Time window to detect scanner input (ms)
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
@@ -24,12 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow Enter key to scan
   document.getElementById("scan-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-      const input = document.getElementById("scan-input")
-      const code = input.value.trim()
-      if (code) {
-        scanItem(code)
-        input.value = ""
-      }
+      scanItem()
     }
   })
 
@@ -44,17 +26,11 @@ function loadCustomerPoints() {
   updateTotals()
 }
 
-async function manuallyScanItem() {
+// Scan an item by UPC or EPC
+async function scanItem() {
   const input = document.getElementById("scan-input")
   const code = input.value.trim()
-  if (code) {
-    await scanItem(code)
-    input.value = ""
-  }
-}
 
-// Scan an item by UPC or EPC
-async function scanItem(code) {
   if (!code) {
     showToast("Error", "Please enter a UPC or EPC code", "error")
     return
@@ -68,10 +44,11 @@ async function scanItem(code) {
     }
 
     const products = await response.json()
-    const product = products.find((p) => p.upc == code || p.epc == code)
+    const product = products.find((p) => p.upc === code || p.epc === code)
 
     if (!product) {
       showToast("Not Found", "Item not found. Please try again.", "warning")
+      input.value = ""
       return
     }
 
@@ -88,6 +65,7 @@ async function scanItem(code) {
     }
 
     showToast("Success", `Added ${product.name} to cart`, "success")
+    input.value = ""
     renderCart()
     updateTotals()
   } catch (error) {
@@ -114,7 +92,7 @@ function renderCart() {
 
   itemsList.innerHTML = cart
     .map(
-      (item) => `
+      (item, index) => `
         <div class="item-row">
             <div class="item-info">
                 <h4>${item.name}</h4>
@@ -123,6 +101,12 @@ function renderCart() {
             </div>
             <div class="item-price">$${Number.parseFloat(item.price).toFixed(2)}</div>
             <div class="item-quantity">${item.quantity}x</div>
+            <div class="item-remove">
+                <button class="btn-remove" onclick="removeItem(${index})">
+                    <i class="fas fa-trash"></i>
+                    ${getCurrentLanguage() === "fr" ? "Retirer" : "Remove"}
+                </button>
+            </div>
         </div>
     `,
     )
@@ -143,6 +127,20 @@ function updateTotals() {
   // Enable/disable pay button
   const payBtn = document.getElementById("pay-btn")
   payBtn.disabled = cart.length === 0
+}
+
+function removeItem(index) {
+  if (index >= 0 && index < cart.length) {
+    const item = cart[index]
+    cart.splice(index, 1)
+    showToast(
+      "Success",
+      getCurrentLanguage() === "fr" ? `${item.name} retiré du panier` : `${item.name} removed from cart`,
+      "success",
+    )
+    renderCart()
+    updateTotals()
+  }
 }
 
 // Clear the cart
@@ -187,130 +185,10 @@ function processPayment() {
   updateTotals()
 }
 
-// Declare functions for showToast, updatePageLanguage, and getCurrentLanguage
-// showToast = (title, message, type) => {
-//   // Implementation of showToast
-//   console.log(`${title}: ${message}`)
-// }
-
-// updatePageLanguage = () => {
-//   // Implementation of updatePageLanguage
-//   console.log("Page language updated")
-// }
-
-// getCurrentLanguage = () => {
-//   // Implementation of getCurrentLanguage
-//   return "en" // Default to English
-// }
-
-// QR Code Scanner Listener — collect characters until Enter is pressed.
-// Capture all key input except when focus is on inputs/buttons/textareas/contenteditable
-// and ignore events with modifier keys to allow normal shortcuts.
-// Uses timer to distinguish between scanner (fast) and manual typing (slow).
-window.addEventListener(
-  "keydown",
-  (e) => {
-    const active = document.activeElement
-    if (
-      active &&
-      (active.tagName === "INPUT" ||
-        active.tagName === "TEXTAREA" ||
-        active.tagName === "BUTTON" ||
-        active.isContentEditable)
-    ) {
-      // Let the focused control handle the key
-      return
-    }
-
-    // If this is the first key in a potential scan sequence
-    if (!firstKeyEvent && scannerBuffer === "") {
-      // Store the event to potentially replay it later
-      firstKeyEvent = {
-        key: e.key,
-        code: e.code,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-        shiftKey: e.shiftKey,
-        metaKey: e.metaKey,
-      }
-
-      // Prevent default for now
-      e.preventDefault()
-      e.stopImmediatePropagation()
-
-      // Start timer - if it expires, this was manual input
-      scannerTimeout = setTimeout(() => {
-        // Timer expired - this is manual input, not scanner
-        // Replay the first key event by simulating it
-        const replayEvent = new KeyboardEvent("keydown", firstKeyEvent)
-        
-        // Clear state
-        firstKeyEvent = null
-        scannerBuffer = ""
-        scannerTimeout = null
-
-        // Don't re-trigger our listener for the replayed event
-        // The browser will handle it naturally
-      }, SCANNER_TIMEOUT_MS)
-
-      // Handle Enter on first key
-      if (e.key === "Enter") {
-        clearTimeout(scannerTimeout)
-        scannerTimeout = null
-        firstKeyEvent = null
-        return
-      }
-
-      // Add to buffer
-      if (e.key && e.key.length === 1) {
-        scannerBuffer += e.key
-      }
-      return
-    }
-
-    // We have a scan in progress - definitely scanner input
-    e.preventDefault()
-    e.stopImmediatePropagation()
-
-    // Clear and restart the timeout
-    if (scannerTimeout) {
-      clearTimeout(scannerTimeout)
-    }
-    scannerTimeout = setTimeout(() => {
-      // Scan incomplete - reset
-      scannerBuffer = ""
-      firstKeyEvent = null
-      scannerTimeout = null
-    }, SCANNER_TIMEOUT_MS)
-
-    if (e.key === "Enter") {
-      // Finish scan
-      clearTimeout(scannerTimeout)
-      scannerTimeout = null
-      
-      if (scannerBuffer.trim()) {
-        scanItem(scannerBuffer)
-      }
-      console.log(scannerBuffer)
-      scannerBuffer = ""
-      firstKeyEvent = null
-      return
-    }
-
-    // Append printable characters only (single-char keys)
-    if (e.key && e.key.length === 1) {
-      scannerBuffer += e.key
-    }
-  },
-  /* useCapture */ true,
-)
-
-// Expose functions to global scope for button onclick handlers
+// Export functions to global scope
 if (typeof window !== "undefined") {
-  window.checkout = {
-    clearCart,
-    processPayment,
-    scanItem,
-    manuallyScanItem
-  }
+  window.removeItem = removeItem
+  window.clearCart = clearCart
+  window.scanItem = scanItem
+  window.processPayment = processPayment
 }

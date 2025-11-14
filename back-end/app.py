@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, g, jsonify, session, redirect
 import sqlite3, sys, os
 from functools import wraps
 from flask_cors import CORS
+
+from models.payment_model import Payment
 from .password_reset import password_reset_bp
 from models.customer_model import Customer
 from models.product_model import Product
@@ -197,23 +199,15 @@ def logout():
 @app.route('/customers/data', methods=['GET'])
 def get_customers():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Customers')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        customers = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(customers)
-    except Exception as e:
+        customers = Customer.fetch_all_customers()
+        customers_list = [customer.to_dict() for customer in customers]
+        return jsonify(customers_list), 200
+    except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
 
 # need a method to add customer
 @app.route('/customers/add', methods=['POST'])
 def register_customer():
-    # Note: if you got this error,
-    #       "An attempt was made to access a socket in a way forbidden by its access permissions (env),"
-    #       run on another port by typing this command flask run --port=5001
     data = request.get_json()
     
     # Validate the input
@@ -223,27 +217,12 @@ def register_customer():
         return jsonify({"success": False, "errors": errors}), 400
     
     # Create the customer object
-    customer = Customer(data.get("first_name"),data.get("last_name"),data.get("email"), data.get("password"), data.get("phone_number"), data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0))
+    customer = Customer(data.get("first_name"), data.get("last_name"), data.get("email"), data.get("password"), data.get("phone_number"), rewards_points=data.get("rewards_points", 0))
 
     # Insert the customer
-    try:        
-        # Validate the input
-        errors = validate_customer(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
-        
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-        
-        # Insert the new customer into the Customers table
-        cursor.execute('INSERT INTO Customers (first_name, last_name, email, password, phone_number, qr_identification, has_membership, rewards_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ', 
-        (data["first_name"], data["last_name"], data["email"], data["phone_number"],  data.get("qr_identification", None), data.get("has_membership", 0), data.get("rewards_points", 0)))
-        conn.commit()
-        conn.close()
+    try:                
+        Customer.insertCustomer(customer)
         return jsonify({'message': 'Customer added successfully'}), 200
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -265,30 +244,20 @@ def delete_customer(customer_id):
 def account():
     if "user_id" not in session:
         return redirect("/")
+    
+    try:
+        # Fetch customer
+        customer = Customer.fetch_customer_by_id(int(session["user_id"]))
 
-    db = get_db()
-    cursor = db.cursor()
+        if not customer:
+            redirect("/logout")
 
-    # Fetch user info + membership
-    cursor.execute("""
-        SELECT c.first_name, c.last_name, c.email, c.rewards_points, 
-               m.membership_number, m.join_date
-        FROM Customers c
-        LEFT JOIN memberships m ON c.customer_id = m.customer_id
-        WHERE c.customer_id = ?
-    """, (session["user_id"],))
-    user = cursor.fetchone()
-
-    # Fetch purchase history
-    cursor.execute("""
-        SELECT receipt_id, date, total_amount
-        FROM Purchases
-        WHERE customer_id = ?
-        ORDER BY date DESC
-    """, (session["user_id"],))
-    purchases = cursor.fetchall()
-
-    return render_template("customer_account.html", user=user, purchases=purchases)
+        # Fetch customer payments
+        payments = Payment.fetch_payment_by_customer_id(customer.customer_id)
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    
+    return render_template("customer_account.html", customer=customer, payments=payments)
 
 @app.route("/join-membership", methods=["POST"])
 def join_membership():
@@ -325,19 +294,16 @@ def get_products_api():
     """Alias for /products/data to match frontend API calls."""
     return get_products()
 
+
 @app.route('/products/data', methods=['GET'])
 def get_products():
     try:
-        # Establish db connection
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Products')
-        rows = cursor.fetchall()                # this returns tuples by default, not dictionaries
-        products = [dict(row) for row in rows] # JSON representation without the dict() would be with brackets [[1, "John", "Doe"]] (by Flask)
-        conn.close()
-        return jsonify(products)
-    except Exception as e:
+        products = Product.fetch_all_products()
+        products_list = [product.to_dict() for product in products]
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_by_id(product_id):
@@ -361,27 +327,26 @@ def register_product_api():
     """Alias for /products/add to match frontend API calls."""
     return register_product()
 
+
 # Method to add product (will wait on Ishi to make the Products table, but for now, relying on the ERD)
 @app.route('/products/add', methods=['POST'])
 def register_product():
+    data = request.get_json()
+    # Validate the input
+    errors = validate_product(data)
+    if errors:
+        print("Returning validation errors to client...") 
+        return jsonify({'errors': errors}), 400
+    
+    # Create the product object
+    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"))
     try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_product(data)
-        if errors:
-            print("Returning validation errors to client...") 
-            return jsonify({'errors': errors}), 400
-        
-        conn = get_db()
-        cursor = conn.cursor() # to allow execute sql statement
-
-        cursor.execute('INSERT INTO Products (name, price, epc, upc, available_stock, category, points_worth) VALUES (?, ?, ?, ?, ?, ? ,?) ', (data["name"], data["price"], data["epc"], data["upc"], data["available_stock"], data["category"], data["points_worth"]))
-        conn.commit()
-        conn.close()
+        # Insert the product
+        Product.insert_product(product)
         return jsonify({'message': 'Product added successfully'}), 200
-    except Exception as e:
+    except DatabaseInsertException as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product_api(product_id):
@@ -390,6 +355,7 @@ def update_product_api(product_id):
 
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
+    """
     try:
         data = request.get_json()
         
@@ -411,6 +377,40 @@ def update_product(product_id):
         return jsonify({'message': 'Product updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    """
+    data = request.get_json()
+
+    # Validate the input
+    errors = validate_product(data)
+    if errors:
+        return jsonify({'errors': errors}), 400
+    
+    try:
+        # Get the product
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Update product fields
+        product.name = data.get("name")
+        product.price = float(data.get("price"))
+        product.epc = data.get("epc")
+        product.upc = int(data.get("upc"))
+        product.category = data.get("category")
+        product.points_worth = data.get("points_worth")
+
+        # Save the updated product
+        Product.update_product(product)
+
+        # Return success response
+        return jsonify({'message': 'Product updated successfully'}), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    except DatabaseInsertException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to update product: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
 def delete_product_api(product_id):
@@ -420,13 +420,19 @@ def delete_product_api(product_id):
 @app.route('/products/delete/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM Products WHERE product_id = ?', (product_id,))
-        conn.commit()
-        conn.close()
+        # Check if product exists
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Delete the product
+        Product.delete_product(product_id)
+        
         return jsonify({'message': 'Product deleted successfully'}), 200
+    except DatabaseDeleteException as e:
+        return jsonify({'error': str(e)}), 500
     except Exception as e:
+        print(f"ERROR: Failed to delete product: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= SENSOR API ROUTES =============

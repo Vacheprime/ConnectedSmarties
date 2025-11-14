@@ -45,11 +45,107 @@
 
             <!-- Dashboard with all cards in one row -->
             <div class="dashboard-row">
-                <!-- Humidity Pareto Chart Card -->
-                <div class="dashboard-card humidity-chart-card">
-                    <h3 data-i18n="humidityChart">Humidity Dashboard</h3>
-                    <div id="humidity-chart-container" style="width: 100%; height: 250px;">
-                        <canvas id="humidityParetoChart"></canvas>
+                <!-- Ambient Context Card -->
+                <div class="dashboard-card ambient-context-card">
+                    <h3 data-i18n="ambientContext">Ambient Context</h3>
+                    <div id="ambient-context-container">
+                        <!-- Motion Detection -->
+                        <div class="ambient-row motion-row">
+                            <div class="ambient-icon">
+                                <i class="fas fa-walking"></i>
+                            </div>
+                            <div class="ambient-value">
+                                <span id="motion-status" data-i18n="noMotion">No motion detected</span>
+                            </div>
+                            <div class="ambient-meta">
+                                <span id="motion-device">e500000001/3</span>
+                                <span id="motion-time">14:11:51</span>
+                            </div>
+                        </div>
+
+                        <!-- Temperature -->
+                        <div class="ambient-row temp-row">
+                            <div class="ambient-icon">
+                                <i class="fas fa-thermometer-half"></i>
+                            </div>
+                            <div class="ambient-value">
+                                <span id="ambient-temp" class="value-large">30.0</span>
+                                <span class="unit">°C</span>
+                            </div>
+                            <div class="ambient-minmax">
+                                <div class="minmax-item">
+                                    <span id="temp-max" class="max-value">32.0°C</span>
+                                    <span class="minmax-label" data-i18n="max">max</span>
+                                </div>
+                                <div class="minmax-item">
+                                    <span id="temp-min" class="min-value">28.0°C</span>
+                                    <span class="minmax-label" data-i18n="min">min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Humidity -->
+                        <div class="ambient-row humidity-row">
+                            <div class="ambient-icon">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="ambient-value">
+                                <span id="ambient-humidity" class="value-large">27</span>
+                                <span class="unit">%</span>
+                            </div>
+                            <div class="ambient-minmax">
+                                <div class="minmax-item">
+                                    <span id="humidity-max" class="max-value">33%</span>
+                                    <span class="minmax-label" data-i18n="max">max</span>
+                                </div>
+                                <div class="minmax-item">
+                                    <span id="humidity-min" class="min-value">21%</span>
+                                    <span class="minmax-label" data-i18n="min">min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Light/Illuminance -->
+                        <div class="ambient-row light-row">
+                            <div class="ambient-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="ambient-value">
+                                <span id="ambient-light" class="value-large">810</span>
+                                <span class="unit">lux</span>
+                            </div>
+                            <div class="ambient-minmax">
+                                <div class="minmax-item">
+                                    <span id="light-max" class="max-value">896 lux</span>
+                                    <span class="minmax-label" data-i18n="max">max</span>
+                                </div>
+                                <div class="minmax-item">
+                                    <span id="light-min" class="min-value">724 lux</span>
+                                    <span class="minmax-label" data-i18n="min">min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Battery -->
+                        <div class="ambient-row battery-row">
+                            <div class="ambient-icon">
+                                <i class="fas fa-battery-three-quarters"></i>
+                            </div>
+                            <div class="ambient-value">
+                                <span id="ambient-battery" class="value-large">—</span>
+                                <span class="unit">%</span>
+                            </div>
+                            <div class="ambient-minmax">
+                                <div class="minmax-item">
+                                    <span id="battery-max" class="max-value">— </span>
+                                    <span class="minmax-label" data-i18n="max">max</span>
+                                </div>
+                                <div class="minmax-item">
+                                    <span id="battery-min" class="min-value">— </span>
+                                    <span class="minmax-label" data-i18n="min">min</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -219,9 +315,10 @@
     <div id="alert-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
 </body>
 
 </html>

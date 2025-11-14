@@ -5,6 +5,8 @@ from .exceptions.database_read_exception import DatabaseReadException
 from .exceptions.database_delete_exception import DatabaseDeleteException
 from contextlib import closing
 import sqlite3
+import string
+import secrets
 
 class Customer(BaseModel):
 	"""
@@ -21,7 +23,9 @@ class Customer(BaseModel):
         rewards_points (int): Customer's reward points balance.
 	"""
 	DB_TABLE = "Customers"
-	"""
+	
+	def __init__(self, first_name, last_name, email, password, phone_number=None, qr_identification=None, rewards_points=0):
+		"""
         Constructor for a new Customer.
         
         Args:
@@ -32,8 +36,7 @@ class Customer(BaseModel):
         
         Returns:
             None
-    """
-	def __init__(self, first_name, last_name, email, password=None, phone_number=None, qr_identification=None, has_membership=False, rewards_points=0):
+    	"""
 		super().__init__(Customer.DB_TABLE)
 		self.customer_id = None
 		self.first_name = first_name
@@ -42,8 +45,10 @@ class Customer(BaseModel):
 		self.password = password
 		self.phone_number = phone_number
 		self.qr_identification = qr_identification
-		self.has_membership = has_membership
 		self.rewards_points = rewards_points
+		self.join_date = None
+		self.qr_identification = Customer.rand_alnum(10)
+
 
 	def to_dict(self) -> dict:
 		return {
@@ -53,10 +58,48 @@ class Customer(BaseModel):
 			"email": self.email,
 			"password": self.password,
    			"phone_number": self.phone_number,
+			"join_date": self.join_date,
 			"qr_identification": self.qr_identification,
-			"has_membership": self.has_membership,
 			"rewards_points": self.rewards_points
 		}
+	
+
+	@classmethod
+	def _increase_customer_points(cls, customer_id: int, points: int, cursor: sqlite3.Cursor) -> None:
+		"""
+		Increases the reward points of a customer by a specified amount.
+
+		Args:
+			customer_id (int): The ID of the customer whose points are to be increased.
+			points (int): The number of points to add to the customer's balance.
+			cursor (sqlite3.Cursor): The database cursor to use for the operation.
+
+		Raises:
+			DatabaseInsertException: If an error occurs during database update.
+		"""
+
+		sql = f"""
+		UPDATE {cls.DB_TABLE}
+		SET rewards_points = rewards_points + :points
+		WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {
+			"customer_id": customer_id,
+			"points": points
+		}
+
+		# Execute
+		cursor.execute(sql, sql_values)
+
+
+	@staticmethod
+	def rand_alnum(n=10):
+		"""
+		Generate a random alphanumeric string of length n.
+		"""
+		alphabet = string.ascii_letters + string.digits
+		return ''.join(secrets.choice(alphabet) for _ in range(n))
 
 
 	@staticmethod
@@ -72,8 +115,8 @@ class Customer(BaseModel):
         """
 
 		# Define the insert statement and values
-		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, has_membership ,rewards_points)
-			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :has_membership, :rewards_points);
+		sql = """INSERT INTO Customers(first_name, last_name, email, password, phone_number, qr_identification, rewards_points)
+			VALUES (:first_name, :last_name, :email, :password, :phone_number, :qr_identification, :rewards_points);
 		"""
 		sql_values = {
 			"first_name": customer.first_name,
@@ -82,8 +125,8 @@ class Customer(BaseModel):
    			"password": customer.password,
 			"phone_number": customer.phone_number,
 			"qr_identification": customer.qr_identification,
-			"has_membership": customer.has_membership,
-			"rewards_points": customer.rewards_points
+			"rewards_points": customer.rewards_points,
+			"qr_identification": customer.qr_identification
 		}
 
 		# Get the connection and cursor
@@ -98,13 +141,62 @@ class Customer(BaseModel):
 				# Commit
 				connection.commit()
 			except Exception as e:
-				raise DatabaseInsertException(f"An unexpected error occured while inserting the customer: {e}")
+				raise DatabaseInsertException(f"An unexpected error occurred while inserting the customer: {e}")
+
+
+	@classmethod
+	def fetch_customer_by_id(cls, customer_id: int) -> Customer | None:
+		"""
+		Fetches a customer from the database by their ID.
+
+		Args:
+			customer_id (int): The ID of the customer to fetch.
+		Returns:
+			Customer | None: The Customer object if found, otherwise None.
+		"""
+		sql = f"""
+		SELECT * FROM {cls.DB_TABLE} WHERE customer_id = :customer_id;
+		"""
+
+		sql_values = {"customer_id": customer_id}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				# Set the return mode
+				cursor.row_factory = sqlite3.Row
+
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				row = cursor.fetchone()
+
+				if row is None:
+					return None
+
+				# Map row to customer object
+				customer = Customer(
+					row["first_name"],
+					row["last_name"],
+					row["email"],
+					row["password"],
+					row["phone_number"],
+					row["qr_identification"],
+					int(row["rewards_points"])
+				)
+				customer.join_date = row["join_date"]
+				customer.customer_id = int(row["customer_id"])
+
+				return customer
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occured while fetching customer with ID {customer_id}: {e}")
 
 
 	@classmethod
 	def fetch_all_customers(cls) -> list[Customer]:
 		sql = f"""
-		SELECT * FROM {cls.DB_TABLE};
+		SELECT * FROM {cls.DB_TABLE} WHERE customer_id != 0;
 		"""
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:
@@ -129,10 +221,10 @@ class Customer(BaseModel):
 				row["password"],
 				row["phone_number"],
 				row["qr_identification"],
-				row["has_membership"],
 				row["rewards_points"]
 			)
 			customer.customer_id = int(row["customer_id"])
+			customer.join_date = row["join_date"]
 			customers.append(customer)
 
 		return customers
@@ -148,6 +240,7 @@ class Customer(BaseModel):
 
 		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
 			try:
+				cursor.execute("PRAGMA foreign_keys = ON;") # Ensure foreign key constraints are enforced
 				cursor.execute(sql, sql_values)
 			except Exception as e:
 				raise DatabaseDeleteException(f"An unexpected error occured while deleting customer with ID {customer_id}: {e}")

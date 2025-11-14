@@ -22,7 +22,10 @@ const translations = {
     activated: "Activated",
     turnOn: "Turn ON",
     turnOff: "Turn OFF",
-    humidityChart: "Humidity Dashboard",
+    ambientContext: "Ambient Context",
+    noMotion: "No motion detected",
+    max: "max",
+    min: "min",
     emailStatus: "Email Status",
     emailSent: "Email Sent",
     thresholdSettings: "Threshold Settings",
@@ -52,6 +55,7 @@ const translations = {
     loadingCustomers: "Loading customers...",
     edit: "Edit",
     delete: "Delete",
+    password: "Password",
 
     // Products page
     productsTitle: "Product Management",
@@ -97,6 +101,7 @@ const translations = {
     clearCart: "Clear Cart",
     noItems: "No items scanned yet",
     scanToBegin: "Scan an item to begin",
+    remove: "Remove", // Added remove button translation
 
     // Login/Register
     signIn: "Sign In",
@@ -142,7 +147,10 @@ const translations = {
     activated: "Activé",
     turnOn: "Allumer",
     turnOff: "Éteindre",
-    humidityChart: "Tableau de Bord Humidité",
+    ambientContext: "Contexte Ambiant",
+    noMotion: "Aucun mouvement détecté",
+    max: "max",
+    min: "min",
     emailStatus: "Statut Email",
     emailSent: "Email Envoyé",
     thresholdSettings: "Paramètres de Seuil",
@@ -172,6 +180,7 @@ const translations = {
     loadingCustomers: "Chargement des clients...",
     edit: "Modifier",
     delete: "Supprimer",
+    password: "Mot de Passe",
 
     // Products page
     productsTitle: "Gestion des Produits",
@@ -217,6 +226,7 @@ const translations = {
     clearCart: "Vider le Panier",
     noItems: "Aucun article scanné",
     scanToBegin: "Scannez un article pour commencer",
+    remove: "Retirer", 
 
     // Login/Register
     signIn: "Se Connecter",
@@ -306,10 +316,8 @@ export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
-  window.i18n = {
-    setLanguage,
-    getCurrentLanguage,
-    updatePageLanguage,
-    toggleLanguage
-  }
+  window.setLanguage = setLanguage
+  window.getCurrentLanguage = getCurrentLanguage
+  window.updatePageLanguage = updatePageLanguage
+  window.toggleLanguage = toggleLanguage
 }
