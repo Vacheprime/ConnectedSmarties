@@ -107,7 +107,7 @@
                     
                     <div class="modal-header">
                         <h5 class="modal-title">Select Payment Option</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="resetPaymentModal()"></button>
                     </div>
 
                     <div class="modal-body">
@@ -120,12 +120,12 @@
                         </div>
 
                         <div class="guest-section text-center">
-                            <button type="button" id="guest-continue-btn" class="btn btn-success" onclick="processPayment(); closePaymentModal();">Continue as guest</button>
+                            <button type="button" id="guest-continue-btn" class="btn btn-success" onclick="processPayment(); closePaymentModal(); resetPaymentModal();">Continue as guest</button>
                         </div>
                     </div>
                     
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resetPaymentModal()">Cancel</button>
                     </div>
                 </div>
             </div>

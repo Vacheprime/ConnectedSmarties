@@ -26,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 
+  // Reset modal when closed by any method
+  const paymentModal = document.getElementById("paymentModal")
+  if (paymentModal) {
+    paymentModal.addEventListener("hide.bs.modal", () => {
+      resetPaymentModal()
+    })
+  }
+
   renderCart()
 })
 
@@ -36,6 +44,7 @@ function loadCustomerPoints() {
   customerPoints = 0
   updateTotals()
 }
+
 
 async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
@@ -48,6 +57,7 @@ async function manuallyScanItem() {
 
 // Scan an item by UPC or EPC
 async function scanItem(code) {
+  console.log("Scanning item with code:", code)
   if (!code) {
     showToast("Error", "Please enter a UPC or EPC code", "error")
     return
@@ -89,14 +99,30 @@ async function scanItem(code) {
   }
 }
 
-async function signInCustomer() {
-  // Get the customer ID from the input
-  const customerIdInput = document.getElementById("membership-input");
-  const customerId = customerIdInput.value.trim();
+function isModalOpen(modalId) {
+  const modalEl = document.getElementById(modalId)
+  return modalEl && modalEl.classList.contains('show')
+}
 
-  if (!customerId) {
-    showToast("Error", "Please enter a Customer ID", "error");
-    return;
+function isModalInConfirmationState() {
+  const confirmationSection = document.querySelector(".confirmation-section")
+  return confirmationSection !== null && confirmationSection.style.display !== "none"
+}
+
+function isPaymentModalInConfirmationState() {
+  return isModalOpen('paymentModal') && isModalInConfirmationState()
+}
+
+async function signInCustomer(customerId = null) {
+  if (customerId === null) {
+    // Get the customer ID from the input
+    const customerIdInput = document.getElementById("membership-input");
+    const customerId = customerIdInput.value.trim();
+
+    if (!customerId) {
+      showToast("Error", "Please enter a Customer ID", "error");
+      return;
+    }
   }
 
   // Validate the membership number
@@ -108,11 +134,40 @@ async function signInCustomer() {
     return;
   }
 
-  // Pay with the membership number
-  processPayment(customerId);
+  // Success - show confirmation screen
+  showMembershipConfirmation(customerId);
+}
 
-  // Close the modal
+function showMembershipConfirmation(memberId) {
+  // Hide the membership input section
+  const membershipSection = document.querySelector(".membership-section");
+  const guestSection = document.querySelector(".guest-section");
+  
+  membershipSection.style.display = "none";
+  guestSection.style.display = "none";
+
+  // Create and show confirmation section
+  const confirmationHTML = `
+    <div class="confirmation-section text-center">
+      <p class="mb-3">Membership Verified</p>
+      <div class="member-id-display mb-4">
+        <h4>${memberId}</h4>
+      </div>
+      <button type="button" class="btn btn-success btn-lg" onclick="confirmMembershipPayment('${memberId}')">Confirm Payment</button>
+    </div>
+  `;
+
+  const modalBody = document.querySelector("#paymentModal .modal-body");
+  modalBody.insertAdjacentHTML("afterbegin", confirmationHTML);
+}
+
+function confirmMembershipPayment(memberId) {
+  // Process payment with membership
+  processPayment(memberId);
+
+  // Close modal and cleanup
   closePaymentModal();
+  resetPaymentModal();
 }
 
 function closePaymentModal() {
@@ -121,6 +176,23 @@ function closePaymentModal() {
   if (bsModal) {
     bsModal.hide();
   }
+}
+
+function resetPaymentModal() {
+  // Reset modal to initial state
+  const membershipSection = document.querySelector(".membership-section");
+  const guestSection = document.querySelector(".guest-section");
+  const confirmationSection = document.querySelector(".confirmation-section");
+
+  membershipSection.style.display = "block";
+  guestSection.style.display = "block";
+  
+  if (confirmationSection) {
+    confirmationSection.remove();
+  }
+
+  // Clear membership input
+  document.getElementById("membership-input").value = "";
 }
   
 // Render the cart
@@ -317,7 +389,15 @@ window.addEventListener(
       scannerTimeout = null
       
       if (scannerBuffer.trim()) {
-        scanItem(scannerBuffer)
+        // Scan as product
+        if (!isModalOpen('paymentModal')) {
+          scanItem(scannerBuffer)
+          
+        } else if (!isPaymentModalInConfirmationState()) {
+          // Scan as membership number if payment modal is open
+          signInCustomer(scannerBuffer)
+        }
+
       }
       console.log(scannerBuffer)
       scannerBuffer = ""
@@ -341,4 +421,10 @@ if (typeof window !== "undefined") {
   window.processPayment = processPayment
   window.signInCustomer = signInCustomer
   window.closePaymentModal = closePaymentModal
+  window.showMembershipConfirmation = showMembershipConfirmation
+  window.confirmMembershipPayment = confirmMembershipPayment
+  window.resetPaymentModal = resetPaymentModal
+  window.isModalOpen = isModalOpen
+  window.isModalInConfirmationState = isModalInConfirmationState
+  window.isPaymentModalInConfirmationState = isPaymentModalInConfirmationState
 }
