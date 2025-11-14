@@ -283,7 +283,7 @@ function clearCart() {
 }
 
 // Process payment
-function processPayment(membershipNumber = null) {
+async function processPayment(membershipNumber = null) {
   if (cart.length === 0) return
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -299,6 +299,25 @@ function processPayment(membershipNumber = null) {
 
   // Update customer points
   customerPoints += pointsEarned
+
+  console.log("Cart:" + JSON.stringify(cart))
+
+  // Send the payment
+  const response = await fetch('/api/payments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      membership_number: membershipNumber ?? "NONE",
+      products: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+    })
+  })
+
+  if (!response.ok) {
+    showToast("Error", "Failed to process payment on server.", "error")
+    return
+  }
 
   // Clear cart
   cart = []

@@ -303,6 +303,51 @@ def join_membership():
 
 # ============= PAYMENT API ROUTES =============
 
+@app.route('/api/payments', methods=['POST'])
+def process_payment():
+    
+    data = request.get_json()
+    
+    # Validate the data
+    membership_number = data.get("membership_number")
+    products = data.get("products")  # List of dicts with product_id and quantity
+    
+    # Validate the membership
+    customer = None
+    if membership_number != "NONE":
+        try:
+            customer = Customer.fetch_customer_by_membership(membership_number)
+            if not customer:
+                return jsonify({"success": False, "error": "Invalid membership number."}), 400
+        except DatabaseReadException as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    # Check if products is not valid data
+    if not products or not isinstance(products, list):
+        return jsonify({"success": False, "error": "Invalid products data."}), 400
+    
+    # Create Payment object
+    payment = Payment(customer.customer_id if customer else 0)
+    # Loop and add products
+    for item in products:
+        try:
+            product = Product.fetch_product_by_id(int(item.get("product_id")))
+            if not product:
+                return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
+            quantity = int(item.get("quantity", 1))
+            payment.add_product(product, quantity)
+        except DatabaseReadException as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+        except ValueError:
+            return jsonify({"success": False, "error": "Invalid quantity value."}), 400
+
+    # Insert the payment
+    try:
+        Payment.insert_payment(payment)
+    except DatabaseInsertException as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    
+    return jsonify({"success": True, "message": "Payment processed successfully."}), 200
 
 # ============= PRODUCT API ROUTES =============
 
@@ -372,29 +417,6 @@ def update_product_api(product_id):
 
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_product(data)
-        if errors:
-            return jsonify({'errors': errors}), 400
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('''UPDATE Products 
-                         SET name = ?, price = ?, epc = ?, upc = ?, available_stock = ?, category = ?, points_worth = ?
-                         WHERE product_id = ?''',
-                      (data["name"], data["price"], data["epc"], data["upc"], 
-                       data["available_stock"], data["category"], data["points_worth"], product_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Product updated successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    """
     data = request.get_json()
 
     # Validate the input
