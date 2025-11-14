@@ -93,12 +93,43 @@
                     </div>
 
                     <div class="payment-actions">
-                        <button class="btn-pay" id="pay-btn" onclick="processPayment()" disabled data-i18n="pay">Pay Now</button>
+                        <button type="button" class="btn-pay" id="pay-btn" disabled data-i18n="pay" data-bs-toggle="modal" data-bs-target="#paymentModal">Pay Now</button>
                         <button class="btn btn-secondary" onclick="clearCart()" data-i18n="clearCart">Clear Cart</button>
                     </div>
                 </div>
             </div>
         </main>
+
+        <!-- Payment Selector Modal -->
+        <div class="modal fade" tabindex="-1" id="paymentModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">Select Payment Option</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="membership-section mb-3">
+                            <p class="mb-2">Scan your membership or enter it</p>
+                            <div class="input-group">
+                                <input type="text" id="membership-input" class="form-control" placeholder="Membership number or scan card" aria-label="Membership number">
+                                <button type="button" id="membership-apply-btn" class="btn btn-outline-primary" onclick="signInCustomer()">Confirm</button>
+                            </div>
+                        </div>
+
+                        <div class="guest-section text-center">
+                            <button type="button" id="guest-continue-btn" class="btn btn-success" onclick="processPayment(); closePaymentModal();">Continue as guest</button>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <footer>
             <p data-i18n="footer">&copy; 2025 ConnectedSmarties. All rights reserved.</p>

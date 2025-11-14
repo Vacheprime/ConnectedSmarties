@@ -238,7 +238,20 @@ def delete_customer(customer_id):
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
+# Route for verifying that a membership number exists
+@app.route('/api/customers/verify_membership/<string:membership_number>', methods=['GET'])
+def get_customer_by_membership(membership_number):
+    try:
+        customer = Customer.fetch_customer_by_membership(membership_number)
+        if customer:
+            return jsonify({'exists': True}), 200
+        else:
+            return jsonify({'exists': False}), 404
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 # ============= CUSTOMER ACCOUNT ROUTES =============
 
 @app.route("/account")
@@ -287,6 +300,9 @@ def join_membership():
     row = cursor.fetchone()
 
     return jsonify({"success": True, "membership_number": row["membership_number"]})
+
+# ============= PAYMENT API ROUTES =============
+
 
 # ============= PRODUCT API ROUTES =============
 

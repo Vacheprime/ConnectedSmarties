@@ -74,6 +74,40 @@ async function scanItem() {
   }
 }
 
+async function signInCustomer() {
+  // Get the customer ID from the input
+  const customerIdInput = document.getElementById("membership-input");
+  const customerId = customerIdInput.value.trim();
+
+  if (!customerId) {
+    showToast("Error", "Please enter a Customer ID", "error");
+    return;
+  }
+
+  // Validate the membership number
+  const response = await fetch(`/api/customers/verify_membership/${customerId}`);
+  
+  // Show error if membership number not found
+  if (!response.ok) {
+    showToast("Error", "Membership number not found.", "error");
+    return;
+  }
+
+  // Pay with the membership number
+  processPayment(customerId);
+
+  // Close the modal
+  closePaymentModal();
+}
+
+function closePaymentModal() {
+  const modalEl = document.getElementById("paymentModal");
+  const bsModal = bootstrap.Modal.getInstance(modalEl);
+  if (bsModal) {
+    bsModal.hide();
+  }
+}
+  
 // Render the cart
 function renderCart() {
   const itemsList = document.getElementById("items-list")
@@ -162,7 +196,7 @@ function clearCart() {
 }
 
 // Process payment
-function processPayment() {
+function processPayment(membershipNumber = null) {
   if (cart.length === 0) return
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -191,4 +225,6 @@ if (typeof window !== "undefined") {
   window.clearCart = clearCart
   window.scanItem = scanItem
   window.processPayment = processPayment
+  window.signInCustomer = signInCustomer
+  window.closePaymentModal = closePaymentModal
 }
