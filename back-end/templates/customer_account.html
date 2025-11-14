@@ -59,19 +59,7 @@
     </footer>
   </div>
 
-  <script>
-    document.getElementById("membership-form")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/join-membership", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        showToast("Membership Created", "Welcome to ConnectedSmarties Rewards!", "success");
-        setTimeout(() => location.reload(), 2000);
-      } else {
-        showToast("Error", data.error || "Unable to join membership", "error");
-      }
-    });
-  </script>
+  <!-- customer that makes account makes them a member already -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
