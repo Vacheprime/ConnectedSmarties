@@ -3,6 +3,12 @@ import { showToast } from "./notifications.js"
 let cart = []
 let customerPoints = 0
 
+// QR scanner buffer
+let scannerBuffer = ""
+let scannerTimeout = null
+let firstKeyEvent = null
+const SCANNER_TIMEOUT_MS = 50 // Time window to detect scanner input (ms)
+
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
   // Load customer points (you can modify this to load from a logged-in customer)
@@ -11,7 +17,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow Enter key to scan
   document.getElementById("scan-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-      scanItem()
+      const input = document.getElementById("scan-input")
+      const code = input.value.trim()
+      if (code) {
+        scanItem(code)
+        input.value = ""
+      }
     }
   })
 
@@ -26,11 +37,17 @@ function loadCustomerPoints() {
   updateTotals()
 }
 
-// Scan an item by UPC or EPC
-async function scanItem() {
+async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
   const code = input.value.trim()
+  if (code) {
+    await scanItem(code)
+    input.value = ""
+  }
+}
 
+// Scan an item by UPC or EPC
+async function scanItem(code) {
   if (!code) {
     showToast("Error", "Please enter a UPC or EPC code", "error")
     return
@@ -44,11 +61,10 @@ async function scanItem() {
     }
 
     const products = await response.json()
-    const product = products.find((p) => p.upc === code || p.epc === code)
+    const product = products.find((p) => p.upc == code || p.epc == code)
 
     if (!product) {
       showToast("Not Found", "Item not found. Please try again.", "warning")
-      input.value = ""
       return
     }
 
@@ -65,7 +81,6 @@ async function scanItem() {
     }
 
     showToast("Success", `Added ${product.name} to cart`, "success")
-    input.value = ""
     renderCart()
     updateTotals()
   } catch (error) {
@@ -218,6 +233,105 @@ function processPayment(membershipNumber = null) {
   renderCart()
   updateTotals()
 }
+
+// Barcode / QR code scanner handling
+window.addEventListener(
+  "keydown",
+  (e) => {
+    const active = document.activeElement
+    if (
+      active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.tagName === "BUTTON" ||
+        active.isContentEditable)
+    ) {
+      // Let the focused control handle the key
+      return
+    }
+
+    // If this is the first key in a potential scan sequence
+    if (!firstKeyEvent && scannerBuffer === "") {
+      // Store the event to potentially replay it later
+      firstKeyEvent = {
+        key: e.key,
+        code: e.code,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+      }
+
+      // Prevent default for now
+      e.preventDefault()
+      e.stopImmediatePropagation()
+
+      // Start timer - if it expires, this was manual input
+      scannerTimeout = setTimeout(() => {
+        // Timer expired - this is manual input, not scanner
+        // Replay the first key event by simulating it
+        const replayEvent = new KeyboardEvent("keydown", firstKeyEvent)
+        
+        // Clear state
+        firstKeyEvent = null
+        scannerBuffer = ""
+        scannerTimeout = null
+
+        // Don't re-trigger our listener for the replayed event
+        // The browser will handle it naturally
+      }, SCANNER_TIMEOUT_MS)
+
+      // Handle Enter on first key
+      if (e.key === "Enter") {
+        clearTimeout(scannerTimeout)
+        scannerTimeout = null
+        firstKeyEvent = null
+        return
+      }
+
+      // Add to buffer
+      if (e.key && e.key.length === 1) {
+        scannerBuffer += e.key
+      }
+      return
+    }
+
+    // We have a scan in progress - definitely scanner input
+    e.preventDefault()
+    e.stopImmediatePropagation()
+
+    // Clear and restart the timeout
+    if (scannerTimeout) {
+      clearTimeout(scannerTimeout)
+    }
+    scannerTimeout = setTimeout(() => {
+      // Scan incomplete - reset
+      scannerBuffer = ""
+      firstKeyEvent = null
+      scannerTimeout = null
+    }, SCANNER_TIMEOUT_MS)
+
+    if (e.key === "Enter") {
+      // Finish scan
+      clearTimeout(scannerTimeout)
+      scannerTimeout = null
+      
+      if (scannerBuffer.trim()) {
+        scanItem(scannerBuffer)
+      }
+      console.log(scannerBuffer)
+      scannerBuffer = ""
+      firstKeyEvent = null
+      return
+    }
+
+    // Append printable characters only (single-char keys)
+    if (e.key && e.key.length === 1) {
+      scannerBuffer += e.key
+    }
+  },
+  /* useCapture */ true,
+)
 
 // Export functions to global scope
 if (typeof window !== "undefined") {
