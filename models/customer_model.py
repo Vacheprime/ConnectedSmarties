@@ -47,7 +47,7 @@ class Customer(BaseModel):
 		self.qr_identification = qr_identification
 		self.rewards_points = rewards_points
 		self.join_date = None
-		self.qr_identification = Customer.rand_alnum(10)
+		self.qr_identification = qr_identification if qr_identification is not None else Customer.rand_alnum(10)
 
 
 	def to_dict(self) -> dict:
@@ -185,6 +185,7 @@ class Customer(BaseModel):
 					int(row["rewards_points"])
 				)
 				customer.join_date = row["join_date"]
+
 				customer.customer_id = int(row["customer_id"])
 
 				return customer
