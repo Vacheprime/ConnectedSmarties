@@ -1,3 +1,5 @@
+import { showToast } from './notifications.js';
+
 document.addEventListener("DOMContentLoaded", () => {
     const receiptItems = document.querySelectorAll(".receipt-item");
 
@@ -56,6 +58,7 @@ async function openReceiptModal(paymentId) {
         modal.show();
 
     } catch (error) {
+        console.log(error);
         showToast("Error", "Something went wrong.", "error");
     }
 }
