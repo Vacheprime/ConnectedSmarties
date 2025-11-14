@@ -194,7 +194,7 @@ const translations = {
     availableStock: "Stock Disponible",
     category: "Catégorie",
     pointsWorth: "Valeur en Points",
-    producerCompany: "Producteur",
+    producerCompany: "Companie Productrice",
     addProduct: "Ajouter un Produit",
     productDatabase: "Base de Données Produits",
     name: "Nom",
