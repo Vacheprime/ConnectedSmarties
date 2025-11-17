@@ -47,7 +47,7 @@ class Customer(BaseModel):
 		self.qr_identification = qr_identification
 		self.rewards_points = rewards_points
 		self.join_date = None
-		self.qr_identification = Customer.rand_alnum(10)
+		self.qr_identification = qr_identification if qr_identification is not None else Customer.rand_alnum(10)
 
 
 	def to_dict(self) -> dict:
@@ -185,12 +185,54 @@ class Customer(BaseModel):
 					int(row["rewards_points"])
 				)
 				customer.join_date = row["join_date"]
+
 				customer.customer_id = int(row["customer_id"])
 
 				return customer
 
 			except Exception as e:
 				raise DatabaseReadException(f"An unexpected error occured while fetching customer with ID {customer_id}: {e}")
+
+
+	@classmethod
+	def fetch_customer_by_membership(cls, membership_number: str) -> Customer | None:
+		sql = f"""
+		SELECT * FROM {cls.DB_TABLE} WHERE qr_identification = :membership_number;
+		"""
+
+		sql_values = {"membership_number": membership_number}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				# Set the return mode
+				cursor.row_factory = sqlite3.Row
+
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				row = cursor.fetchone()
+
+				if row is None:
+					return None
+
+				# Map row to customer object
+				customer = Customer(
+					row["first_name"],
+					row["last_name"],
+					row["email"],
+					row["password"],
+					row["phone_number"],
+					row["qr_identification"],
+					int(row["rewards_points"])
+				)
+				customer.join_date = row["join_date"]
+				customer.customer_id = int(row["customer_id"])
+
+				return customer
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occured while fetching customer with membership number {membership_number}: {e}")
 
 
 	@classmethod
