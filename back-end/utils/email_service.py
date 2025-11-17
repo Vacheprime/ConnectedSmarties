@@ -111,24 +111,29 @@ class EmailService:
         
         return self._send_email(subject, html_body)
     
-    def send_qr_code(self, data: str, recipient_name: str = "User", subject: str = None) -> bool:
+    def send_qr_code(self, data: str, recipient_email: str, recipient_name: str = "User", subject: str = None) -> bool:
         """
         Send an email with a QR code encoding the provided alphanumeric string.
         
         Args:
             data (str): The alphanumeric string to encode in the QR code
+            recipient_email (str): Email address to send the QR code to
             recipient_name (str): Name of the recipient for personalization
             subject (str): Optional custom subject line
             
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        if not self.sender_email or not self.sender_password or not self.recipient_email:
+        if not self.sender_email or not self.sender_password:
             print("WARNING: Email configuration not set. Skipping email notification.")
             return False
         
-        # Generate QR code
+        # Temporarily override recipient for this email
+        original_recipient = self.recipient_email
+        self.recipient_email = recipient_email
+        
         try:
+            # Generate QR code
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -182,7 +187,8 @@ class EmailService:
         qr_image_part.add_header('Content-Disposition', 'inline', filename='qrcode.png')
         
         # Send email with attachment
-        return self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
+        result = self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
+        return result
     
     def send_payment_receipt(self, recipient_email: str, payment) -> bool:
         """
