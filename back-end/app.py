@@ -707,5 +707,35 @@ def reset_password():
 
 # ============= HELPER FUNCTIONS =============
 
+# ============= INVENTORY API ROUTES =============
+
+@app.route('/api/inventory/add-batch', methods=['POST'])
+@login_required(role="admin")
+def add_inventory_batch():
+    """Add a new inventory batch for a product."""
+    try:
+        data = request.get_json()
+        product_id = data.get('product_id')
+        quantity = data.get('quantity')
+        received_date = data.get('received_date')
+        
+        # Validate inputs
+        if not product_id or not quantity:
+            return jsonify({'error': 'Product ID and quantity are required'}), 400
+        
+        if int(quantity) <= 0:
+            return jsonify({'error': 'Quantity must be positive'}), 400
+        
+        # Add inventory batch
+        Product.add_inventory_batch(int(product_id), int(quantity), received_date)
+        
+        return jsonify({'message': 'Inventory batch added successfully'}), 200
+    except DatabaseInsertException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to add inventory batch: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
