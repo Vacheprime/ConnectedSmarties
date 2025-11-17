@@ -223,9 +223,16 @@ def register_customer():
     # Insert the customer
     try:                
         Customer.insertCustomer(customer)
-        return jsonify({'message': 'Customer added successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    # Send an email confirmation with the member QR Code
+    try:
+        email_service.send_qr_code(customer.qr_identification, customer.email, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
+    except Exception as e:
+        return jsonify({'success': True, "message": "Registration successful, but failed to send confirmation email."}), 200
+
+    return jsonify({"success": True, "message": "Customer registered successfully."}), 200
 
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
