@@ -121,7 +121,7 @@ def login_required(role=None):
 
 @app.route("/checkout", methods=["GET"])
 def get_checkout_page():
-    return render_template("selfcheckout.html")
+    return render_template("selfcheckout.html", user_role=session.get("role"))
 
 # get the HTML page        
 @app.route("/", methods=["GET"])
@@ -146,26 +146,26 @@ def get_register_page():
 @app.route("/home", methods=["GET"])
 @login_required(role="admin")
 def get_admin_home():
-    return render_template("home.html")
+    return render_template("home.html", user_role=session.get("role"))
 
 @app.route('/customers', methods=['GET'])
 @login_required(role="admin")
 def get_customers_page():
-    return render_template('customers.html')
+    return render_template('customers.html', user_role=session.get("role"))
 
 @app.route('/products', methods=['GET'])
 @login_required(role="admin")
 def get_products_page():
-    return render_template('products.html')
+    return render_template('products.html', user_role=session.get("role"))
 
 @app.route('/reports', methods=['GET'])
 @login_required(role="admin")
 def get_reports_page():
-    return render_template('reports.html')
+    return render_template('reports.html', user_role=session.get("role"))
 
 @app.route('/selfcheckout', methods=['GET'])
 def get_selfcheckout_page():
-    return render_template('selfcheckout.html')
+    return render_template('selfcheckout.html', user_role=session.get("role"))
 
 # ============= LOGIN ROUTES =============
 @app.route("/login", methods=["POST"])

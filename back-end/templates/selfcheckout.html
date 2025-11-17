@@ -23,6 +23,7 @@
                     </button>
                     <div class="nav-brand">ConnectedSmarties</div>
                 </div>
+                {% if user_role == "admin" %}
                 <ul class="nav-menu">
                     <li><a href="/" data-i18n="navHome">Home</a></li>
                     <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
@@ -31,6 +32,16 @@
                     <li><a href="/selfcheckout" class="active" data-i18n="navSelfCheckout">Self-Checkout</a></li>
                     <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
+                {% elif user_role == "customer" %}
+                <ul class="nav-menu">
+                    <li><a href="/account">My Account</a></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                </ul>
+                {% else %}
+                <ul class="nav-menu">
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                </ul>
+                {% endif %}
             </nav>
         </header>
 
