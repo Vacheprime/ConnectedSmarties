@@ -88,6 +88,7 @@
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n="addProduct">Add Product</button>
                             <button type="button" class="btn btn-secondary" onclick="resetForm()" data-i18n="clear">Clear</button>
+                            <button type="button" class="btn btn-primary" id="add-inventory-btn" onclick="openInventoryModal()" style="display:none;">Add Inventory Batch</button>
                         </div>
                     </form>
                 </div>
@@ -124,6 +125,36 @@
                 </div>
             </div>
         </main>
+
+        <!-- Inventory Batch Modal -->
+        <div class="modal fade" id="inventoryBatchModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Inventory Batch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="inventory-batch-form">
+                            <div class="form-group mb-3">
+                                <label for="batch_quantity" class="form-label">Quantity *</label>
+                                <input type="number" id="batch_quantity" name="batch_quantity" class="form-control" min="1" required>
+                                <span class="error-message" id="batch_quantity-error"></span>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="batch_received_date" class="form-label" >Received Date/Time</label>
+                                <input type="datetime-local" id="batch_received_date" name="batch_received_date" class="form-control">
+                                <small class="form-text text-muted" >Leave empty to use current timestamp</small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="submitInventoryBatch()" data-i18n="addBatch">Add Batch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <footer>
             <p data-i18n="footer">&copy; 2025 ConnectedSmarties. All rights reserved.</p>
