@@ -117,7 +117,7 @@ async function signInCustomer(customerId = null) {
   if (customerId === null) {
     // Get the customer ID from the input
     const customerIdInput = document.getElementById("membership-input");
-    const customerId = customerIdInput.value.trim();
+    customerId = customerIdInput.value.trim();
 
     if (!customerId) {
       showToast("Error", "Please enter a Customer ID", "error");
