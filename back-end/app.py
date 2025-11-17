@@ -345,8 +345,17 @@ def process_payment():
     try:
         Payment.insert_payment(payment)
     except DatabaseInsertException as e:
+        print(e)
         return jsonify({"success": False, "error": str(e)}), 500
     
+    # Send a receipt confirmation email if customer exists
+    if customer:
+        print(customer.to_dict())
+        try: 
+            email_service.send_payment_receipt(customer.email, payment)
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Payment processed but failed to send email: {str(e)}"}), 500
+
     return jsonify({"success": True, "message": "Payment processed successfully."}), 200
 
 # ============= PRODUCT API ROUTES =============
