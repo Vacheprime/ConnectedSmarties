@@ -1,11 +1,13 @@
+import { showToast } from "./notifications.js"
 // Self-checkout functionality
 let cart = []
 let customerPoints = 0
 
-// Declare necessary variables
-let showToast
-let updatePageLanguage
-let getCurrentLanguage
+// QR scanner buffer
+let scannerBuffer = ""
+let scannerTimeout = null
+let firstKeyEvent = null
+const SCANNER_TIMEOUT_MS = 50 // Time window to detect scanner input (ms)
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
@@ -15,9 +17,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow Enter key to scan
   document.getElementById("scan-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-      scanItem()
+      const input = document.getElementById("scan-input")
+      const code = input.value.trim()
+      if (code) {
+        scanItem(code)
+        input.value = ""
+      }
     }
   })
+
+  // Reset modal when closed by any method
+  const paymentModal = document.getElementById("paymentModal")
+  if (paymentModal) {
+    paymentModal.addEventListener("hide.bs.modal", () => {
+      resetPaymentModal()
+    })
+  }
 
   renderCart()
 })
@@ -30,11 +45,19 @@ function loadCustomerPoints() {
   updateTotals()
 }
 
-// Scan an item by UPC or EPC
-async function scanItem() {
+
+async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
   const code = input.value.trim()
+  if (code) {
+    await scanItem(code)
+    input.value = ""
+  }
+}
 
+// Scan an item by UPC or EPC
+async function scanItem(code) {
+  console.log("Scanning item with code:", code)
   if (!code) {
     showToast("Error", "Please enter a UPC or EPC code", "error")
     return
@@ -48,11 +71,10 @@ async function scanItem() {
     }
 
     const products = await response.json()
-    const product = products.find((p) => p.upc === code || p.epc === code)
+    const product = products.find((p) => p.upc == code || p.epc == code)
 
     if (!product) {
       showToast("Not Found", "Item not found. Please try again.", "warning")
-      input.value = ""
       return
     }
 
@@ -69,7 +91,6 @@ async function scanItem() {
     }
 
     showToast("Success", `Added ${product.name} to cart`, "success")
-    input.value = ""
     renderCart()
     updateTotals()
   } catch (error) {
@@ -78,6 +99,102 @@ async function scanItem() {
   }
 }
 
+function isModalOpen(modalId) {
+  const modalEl = document.getElementById(modalId)
+  return modalEl && modalEl.classList.contains('show')
+}
+
+function isModalInConfirmationState() {
+  const confirmationSection = document.querySelector(".confirmation-section")
+  return confirmationSection !== null && confirmationSection.style.display !== "none"
+}
+
+function isPaymentModalInConfirmationState() {
+  return isModalOpen('paymentModal') && isModalInConfirmationState()
+}
+
+async function signInCustomer(customerId = null) {
+  if (customerId === null) {
+    // Get the customer ID from the input
+    const customerIdInput = document.getElementById("membership-input");
+    customerId = customerIdInput.value.trim();
+
+    if (!customerId) {
+      showToast("Error", "Please enter a Customer ID", "error");
+      return;
+    }
+  }
+
+  // Validate the membership number
+  const response = await fetch(`/api/customers/verify_membership/${customerId}`);
+  
+  // Show error if membership number not found
+  if (!response.ok) {
+    showToast("Error", "Membership number not found.", "error");
+    return;
+  }
+
+  // Success - show confirmation screen
+  showMembershipConfirmation(customerId);
+}
+
+function showMembershipConfirmation(memberId) {
+  // Hide the membership input section
+  const membershipSection = document.querySelector(".membership-section");
+  const guestSection = document.querySelector(".guest-section");
+  
+  membershipSection.style.display = "none";
+  guestSection.style.display = "none";
+
+  // Create and show confirmation section
+  const confirmationHTML = `
+    <div class="confirmation-section text-center">
+      <p class="mb-3">Membership Verified</p>
+      <div class="member-id-display mb-4">
+        <h4>${memberId}</h4>
+      </div>
+      <button type="button" class="btn btn-success btn-lg" onclick="confirmMembershipPayment('${memberId}')">Confirm Payment</button>
+    </div>
+  `;
+
+  const modalBody = document.querySelector("#paymentModal .modal-body");
+  modalBody.insertAdjacentHTML("afterbegin", confirmationHTML);
+}
+
+function confirmMembershipPayment(memberId) {
+  // Process payment with membership
+  processPayment(memberId);
+
+  // Close modal and cleanup
+  closePaymentModal();
+  resetPaymentModal();
+}
+
+function closePaymentModal() {
+  const modalEl = document.getElementById("paymentModal");
+  const bsModal = bootstrap.Modal.getInstance(modalEl);
+  if (bsModal) {
+    bsModal.hide();
+  }
+}
+
+function resetPaymentModal() {
+  // Reset modal to initial state
+  const membershipSection = document.querySelector(".membership-section");
+  const guestSection = document.querySelector(".guest-section");
+  const confirmationSection = document.querySelector(".confirmation-section");
+
+  membershipSection.style.display = "block";
+  guestSection.style.display = "block";
+  
+  if (confirmationSection) {
+    confirmationSection.remove();
+  }
+
+  // Clear membership input
+  document.getElementById("membership-input").value = "";
+}
+  
 // Render the cart
 function renderCart() {
   const itemsList = document.getElementById("items-list")
@@ -116,24 +233,6 @@ function renderCart() {
     )
     .join("")
 }
-
-// Declare functions for showToast, updatePageLanguage, and getCurrentLanguage
-// showToast = (title, message, type) => {
-//   // Implementation of showToast
-//   console.log(`${title}: ${message}`)
-// }
-// updatePageLanguage = () => {
-//   // Implementation of updatePageLanguage
-//   console.log("Page language updated")
-// }
-// getCurrentLanguage = () => {
-//   // Implementation of getCurrentLanguage
-//   return "en" // Default to English
-// }
-// QR Code Scanner Listener — collect characters until Enter is pressed.
-// Capture all key input except when focus is on inputs/buttons/textareas/contenteditable
-// and ignore events with modifier keys to allow normal shortcuts.
-// Uses timer to distinguish between scanner (fast) and manual typing (slow).
 
 // Update totals
 function updateTotals() {
@@ -184,7 +283,7 @@ function clearCart() {
 }
 
 // Process payment
-function processPayment() {
+async function processPayment(membershipNumber = null) {
   if (cart.length === 0) return
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -201,24 +300,150 @@ function processPayment() {
   // Update customer points
   customerPoints += pointsEarned
 
+  console.log("Cart:" + JSON.stringify(cart))
+
+  // Send the payment
+  const response = await fetch('/api/payments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      membership_number: membershipNumber ?? "NONE",
+      products: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+    })
+  })
+
+  if (!response.ok) {
+    showToast("Error", "Failed to process payment on server.", "error")
+    return
+  }
+
   // Clear cart
   cart = []
   renderCart()
   updateTotals()
 }
 
-// Declare functions for showToast, updatePageLanguage, and getCurrentLanguage
-showToast = (title, message, type) => {
-  // Implementation of showToast
-  console.log(`${title}: ${message}`)
-}
+// Barcode / QR code scanner handling
+window.addEventListener(
+  "keydown",
+  (e) => {
+    const active = document.activeElement
+    if (
+      active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.tagName === "BUTTON" ||
+        active.isContentEditable)
+    ) {
+      // Let the focused control handle the key
+      return
+    }
 
-updatePageLanguage = () => {
-  // Implementation of updatePageLanguage
-  console.log("Page language updated")
-}
+    // If this is the first key in a potential scan sequence
+    if (!firstKeyEvent && scannerBuffer === "") {
+      // Store the event to potentially replay it later
+      firstKeyEvent = {
+        key: e.key,
+        code: e.code,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+      }
 
-getCurrentLanguage = () => {
-  // Implementation of getCurrentLanguage
-  return "en" // Default to English
+      // Prevent default for now
+      e.preventDefault()
+      e.stopImmediatePropagation()
+
+      // Start timer - if it expires, this was manual input
+      scannerTimeout = setTimeout(() => {
+        // Timer expired - this is manual input, not scanner
+        // Replay the first key event by simulating it
+        const replayEvent = new KeyboardEvent("keydown", firstKeyEvent)
+        
+        // Clear state
+        firstKeyEvent = null
+        scannerBuffer = ""
+        scannerTimeout = null
+
+        // Don't re-trigger our listener for the replayed event
+        // The browser will handle it naturally
+      }, SCANNER_TIMEOUT_MS)
+
+      // Handle Enter on first key
+      if (e.key === "Enter") {
+        clearTimeout(scannerTimeout)
+        scannerTimeout = null
+        firstKeyEvent = null
+        return
+      }
+
+      // Add to buffer
+      if (e.key && e.key.length === 1) {
+        scannerBuffer += e.key
+      }
+      return
+    }
+
+    // We have a scan in progress - definitely scanner input
+    e.preventDefault()
+    e.stopImmediatePropagation()
+
+    // Clear and restart the timeout
+    if (scannerTimeout) {
+      clearTimeout(scannerTimeout)
+    }
+    scannerTimeout = setTimeout(() => {
+      // Scan incomplete - reset
+      scannerBuffer = ""
+      firstKeyEvent = null
+      scannerTimeout = null
+    }, SCANNER_TIMEOUT_MS)
+
+    if (e.key === "Enter") {
+      // Finish scan
+      clearTimeout(scannerTimeout)
+      scannerTimeout = null
+      
+      if (scannerBuffer.trim()) {
+        // Scan as product
+        if (!isModalOpen('paymentModal')) {
+          scanItem(scannerBuffer)
+          
+        } else if (!isPaymentModalInConfirmationState()) {
+          // Scan as membership number if payment modal is open
+          signInCustomer(scannerBuffer)
+        }
+
+      }
+      console.log(scannerBuffer)
+      scannerBuffer = ""
+      firstKeyEvent = null
+      return
+    }
+
+    // Append printable characters only (single-char keys)
+    if (e.key && e.key.length === 1) {
+      scannerBuffer += e.key
+    }
+  },
+  /* useCapture */ true,
+)
+
+// Export functions to global scope
+if (typeof window !== "undefined") {
+  window.removeItem = removeItem
+  window.clearCart = clearCart
+  window.scanItem = scanItem
+  window.processPayment = processPayment
+  window.signInCustomer = signInCustomer
+  window.closePaymentModal = closePaymentModal
+  window.showMembershipConfirmation = showMembershipConfirmation
+  window.confirmMembershipPayment = confirmMembershipPayment
+  window.resetPaymentModal = resetPaymentModal
+  window.isModalOpen = isModalOpen
+  window.isModalInConfirmationState = isModalInConfirmationState
+  window.isPaymentModalInConfirmationState = isPaymentModalInConfirmationState
 }

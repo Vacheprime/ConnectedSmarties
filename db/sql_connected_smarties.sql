@@ -1,9 +1,14 @@
+PRAGMA foreign_keys=OFF;
+
 DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS Products;
-DROP TABLE IF EXISTS Memberships;
+DROP TABLE IF EXISTS Payments;
+DROP TABLE IF EXISTS PaymentProducts;
 DROP TABLE IF EXISTS Sensors;
 DROP TABLE IF EXISTS SensorDataPoints;
+DROP TABLE IF EXISTS InventoryBatches;
+DROP TABLE IF EXISTS ProductInventory;
 
 -- Create the admin table 
 CREATE TABLE IF NOT EXISTS Admins (
@@ -21,16 +26,8 @@ CREATE TABLE IF NOT EXISTS Customers (
     password VARCHAR(255) NOT NULL,
     phone_number TEXT UNIQUE NOT NULL,
     qr_identification VARCHAR(255) DEFAULT NULL,
-    has_membership BOOLEAN DEFAULT FALSE,
-    rewards_points INTEGER DEFAULT 0
-);
-
--- Memberships table
-CREATE TABLE IF NOT EXISTS Memberships (
-    membership_number INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER UNIQUE,
     join_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+    rewards_points INTEGER DEFAULT 0
 );
 
 -- Create the products table
@@ -41,7 +38,8 @@ CREATE TABLE IF NOT EXISTS Products (
     epc VARCHAR(64) NOT NULL CHECK(LENGTH(epc) > 0) UNIQUE,
     upc INTEGER NOT NULL,
     category TEXT,
-    points_worth INTEGER DEFAULT 0
+    points_worth INTEGER DEFAULT 0,
+    producer_company VARCHAR(255) 
 );
 
 -- Create the Payments table
@@ -111,8 +109,6 @@ VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'Password123!', '123 45
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
 VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
 
--- For memberships table
-INSERT INTO Memberships (customer_id) VALUES (1);
 
 -- For the Admins table
 INSERT INTO Admins (email, password) VALUES 
@@ -149,21 +145,21 @@ INSERT INTO SensorDataPoints (sensor_id, data_type, value, created_at) VALUES
 (2, 'humidity', '70.0', '2025-10-24 18:15:00');
 
 -- Insert default value for product
-INSERT INTO Products (product_id, name, price, epc, upc, category, points_worth) VALUES
-(0, 'UNDEFINED PRODUCT', 0.00, 'DEFAULTEPC', 000000000000, 'Default', 0);
+INSERT INTO Products (product_id, name, price, epc, upc, category, points_worth, producer_company) VALUES
+(0, 'UNDEFINED PRODUCT', 0.00, 'DEFAULTEPC', 000000000000, 'Default', 0, 'System Default');
 
 -- Insert for Products table
-INSERT INTO Products (name, price, epc, upc, category, points_worth) VALUES
-('Organic Apple Juice 1L', 4.99, 'EPC001', 123456789012, 'Beverages', 10),
-('Tropical Mango Smoothie 500ml', 6.99, 'EPC002', 123456789013, 'Beverages', 15),
-('Dark Roast Coffee Beans 1kg', 14.99, 'EPC003', 123456789014, 'Groceries', 30),
-('Whole Grain Bread', 3.99, 'EPC004', 123456789015, 'Bakery', 8),
-('Fresh Pineapple', 5.99, 'EPC005', 123456789016, 'Fruits', 12),
-('Avocado Toast Pack', 9.99, 'EPC006', 123456789017, 'Snacks', 20),
-('Coconut Water 1L', 4.99, 'EPC007', 123456789018, 'Beverages', 10),
-('Chocolate Chip Cookies', 7.99, 'EPC008', 123456789019, 'Snacks', 16),
-('Vanilla Yogurt 4-pack', 5.99, 'EPC009', 123456789020, 'Dairy', 12),
-('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 'Beverages', 10);
+INSERT INTO Products (name, price, epc, upc, category, points_worth, producer_company) VALUES
+('Organic Apple Juice 1L', 4.99, 'EPC001', 123456789012, 'Beverages', 10, 'GreenValley Farms'),
+('Tropical Mango Smoothie 500ml', 6.99, 'EPC002', 123456789013, 'Beverages', 15, 'SunFresh Naturals'),
+('Dark Roast Coffee Beans 1kg', 14.99, 'EPC003', 123456789014, 'Groceries', 30, 'Mountain Peak Roasters'),
+('Whole Grain Bread', 3.99, 'EPC004', 123456789015, 'Bakery', 8, 'GoldenBaker Foods'),
+('Fresh Pineapple', 5.99, 'EPC005', 123456789016, 'Fruits', 12, 'TropiHarvest Co.'),
+('Avocado Toast Pack', 9.99, 'EPC006', 123456789017, 'Snacks', 20, 'HealthyBite Kitchens'),
+('Coconut Water 1L', 4.99, 'EPC007', 123456789018, 'Beverages', 10, 'IslandPure Drinks'),
+('Chocolate Chip Cookies', 7.99, 'EPC008', 123456789019, 'Snacks', 16, 'SweetCrumb Bakers'),
+('Vanilla Yogurt 4-pack', 5.99, 'EPC009', 123456789020, 'Dairy', 12, 'DairyFresh Co.'),
+('Green Tea Bags 25ct', 4.99, 'EPC010', 123456789021, 'Beverages', 10, 'ZenLeaf Tea Co.');
 
 
 -- Insert for ProductInventory table
