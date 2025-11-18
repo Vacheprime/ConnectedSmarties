@@ -417,7 +417,7 @@ def register_product():
         return jsonify({'errors': errors}), 400
     
     # Create the product object
-    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"))
+    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
     try:
         # Insert the product
         Product.insert_product(product)
@@ -453,6 +453,7 @@ def update_product(product_id):
         product.upc = int(data.get("upc"))
         product.category = data.get("category")
         product.points_worth = data.get("points_worth")
+        product.producer_company = data.get("producer_company")
 
         # Save the updated product
         Product.update_product(product)

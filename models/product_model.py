@@ -11,7 +11,7 @@ class Product(BaseModel):
     INVENTORY_TABLE = "ProductInventory"
     INVENTORY_BATCH_TABLE = "InventoryBatches"
 
-    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0):
+    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
         super().__init__(Product.DB_TABLE)
         self.product_id = None
         self.name = name
@@ -20,6 +20,7 @@ class Product(BaseModel):
         self.upc = upc
         self.category = category
         self.points_worth = points_worth
+        self.producer_company = producer_company
 
     
     def to_dict(self) -> dict:
@@ -31,10 +32,12 @@ class Product(BaseModel):
             "upc": self.upc,
             "category": self.category,
             "available_stock": self.get_inventory(self.product_id),
-            "points_worth": self.points_worth
+            "points_worth": self.points_worth,
+            "producer_company": self.producer_company
         }
     
 
+    # specify the date that the inventory batch was added
     @classmethod
     def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> None:
         # Check if product exists
@@ -146,9 +149,9 @@ class Product(BaseModel):
     @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth)
+        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth, producer_company)
         VALUES
-        (:name, :price, :epc, :upc, :category, :points_worth);
+        (:name, :price, :epc, :upc, :category, :points_worth, :producer_company);
         """
 
         sql_values = {
@@ -157,7 +160,8 @@ class Product(BaseModel):
             "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
-            "points_worth": product.points_worth
+            "points_worth": product.points_worth,
+            "producer_company": product.producer_company
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
@@ -198,7 +202,8 @@ class Product(BaseModel):
                 row["epc"],
                 int(row["upc"]),
                 row["category"],
-                row["points_worth"]
+                row["points_worth"],
+                row["producer_company"]
             )
             # Set ID
             product.product_id = int(row["product_id"])
@@ -240,7 +245,8 @@ class Product(BaseModel):
             row["epc"],
             int(row["upc"]),
             row["category"],
-            row["points_worth"]
+            row["points_worth"],
+            row["producer_company"]
         )
         # Set ID
         product.product_id = int(row["product_id"])
@@ -257,7 +263,8 @@ class Product(BaseModel):
             epc = :epc,
             upc = :upc,
             category = :category,
-            points_worth = :points_worth
+            points_worth = :points_worth,
+            producer_company = :producer_company
         WHERE product_id = :product_id;
         """
 
@@ -268,7 +275,8 @@ class Product(BaseModel):
             "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
-            "points_worth": product.points_worth
+            "points_worth": product.points_worth,
+            "producer_company": product.producer_company
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:

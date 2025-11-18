@@ -39,6 +39,7 @@ function displayProducts(products) {
             <td>${product.available_stock || 0}</td>
             <td>${product.category || "-"}</td>
             <td>${product.points_worth || 0}</td>
+            <td>${product.producer_company}</td>
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct(${product.product_id})">Edit</button>
                 <button class="action-btn delete-btn" onclick="deleteProduct(${product.product_id})">Delete</button>
@@ -112,6 +113,7 @@ async function saveProduct(event) {
     upc: formData.get("upc").trim(),
     category: formData.get("category").trim(),
     points_worth: formData.get("points_worth").trim() || "0",
+    producer_company: formData.get("producer_company").trim()
   };
 
   // Validation
@@ -166,6 +168,7 @@ async function editProduct(productId) {
       document.getElementById("upc").value = product.upc || ""
       document.getElementById("category").value = product.category || ""
       document.getElementById("points_worth").value = product.points_worth || 0
+      document.getElementById("producer_company").value = product.producer_company
 
       // Update form title and button
       document.getElementById("form-title").textContent = "Edit Product"
