@@ -111,24 +111,29 @@ class EmailService:
         
         return self._send_email(subject, html_body)
     
-    def send_qr_code(self, data: str, recipient_name: str = "User", subject: str = None) -> bool:
+    def send_qr_code(self, data: str, recipient_email: str, recipient_name: str = "User", subject: str = None) -> bool:
         """
         Send an email with a QR code encoding the provided alphanumeric string.
         
         Args:
             data (str): The alphanumeric string to encode in the QR code
+            recipient_email (str): Email address to send the QR code to
             recipient_name (str): Name of the recipient for personalization
             subject (str): Optional custom subject line
             
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        if not self.sender_email or not self.sender_password or not self.recipient_email:
+        if not self.sender_email or not self.sender_password:
             print("WARNING: Email configuration not set. Skipping email notification.")
             return False
         
-        # Generate QR code
+        # Temporarily override recipient for this email
+        original_recipient = self.recipient_email
+        self.recipient_email = recipient_email
+        
         try:
+            # Generate QR code
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -166,6 +171,10 @@ class EmailService:
                     <img src="cid:qrcode" alt="QR Code" style="max-width: 300px; border: 2px solid #ddd; padding: 10px;"/>
                 </div>
                 
+                <p style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #4CAF50; border-radius: 4px;">
+                    <strong>Your Code:</strong> <code style="font-family: monospace; font-size: 14px;">{data}</code>
+                </p>
+                
                 <p style="margin-top: 30px; color: #666; font-size: 12px;">
                     This is an automated message from ConnectedSmarties system.
                 </p>
@@ -178,4 +187,93 @@ class EmailService:
         qr_image_part.add_header('Content-Disposition', 'inline', filename='qrcode.png')
         
         # Send email with attachment
-        return self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
+        result = self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
+        return result
+    
+    def send_payment_receipt(self, recipient_email: str, payment) -> bool:
+        """
+        Send an email receipt for a completed payment.
+        
+        Args:
+            recipient_email (str): Email address to send receipt to
+            payment (Payment): Payment object containing order details
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        # Temporarily override recipient for this email
+        original_recipient = self.recipient_email
+        self.recipient_email = recipient_email
+        
+        try:
+            subject = f"Receipt #{payment.payment_id} - ConnectedSmarties"
+            
+            # Format product rows
+            product_rows = ""
+            for product, quantity in payment.products:
+                product_total = round(product.price * quantity, 2)
+                product_rows += f"""
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; text-align: left;">{product.name}</td>
+                    <td style="padding: 12px; text-align: center;">{quantity}</td>
+                    <td style="padding: 12px; text-align: right;">${product.price:.2f}</td>
+                    <td style="padding: 12px; text-align: right;">${product_total:.2f}</td>
+                </tr>
+                """
+            
+            # Create HTML email body
+            html_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h2 style="color: #4CAF50; text-align: center; margin-bottom: 30px;">Receipt</h2>
+                        
+                        <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee;">
+                            <p><strong>Receipt #:</strong> {payment.payment_id}</p>
+                            <p><strong>Date:</strong> {payment.date}</p>
+                        </div>
+                        
+                        <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color: #f9f9f9; border-bottom: 2px solid #ddd;">
+                                    <th style="padding: 12px; text-align: left;">Product</th>
+                                    <th style="padding: 12px; text-align: center;">Quantity</th>
+                                    <th style="padding: 12px; text-align: right;">Price</th>
+                                    <th style="padding: 12px; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {product_rows}
+                            </tbody>
+                        </table>
+                        
+                        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 18px; color: #4CAF50;">
+                                <strong>Total:</strong>
+                                <strong>${payment.total_paid:.2f}</strong>
+                            </div>
+                        </div>
+                        
+                        <div style="background-color: #e8f5e9; padding: 15px; border-radius: 4px; margin-bottom: 30px; border-left: 4px solid #4CAF50;">
+                            <p style="margin: 0;"><strong>🎉 Reward Points Earned: {payment.get_reward_points_won()} points</strong></p>
+                            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Add these points to your membership account!</p>
+                        </div>
+                        
+                        <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
+                            Thank you for shopping at ConnectedSmarties!<br>
+                            This is an automated receipt from our system.
+                        </p>
+                    </div>
+                </body>
+            </html>
+            """
+            
+            result = self._send_email(subject, html_body)
+            return result
+            
+        except Exception as e:
+            print(f"ERROR: Failed to send payment receipt: {e}")
+            return False
+        finally:
+            # Restore original recipient
+            self.recipient_email = original_recipient

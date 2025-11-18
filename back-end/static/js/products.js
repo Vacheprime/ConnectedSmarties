@@ -174,6 +174,9 @@ async function editProduct(productId) {
       document.getElementById("form-title").textContent = "Edit Product"
       document.getElementById("submit-btn").textContent = "Update Product"
 
+      // Show inventory button
+      document.getElementById("add-inventory-btn").style.display = "inline-block";
+
       // Scroll to form
       document.querySelector(".form-section").scrollIntoView({ behavior: "smooth" })
     } else {
@@ -215,7 +218,87 @@ function resetForm() {
   document.getElementById("product_id").value = ""
   document.getElementById("form-title").textContent = "Add New Product"
   document.getElementById("submit-btn").textContent = "Add Product"
+  document.getElementById("add-inventory-btn").style.display = "none";
   window.clearAllErrors()
+}
+
+// Inventory batch functions
+let currentProductId = null;
+
+function openInventoryModal() {
+    currentProductId = document.getElementById('product_id').value;
+    if (!currentProductId) {
+        showToast('Please save the product first before adding inventory.', 'error');
+        return;
+    }
+    
+    // Clear the form
+    document.getElementById('inventory-batch-form').reset();
+    document.getElementById('batch_quantity-error').textContent = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('inventoryBatchModal'));
+    modal.show();
+}
+
+async function submitInventoryBatch() {
+    const quantity = parseInt(document.getElementById('batch_quantity').value);
+    const receivedDateInput = document.getElementById('batch_received_date').value;
+    
+    // Validate quantity
+    if (!quantity || quantity <= 0) {
+        document.getElementById('batch_quantity-error').textContent = 'Quantity must be a positive integer';
+        return;
+    }
+    
+    // Format received_date to "YYYY-MM-DD HH:MM:SS" and validate it's not in the future
+    let receivedDate = null;
+    if (receivedDateInput) {
+        const dateObj = new Date(receivedDateInput);
+        const now = new Date();
+        
+        // Check if date is in the future
+        if (dateObj > now) {
+            document.getElementById('batch_quantity-error').textContent = 'Received date cannot be in the future';
+            return;
+        }
+        
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const seconds = '00';
+        receivedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    try {
+        const payload = {
+            product_id: currentProductId,
+            quantity: quantity,
+            received_date: receivedDate
+        };
+        
+        const response = await fetch('/api/inventory/add-batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast('Inventory batch added successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('inventoryBatchModal')).hide();
+            loadProducts(); // Refresh the products table
+        } else {
+            showToast(data.error || 'Failed to add inventory batch', 'error');
+        }
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
 }
 
 // Initialize on page load
@@ -273,4 +356,6 @@ if (typeof window !== "undefined") {
   window.showFieldError = showFieldError
   window.clearAllErrors = clearAllErrors
   window.loadProducts = loadProducts
+  window.openInventoryModal = openInventoryModal
+  window.submitInventoryBatch = submitInventoryBatch
 }

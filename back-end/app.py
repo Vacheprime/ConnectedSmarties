@@ -121,7 +121,7 @@ def login_required(role=None):
 
 @app.route("/checkout", methods=["GET"])
 def get_checkout_page():
-    return render_template("selfcheckout.html")
+    return render_template("selfcheckout.html", user_role=session.get("role"))
 
 # get the HTML page        
 @app.route("/", methods=["GET"])
@@ -146,26 +146,26 @@ def get_register_page():
 @app.route("/home", methods=["GET"])
 @login_required(role="admin")
 def get_admin_home():
-    return render_template("home.html")
+    return render_template("home.html", user_role=session.get("role"))
 
 @app.route('/customers', methods=['GET'])
 @login_required(role="admin")
 def get_customers_page():
-    return render_template('customers.html')
+    return render_template('customers.html', user_role=session.get("role"))
 
 @app.route('/products', methods=['GET'])
 @login_required(role="admin")
 def get_products_page():
-    return render_template('products.html')
+    return render_template('products.html', user_role=session.get("role"))
 
 @app.route('/reports', methods=['GET'])
 @login_required(role="admin")
 def get_reports_page():
-    return render_template('reports.html')
+    return render_template('reports.html', user_role=session.get("role"))
 
 @app.route('/selfcheckout', methods=['GET'])
 def get_selfcheckout_page():
-    return render_template('selfcheckout.html')
+    return render_template('selfcheckout.html', user_role=session.get("role"))
 
 # ============= LOGIN ROUTES =============
 @app.route("/login", methods=["POST"])
@@ -223,9 +223,16 @@ def register_customer():
     # Insert the customer
     try:                
         Customer.insertCustomer(customer)
-        return jsonify({'message': 'Customer added successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    # Send an email confirmation with the member QR Code
+    try:
+        email_service.send_qr_code(customer.qr_identification, customer.email, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
+    except Exception as e:
+        return jsonify({'success': True, "message": "Registration successful, but failed to send confirmation email."}), 200
+
+    return jsonify({"success": True, "message": "Customer registered successfully."}), 200
 
 @app.route('/customers/delete/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
@@ -238,7 +245,20 @@ def delete_customer(customer_id):
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
+# Route for verifying that a membership number exists
+@app.route('/api/customers/verify_membership/<string:membership_number>', methods=['GET'])
+def get_customer_by_membership(membership_number):
+    try:
+        customer = Customer.fetch_customer_by_membership(membership_number)
+        if customer:
+            return jsonify({'exists': True}), 200
+        else:
+            return jsonify({'exists': False}), 404
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 # ============= CUSTOMER ACCOUNT ROUTES =============
 
 @app.route("/account")
@@ -287,6 +307,63 @@ def join_membership():
     row = cursor.fetchone()
 
     return jsonify({"success": True, "membership_number": row["membership_number"]})
+
+# ============= PAYMENT API ROUTES =============
+
+@app.route('/api/payments', methods=['POST'])
+def process_payment():
+    
+    data = request.get_json()
+    
+    # Validate the data
+    membership_number = data.get("membership_number")
+    products = data.get("products")  # List of dicts with product_id and quantity
+    
+    # Validate the membership
+    customer = None
+    if membership_number != "NONE":
+        try:
+            customer = Customer.fetch_customer_by_membership(membership_number)
+            if not customer:
+                return jsonify({"success": False, "error": "Invalid membership number."}), 400
+        except DatabaseReadException as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    # Check if products is not valid data
+    if not products or not isinstance(products, list):
+        return jsonify({"success": False, "error": "Invalid products data."}), 400
+    
+    # Create Payment object
+    payment = Payment(customer.customer_id if customer else 0)
+    # Loop and add products
+    for item in products:
+        try:
+            product = Product.fetch_product_by_id(int(item.get("product_id")))
+            if not product:
+                return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
+            quantity = int(item.get("quantity", 1))
+            payment.add_product(product, quantity)
+        except DatabaseReadException as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+        except ValueError:
+            return jsonify({"success": False, "error": "Invalid quantity value."}), 400
+
+    # Insert the payment
+    try:
+        Payment.insert_payment(payment)
+    except DatabaseInsertException as e:
+        print(e)
+        return jsonify({"success": False, "error": str(e)}), 500
+    
+    # Send a receipt confirmation email if customer exists
+    if customer:
+        print(customer.to_dict())
+        try: 
+            email_service.send_payment_receipt(customer.email, payment)
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Payment processed but failed to send email: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": "Payment processed successfully."}), 200
 
 # ============= PRODUCT API ROUTES =============
 
@@ -356,29 +433,6 @@ def update_product_api(product_id):
 
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
-    """
-    try:
-        data = request.get_json()
-        
-        # Validate the input
-        errors = validate_product(data)
-        if errors:
-            return jsonify({'errors': errors}), 400
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('''UPDATE Products 
-                         SET name = ?, price = ?, epc = ?, upc = ?, available_stock = ?, category = ?, points_worth = ?, producer_company = ?
-                         WHERE product_id = ?''',
-                      (data["name"], data["price"], data["epc"], data["upc"], 
-                       data["available_stock"], data["category"], data["points_worth"], data["producer_company"] , product_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Product updated successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    """
     data = request.get_json()
 
     # Validate the input
@@ -660,6 +714,36 @@ def reset_password():
         return jsonify({'error': str(e)}), 500
 
 # ============= HELPER FUNCTIONS =============
+
+# ============= INVENTORY API ROUTES =============
+
+@app.route('/api/inventory/add-batch', methods=['POST'])
+@login_required(role="admin")
+def add_inventory_batch():
+    """Add a new inventory batch for a product."""
+    try:
+        data = request.get_json()
+        product_id = data.get('product_id')
+        quantity = data.get('quantity')
+        received_date = data.get('received_date')
+        
+        # Validate inputs
+        if not product_id or not quantity:
+            return jsonify({'error': 'Product ID and quantity are required'}), 400
+        
+        if int(quantity) <= 0:
+            return jsonify({'error': 'Quantity must be positive'}), 400
+        
+        # Add inventory batch
+        Product.add_inventory_batch(int(product_id), int(quantity), received_date)
+        
+        return jsonify({'message': 'Inventory batch added successfully'}), 200
+    except DatabaseInsertException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to add inventory batch: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)

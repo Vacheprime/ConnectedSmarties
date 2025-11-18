@@ -143,14 +143,25 @@ class Payment(BaseModel):
         VALUES (:payment_id, :product_id, :product_amount);
         """
 
+        sql_fetch_payment = f"""
+        SELECT date FROM {cls.DB_TABLE} WHERE payment_id = :payment_id;
+        """
+
         sql_values = payment.to_dict()
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
+                cursor.row_factory = sqlite3.Row
                 # Insert payment and capture the generated payment_id
                 cursor.execute(sql_insert_payment, sql_values)
                 payment_id = cursor.lastrowid
                 payment.payment_id = payment_id
+
+                # Fetch the date from the inserted payment
+                cursor.execute(sql_fetch_payment, {"payment_id": payment_id})
+                payment_row = cursor.fetchone()
+                if payment_row:
+                    payment.date = payment_row["date"]
 
                 # Update the customer's reward points
                 Customer._increase_customer_points(payment.customer_id, payment.get_reward_points_won(), cursor)
@@ -167,5 +178,5 @@ class Payment(BaseModel):
 
             except Exception as e:
                 raise DatabaseInsertException(f"An unexpected error occurred while inserting payment: {e}")
-    
+
 

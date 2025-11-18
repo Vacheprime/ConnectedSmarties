@@ -39,7 +39,7 @@ class Product(BaseModel):
 
     # specify the date that the inventory batch was added
     @classmethod
-    def add_inventory_batch(cls, product_id: int, quantity: int) -> None:
+    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> None:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -49,10 +49,25 @@ class Product(BaseModel):
             raise ValueError("Quantity to increase must be a positive integer.")
         
         # Insert a new inventory batch and update total stock in ProductInventory inside one transaction
-        sql_insert_batch = f"""
-        INSERT INTO {cls.INVENTORY_BATCH_TABLE} (product_id, quantity)
-        VALUES (:product_id, :quantity);
-        """
+        if received_date is None:
+            sql_insert_batch = f"""
+            INSERT INTO {cls.INVENTORY_BATCH_TABLE} (product_id, quantity)
+            VALUES (:product_id, :quantity);
+            """
+            sql_values = {
+                "product_id": product_id,
+                "quantity": quantity
+            }
+        else:
+            sql_insert_batch = f"""
+            INSERT INTO {cls.INVENTORY_BATCH_TABLE} (product_id, quantity, received_date)
+            VALUES (:product_id, :quantity, :received_date);
+            """
+            sql_values = {
+                "product_id": product_id,
+                "quantity": quantity,
+                "received_date": received_date
+            }
 
         sql_upsert_inventory = f"""
         INSERT INTO {cls.INVENTORY_TABLE} (product_id, total_stock)
@@ -60,17 +75,12 @@ class Product(BaseModel):
         ON CONFLICT(product_id) DO UPDATE SET total_stock = total_stock + :quantity;
         """
 
-        sql_values = {
-            "product_id": product_id,
-            "quantity": quantity
-        }
-
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
                 # Insert batch record
                 cursor.execute(sql_insert_batch, sql_values)
                 # Upsert inventory total_stock
-                cursor.execute(sql_upsert_inventory, sql_values)
+                cursor.execute(sql_upsert_inventory, {"product_id": product_id, "quantity": quantity})
             except Exception as e:
                 # Any failure should be reported as an insert error (transaction will roll back)
                 raise DatabaseInsertException(f"An unexpected error occurred while adding inventory batch: {e}")
