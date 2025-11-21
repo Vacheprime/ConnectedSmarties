@@ -111,6 +111,64 @@ class EmailService:
         
         return self._send_email(subject, html_body)
     
+    def send_threshold_update(self, high_threshold: float, low_threshold: float) -> bool:
+        """
+        Send an email notification when temperature thresholds are updated.
+        
+        Args:
+            high_threshold (float): New high temperature threshold in Celsius
+            low_threshold (float): New low temperature threshold in Celsius
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        subject = "🔧 Temperature Thresholds Updated"
+        
+        # Create HTML email body
+        html_body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="color: #4CAF50; text-align: center; margin-bottom: 30px;">Threshold Update Notification</h2>
+                    
+                    <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+                        Your temperature monitoring thresholds have been successfully updated.
+                    </p>
+                    
+                    <div style="background-color: #f0f8ff; padding: 20px; border-radius: 4px; border-left: 4px solid #4CAF50; margin-bottom: 30px;">
+                        <h3 style="color: #333; margin-top: 0;">New Threshold Settings:</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 12px; text-align: left;"><strong>High Threshold:</strong></td>
+                                <td style="padding: 12px; text-align: right; color: #d32f2f;"><strong>{high_threshold}°C</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; text-align: left;"><strong>Low Threshold:</strong></td>
+                                <td style="padding: 12px; text-align: right; color: #1976d2;"><strong>{low_threshold}°C</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                        <strong>What this means:</strong><br>
+                        • If temperature exceeds <strong>{high_threshold}°C</strong>, you will receive an alert email<br>
+                        • If temperature drops below <strong>{low_threshold}°C</strong>, you will receive an alert email<br>
+                        • These new thresholds are now active and will be used for all future temperature monitoring
+                    </p>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                        <p style="color: #999; font-size: 12px; margin: 0;">
+                            This is an automated notification from ConnectedSmarties monitoring system.<br>
+                            If you did not make this change or have any concerns, please contact your system administrator.
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        return self._send_email(subject, html_body)
+    
     def send_qr_code(self, data: str, recipient_email: str, recipient_name: str = "User", subject: str = None) -> bool:
         """
         Send an email with a QR code encoding the provided alphanumeric string.

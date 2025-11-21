@@ -239,22 +239,76 @@ async function loadThresholds() {
 }
 
 function initAmbientContext() {
-  // Fetch ambient context data from Pareto Anywhere or API
-  // For now, we'll use placeholder data since Pareto Anywhere is not installed
-  updateAmbientContext({
-    motion: { detected: false, device: "e500000001/3", time: "14:11:51" },
-    temperature: { current: 30.0, max: 32.0, min: 28.0 },
-    humidity: { current: 27, max: 33, min: 21 },
-    light: { current: 810, max: 896, min: 724 },
-    battery: { current: null, max: null, min: null },
-  })
+  // Fetch ambient context data from Pareto Anywhere API
+  fetchAmbientContext()
+}
+
+async function fetchAmbientContext() {
+  try {
+    const response = await fetch("/api/ambient-context")
+    if (response.ok) {
+      const data = await response.json()
+      
+      // Format the data for updateAmbientContext
+      const contextData = {
+        motion: { detected: false, device: data.device_id || "unknown", time: data.timestamp },
+        temperature: {
+          current: data.temperature !== null ? data.temperature : 0,
+          max: data.temperature !== null ? data.temperature : 0,
+          min: data.temperature !== null ? data.temperature : 0,
+        },
+        humidity: {
+          current: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
+          max: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
+          min: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
+        },
+        light: { 
+          current: data.lux !== null ? Math.round(data.lux) : 0, 
+          max: data.lux !== null ? Math.round(data.lux) : 0, 
+          min: data.lux !== null ? Math.round(data.lux) : 0 
+        },
+        battery: { 
+          current: data.battery !== null ? Math.round(data.battery) : null, 
+          max: data.battery !== null ? Math.round(data.battery) : null, 
+          min: data.battery !== null ? Math.round(data.battery) : null 
+        },
+      }
+      
+      updateAmbientContext(contextData)
+    } else {
+      throw new Error("Failed to fetch ambient context")
+    }
+  } catch (error) {
+    console.error("Error fetching ambient context:", error)
+    showToast("Ambient Context Error", "Failed to fetch ambient context from Pareto Anywhere", "error")
+    
+    // Use placeholder data on error
+    updateAmbientContext({
+      motion: { detected: false, device: "error", time: new Date().toLocaleTimeString() },
+      temperature: { current: 0, max: 0, min: 0 },
+      humidity: { current: 0, max: 0, min: 0 },
+      light: { current: 0, max: 0, min: 0 },
+      battery: { current: null, max: null, min: null },
+    })
+  }
 }
 
 function updateAmbientContext(data) {
-  // Update motion
+  // Update motion status and time
   const motionStatus = document.getElementById("motion-status")
   if (motionStatus) {
     motionStatus.textContent = data.motion.detected ? "Motion detected" : "No motion detected"
+  }
+  
+  // Update device ID and time
+  const motionDevice = document.getElementById("motion-device")
+  if (motionDevice) {
+    motionDevice.textContent = data.motion.device
+  }
+  
+  const motionTime = document.getElementById("motion-time")
+  if (motionTime) {
+    motionTime.textContent = data.motion.time
   }
 
   // Update temperature
@@ -282,7 +336,7 @@ function updateAmbientContext(data) {
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-  initAmbientContext() // Initialize ambient context instead of humidity chart
+  initAmbientContext() // Fetch ambient context immediately
 
   // Initialize all fans to OFF (Deactivated)
   window.fanStatuses = {
@@ -301,6 +355,8 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchSensorData()
   // Update sensor data every 5 seconds
   setInterval(fetchSensorData, 5000)
+  // Update ambient context every 5 seconds
+  setInterval(fetchAmbientContext, 5000)
 })
 
 // Close modal when clicking outside
