@@ -107,7 +107,7 @@ INSERT INTO Customers (first_name, last_name, email, password, phone_number, rew
 VALUES ('Danat Ali', 'Muradov', 'donutrallyr@gmail.com', 'Password123!', '123 456 789', 100);
 
 INSERT INTO Customers (first_name, last_name, email, password, phone_number, rewards_points)
-VALUES ('Florence Keith', 'Neflas', 'neflasflorence@gmail.com', 'Password123!' ,'5142246080', 5);
+VALUES ('Florence Keith', 'Neflas', 'test.florence123@gmail.com', 'Password123!' ,'5142246080', 5);
 
 
 -- For the Admins table
