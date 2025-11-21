@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,9 +11,12 @@
     <link rel="stylesheet" href="../static/styles/main.css">
     <link rel="stylesheet" href="../static/styles/customer.css">
 </head>
+
 <body>
-    <div id="alert-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 500px;"></div>
-    
+    <div id="alert-container"
+        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 500px;">
+    </div>
+
     <div class="app-container">
         <header>
             <nav class="navbar">
@@ -31,16 +35,19 @@
                     <li><a href="/products" data-i18n="navProducts">Products</a></li>
                     <li><a href="/reports" data-i18n="navReports">Reports</a></li>
                     <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()"
+                            style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% elif user_role == "customer" %}
                 <ul class="nav-menu">
                     <li><a href="/account" data-i18n="myAccount">My Account</a></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()"
+                            style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% else %}
                 <ul class="nav-menu">
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()"
+                            style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% endif %}
             </nav>
@@ -79,12 +86,14 @@
                             <label for="password" data-i18n="password">Password *</label>
                             <!-- Added password toggle visibility wrapper -->
                             <div class="password-input-wrapper">
-                                <input type="password" id="password" name="password" placeholder="Enter your password" required />
-                                <button id="togglePassword" type="button" class="password-toggle" aria-label="Toggle password visibility">
+                                <input type="password" id="password" name="password" placeholder="Enter your password"
+                                    required />
+                                <button type="button" class="password-toggle" data-target="password"
+                                    aria-label="Toggle password visibility">
                                     <i class="fas fa-eye" id="password-toggle-icon"></i>
                                 </button>
                             </div>
-                        </div> 
+                        </div>
 
                         <div class="form-group">
                             <label for="phone_number" data-i18n="phoneNumber">Phone Number *</label>
@@ -100,7 +109,8 @@
 
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary" data-i18n="addCustomer">Add Customer</button>
-                            <button type="button" class="btn btn-secondary" onclick="resetForm()" data-i18n="clear">Clear</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()"
+                                data-i18n="clear">Clear</button>
                         </div>
                     </form>
                 </div>
@@ -111,7 +121,7 @@
                         <h2 data-i18n="customerDatabase">Customer Database</h2>
                         <button class="btn btn-secondary" onclick="loadCustomers()" data-i18n="refresh">Refresh</button>
                     </div>
-                    
+
                     <div class="table-container">
                         <table id="customers-table">
                             <thead>
@@ -127,7 +137,8 @@
                             </thead>
                             <tbody id="customers-tbody">
                                 <tr>
-                                    <td colspan="7" class="loading" data-i18n="loadingCustomers">Loading customers...</td>
+                                    <td colspan="7" class="loading" data-i18n="loadingCustomers">Loading customers...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -148,4 +159,5 @@
     <script type="module" src="{{ url_for('static', filename='js/customers.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
 </body>
+
 </html>

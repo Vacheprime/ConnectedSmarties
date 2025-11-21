@@ -1,3 +1,5 @@
+import { showToast } from "./notifications.js"
+
 function togglePasswordVisibility(inputId) {
   const passwordInput = document.getElementById(inputId);
   const toggleIcon = document.getElementById(`${inputId}-toggle-icon`);
