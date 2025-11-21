@@ -641,6 +641,9 @@ def update_threshold():
         # Update the threshold callback with new values
         mqtt_service.set_threshold_callback(check_temperature_threshold)
         
+        # Send email notification about the threshold update
+        email_service.send_threshold_update(TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
+        
         print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
         return jsonify({
             'message': 'Thresholds updated successfully',
