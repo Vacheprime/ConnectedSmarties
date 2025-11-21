@@ -1,20 +1,28 @@
-// Password visibility toggle function
 function togglePasswordVisibility(inputId) {
-  const passwordInput = document.getElementById(inputId)
-  const toggleIcon = document.getElementById(`${inputId}-toggle-icon`)
+  const passwordInput = document.getElementById(inputId);
+  const toggleIcon = document.getElementById(`${inputId}-toggle-icon`);
+
+  if (!passwordInput || !toggleIcon) return;
 
   if (passwordInput.type === "password") {
-    passwordInput.type = "text"
-    toggleIcon.classList.remove("fa-eye")
-    toggleIcon.classList.add("fa-eye-slash")
+    passwordInput.type = "text";
+    toggleIcon.classList.remove("fa-eye");
+    toggleIcon.classList.add("fa-eye-slash");
   } else {
-    passwordInput.type = "password"
-    toggleIcon.classList.remove("fa-eye-slash")
-    toggleIcon.classList.add("fa-eye")
+    passwordInput.type = "password";
+    toggleIcon.classList.remove("fa-eye-slash");
+    toggleIcon.classList.add("fa-eye");
   }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".password-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.target;
+      if (target) togglePasswordVisibility(target);
+    });
+  });
+
   const form = document.getElementById("reset-form")
 
   form.addEventListener("submit", async (e) => {
@@ -35,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const response = await fetch("/api/reset-password", {
+      const response = await fetch("/forgot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

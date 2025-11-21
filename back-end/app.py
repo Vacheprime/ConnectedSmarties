@@ -6,7 +6,6 @@ from functools import wraps
 from flask_cors import CORS
 
 from models.payment_model import Payment
-from .password_reset import password_reset_bp
 from models.customer_model import Customer
 from models.product_model import Product
 from models.exceptions.database_insert_exception import DatabaseInsertException
@@ -19,7 +18,7 @@ try:
     from validators import validate_customer, validate_product
     from mqtt_service import MQTTService
     from utils.email_service import EmailService
-    from password_reset import password_reset_bp
+    from utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -31,7 +30,7 @@ except ImportError:
     from .validators import validate_customer, validate_product
     from .mqtt_service import MQTTService
     from .utils.email_service import EmailService
-    from .password_reset import password_reset_bp
+    from .utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -49,8 +48,8 @@ app.register_blueprint(password_reset_bp)
 # After pulling, run this: sqlite3 sql_connected_smarties.db < sql_connected_smarties.sql
 db_path = os.path.join(os.path.dirname(__file__), "..", "db", "sql_connected_smarties.db")
 
-# Make the path absolute
-db_path = os.path.abspath(db_path)
+# # Make the path absolute
+# db_path = os.path.abspath(db_path)
 
 mqtt_broker = os.getenv('MQTT_BROKER', 'localhost')
 mqtt_port = int(os.getenv('MQTT_PORT', '1883'))
@@ -135,7 +134,7 @@ def get_login():
     
     return render_template("login.html")
 
-@app.route("/reset_password", methods=["GET"])
+@app.route("/go_to_reset", methods=["GET"])
 def get_reset_password():
     return render_template('reset_password.html')
 
@@ -704,11 +703,15 @@ def reset_password():
             # For security, don't reveal if email exists or not
             return jsonify({'message': 'If an account exists with this email, a reset link has been sent.'}), 200
         
-        # TODO: Implement actual password reset email logic here
-        # For now, just return success message
-        print(f"INFO: Password reset requested for {email}")
+        sent = send_password_reset_email(email)
+
+        if sent:
+            return jsonify({'message': 'Password reset email sent successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to send email'}), 500
+            # For now, just return success message
+            print(f"INFO: Password reset requested for {email}")
         
-        return jsonify({'message': 'Password reset email sent successfully'}), 200
     except Exception as e:
         print(f"ERROR: Failed to send reset email: {e}")
         return jsonify({'error': str(e)}), 500
