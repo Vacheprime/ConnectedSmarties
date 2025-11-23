@@ -19,7 +19,7 @@ try:
     from mqtt_service import MQTTService
     from utils.email_service import EmailService
     from utils.pareto_anywhere_service import ParetoAnywhereService
-    from password_reset import password_reset_bp
+    from utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -32,7 +32,7 @@ except ImportError:
     from .mqtt_service import MQTTService
     from .utils.email_service import EmailService
     from .utils.pareto_anywhere_service import ParetoAnywhereService
-    from .password_reset import password_reset_bp
+    from .utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
