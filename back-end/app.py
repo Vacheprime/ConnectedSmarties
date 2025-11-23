@@ -336,7 +336,7 @@ def get_total_sales():
             return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
     
     if not end_date:
-        end_date = "9999-12-31 23:59:59"
+        end_date = start_date[:10] + " 23:59:59"
 
     try:
         total_sales = Payment.get_total_sales_amount(start_date, end_date)
