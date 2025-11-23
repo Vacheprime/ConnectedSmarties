@@ -121,6 +121,22 @@ const translations = {
     backToSignIn: "Back to Sign In",
     logout: "Logout",
 
+    // Customer Account page
+    account: "Account",
+    accountDetails: "Account Details",
+    purchaseHistoryTitle: "Purchase History",
+    spendingSummary: "Spending Summary",
+    profileTitle: "Profile",
+    welcome: "Welcome",
+    emailLabel: "Email:",
+    rewardsPointsLabel: "Rewards Points:",
+    membershipNumber: "Membership #:",
+    joinedLabel: "Joined:",
+    receipt: "Receipt",
+    noPurchases: "No purchases yet.",
+    receiptDetails: "Receipt Details",
+    close: "Close",
+
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
 
@@ -247,6 +263,22 @@ const translations = {
     rememberedPassword: "Vous vous souvenez de votre mot de passe?",
     backToSignIn: "Retour à la Connexion",
     logout: "Se déconnecter",
+
+    // Customer Account page
+    account: "Compte",
+    accountDetails: "Détails du Compte",
+    purchaseHistoryTitle: "Historique des Achats",
+    spendingSummary: "Résumé des Dépenses",
+    profileTitle: "Profil",
+    welcome: "Bienvenue",
+    emailLabel: "Courriel :",
+    rewardsPointsLabel: "Points de Récompense :",
+    membershipNumber: "N° d'Adhésion :",
+    joinedLabel: "Inscrit le :",
+    receipt: "Reçu",
+    noPurchases: "Aucun achat pour le moment.",
+    receiptDetails: "Détails du Reçu",
+    close: "Fermer",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",
