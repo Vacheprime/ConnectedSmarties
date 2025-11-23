@@ -18,7 +18,8 @@ try:
     from validators import validate_customer, validate_product
     from mqtt_service import MQTTService
     from utils.email_service import EmailService
-    from utils.password_reset import password_reset_bp
+    from utils.pareto_anywhere_service import ParetoAnywhereService
+    from password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -30,7 +31,8 @@ except ImportError:
     from .validators import validate_customer, validate_product
     from .mqtt_service import MQTTService
     from .utils.email_service import EmailService
-    from .utils.password_reset import password_reset_bp
+    from .utils.pareto_anywhere_service import ParetoAnywhereService
+    from .password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -56,6 +58,8 @@ mqtt_port = int(os.getenv('MQTT_PORT', '1883'))
 mqtt_service = MQTTService(mqtt_broker, mqtt_port)
 
 email_service = EmailService()
+
+pareto_service = ParetoAnywhereService()
 
 # Temperature thresholds for alerts (in Celsius)
 TEMP_THRESHOLD_HIGH = 25.0  # Alert if temperature exceeds this
@@ -590,6 +594,23 @@ def get_sensor_values(sensor_id):
         print(f"ERROR: Failed to fetch sensor values: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= AMBIENT CONTEXT API ROUTES =============
+
+@app.route('/api/ambient-context', methods=['GET'])
+def get_ambient_context():
+    """Get ambient context data from Pareto Anywhere (temperature, humidity, lux, battery)."""
+    try:
+        # Optional: allow specifying a device ID in query parameters
+        device_id = request.args.get('device_id', None)
+        
+        # Fetch ambient context from Pareto Anywhere
+        context_data = pareto_service.get_ambient_context(device_id)
+        
+        return jsonify(context_data), 200
+    except Exception as e:
+        print(f"ERROR: Failed to fetch ambient context: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= THRESHOLD API ROUTES =============
 
 @app.route('/api/threshold', methods=['GET'])
@@ -618,6 +639,9 @@ def update_threshold():
         
         # Update the threshold callback with new values
         mqtt_service.set_threshold_callback(check_temperature_threshold)
+        
+        # Send email notification about the threshold update
+        email_service.send_threshold_update(TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
         
         print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
         return jsonify({
