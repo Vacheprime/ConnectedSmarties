@@ -314,6 +314,36 @@ def join_membership():
 
 # ============= PAYMENT API ROUTES =============
 
+@app.route('/api/payments/totalsales', methods=['GET'])
+@login_required(role="admin")
+def get_total_sales():
+    """Get the total sales within a date range."""
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required'}), 400
+    
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    if not end_date:
+        end_date = "9999-12-31 23:59:59"
+
+    try:
+        total_sales = Payment.get_total_sales_amount(start_date, end_date)
+        return jsonify({"total_sales": total_sales, "start_date": start_date, "end_date": end_date}), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/payments', methods=['POST'])
 def process_payment():
     
