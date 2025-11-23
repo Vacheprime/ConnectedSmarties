@@ -37,9 +37,9 @@ def validate_product(data):
     if not data.get("name") or not data.get("price") or not data.get("epc"):
         errors.append("Field is missing, must require the following fields: name, price, epc.")
         
-    # Validate name (letters and spaces only)
-    if data.get("name") and not re.match(r"^[A-Za-z\s]+$", data["name"]):
-        errors.append("Product name must contain only letters and spaces.")
+    # Validate name (allow letters, numbers and spaces)
+    if data.get("name") and not re.match(r"^[A-Za-z0-9\s]+$", data["name"]):
+        errors.append("Product name must contain only letters, numbers, and spaces.")
     
     # Validate category (letters and spaces only)
     if data.get("category") and not re.match(r"^[A-Za-z\s]+$", data["category"]):
