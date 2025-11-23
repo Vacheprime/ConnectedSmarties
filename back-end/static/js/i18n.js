@@ -142,6 +142,12 @@ const translations = {
 
     // Messages
     required: "* Required fields",
+    // Search / Purchase History
+    searchPlaceholder: "Search items...",
+    purchased: "Purchased",
+    times: "times",
+    details: "Details",
+    noResults: "No results found.",
   },
   fr: {
     // Navigation
@@ -285,6 +291,12 @@ const translations = {
 
     // Messages
     required: "* Champs obligatoires",
+    // Search / Purchase History
+    searchPlaceholder: "Rechercher des articles...",
+    purchased: "Acheté",
+    times: "fois",
+    details: "Détails",
+    noResults: "Aucun résultat.",
   },
 }
 
@@ -348,7 +360,8 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePageLanguage()
 })
 
-export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage }
+// Export translation function for other modules
+export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage, t }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
@@ -356,4 +369,5 @@ if (typeof window !== "undefined") {
   window.getCurrentLanguage = getCurrentLanguage
   window.updatePageLanguage = updatePageLanguage
   window.toggleLanguage = toggleLanguage
+  window.t = t
 }
