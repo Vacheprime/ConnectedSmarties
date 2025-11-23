@@ -19,7 +19,7 @@ try:
     from mqtt_service import MQTTService
     from utils.email_service import EmailService
     from utils.pareto_anywhere_service import ParetoAnywhereService
-    from password_reset import password_reset_bp
+    from utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -32,7 +32,7 @@ except ImportError:
     from .mqtt_service import MQTTService
     from .utils.email_service import EmailService
     from .utils.pareto_anywhere_service import ParetoAnywhereService
-    from .password_reset import password_reset_bp
+    from .utils.password_reset import password_reset_bp
     from models.sensor_model import Sensor
     from models.sensor_data_point_model import SensorDataPoint
     from models.customer_model import Customer
@@ -278,10 +278,22 @@ def account():
 
         # Fetch customer payments
         payments = Payment.fetch_payment_by_customer_id(customer.customer_id)
+        # Convert Payment objects into JSON-serializable dicts for templates/JS
+        payments_list = []
+        for p in payments:
+            try:
+                payment_date = p.date
+            except Exception:
+                payment_date = None
+            payments_list.append({
+                "payment_id": getattr(p, 'payment_id', None),
+                "date": payment_date,
+                "total_paid": getattr(p, 'total_paid', None)
+            })
     except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
     
-    return render_template("customer_account.html", customer=customer, payments=payments)
+    return render_template("customer_account.html", customer=customer, payments=payments_list)
 
 @app.route("/join-membership", methods=["POST"])
 def join_membership():
@@ -740,8 +752,6 @@ def reset_password():
         print(f"ERROR: Failed to send reset email: {e}")
         return jsonify({'error': str(e)}), 500
 
-# ============= HELPER FUNCTIONS =============
-
 # ============= INVENTORY API ROUTES =============
 
 @app.route('/api/inventory/add-batch', methods=['POST'])
@@ -771,6 +781,7 @@ def add_inventory_batch():
         print(f"ERROR: Failed to add inventory batch: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= HELPER FUNCTIONS =============
 
 if __name__ == '__main__':
     app.run(debug=True)
