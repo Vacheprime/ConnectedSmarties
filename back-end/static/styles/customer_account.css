@@ -8,7 +8,9 @@ body {
 .account-container {
   margin-top: 1.5rem;
 }
+
 .sidebar {
+  background-color: var(--color-background-card);
   position: sticky;
   top: 1.5rem;
   height: calc(100vh - 3rem);
@@ -17,11 +19,11 @@ body {
   border-radius: .5rem;
 }
 .sidebar .nav-link {
-  color: #333;
+  color: var(--color-text-normal);
 }
 .sidebar .nav-link.active {
   font-weight: 600;
-  color: #0d6efd;
+  color: var(--color-primary-dark);
 }
 .section {
   padding: 1rem 0.5rem;

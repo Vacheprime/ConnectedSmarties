@@ -54,10 +54,8 @@ function setupSidebarScrolling() {
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  // initial highlight
   onScroll();
 
-  // smooth behavior for older browsers
   links.forEach(l => {
     l.addEventListener('click', e => {
       e.preventDefault();
