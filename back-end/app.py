@@ -406,6 +406,37 @@ def get_products_api():
     """Alias for /products/data to match frontend API calls."""
     return get_products()
 
+@app.route('/api/products/sold', methods=['GET'])
+@login_required(role="admin")
+def get_sold_products():
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    include_not_sold = request.args.get("include_not_sold", "false").lower() == "true"
+
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required.'}), 400
+
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    else:
+        end_date = "9999-12-31 23:59:59"
+    
+    try:
+        sold_products = Product.fetch_products_sold(start_date, end_date, include_not_sold)
+        products_list = [{"product": item["product"].to_dict(), "number_sold": item["number_sold"]} for item in sold_products]
+
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/products/mostsold', methods=['GET'])
 @login_required(role="admin")
 def get_most_sold_products():
