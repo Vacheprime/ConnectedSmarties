@@ -11,6 +11,7 @@ from models.product_model import Product
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -325,6 +326,36 @@ def join_membership():
 
 # ============= PAYMENT API ROUTES =============
 
+@app.route('/api/payments/totalsales', methods=['GET'])
+@login_required(role="admin")
+def get_total_sales():
+    """Get the total sales within a date range."""
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required'}), 400
+    
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    if not end_date:
+        end_date = start_date[:10] + " 23:59:59"
+
+    try:
+        total_sales = Payment.get_total_sales_amount(start_date, end_date)
+        return jsonify({"total_sales": total_sales, "start_date": start_date, "end_date": end_date}), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/payments', methods=['POST'])
 def process_payment():
     
@@ -386,6 +417,128 @@ def process_payment():
 def get_products_api():
     """Alias for /products/data to match frontend API calls."""
     return get_products()
+
+@app.route('/api/products/sold', methods=['GET'])
+@login_required(role="admin")
+def get_sold_products():
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    include_not_sold = request.args.get("include_not_sold", "false").lower() == "true"
+
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required.'}), 400
+
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    else:
+        end_date = "9999-12-31 23:59:59"
+    
+    try:
+        sold_products = Product.fetch_products_sold(start_date, end_date, include_not_sold)
+        products_list = [{"product": item["product"].to_dict(), "number_sold": item["number_sold"]} for item in sold_products]
+
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products/mostsold', methods=['GET'])
+@login_required(role="admin")
+def get_most_sold_products():
+    """Get the most sold products within a date range."""
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    top_n = request.args.get("product_amount", 1, type=int)
+    print(start_date)
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required'}), 400
+    
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    if not end_date:
+        end_date = "9999-12-31 23:59:59"
+
+    # Validate top_n
+    if top_n <= 0:
+        return jsonify({'error': 'product_amount must be a positive integer greater than zero'}), 400
+
+    try:
+        most_sold_products = Product.fetch_most_sold_products(start_date, end_date, int(top_n))
+        products_list = [product.to_dict() for product in most_sold_products]
+
+        # Return as JSON
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products/leastsold', methods=['GET'])
+@login_required(role="admin")
+def get_least_sold_products():
+    """Get the least sold products within a date range."""
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    top_n = request.args.get("product_amount", 1, type=int)
+    
+    # Validate start_date
+    if not start_date:
+        return jsonify({'error': 'start_date is required'}), 400
+    
+    start_date = start_date.strip().replace("\"", "")
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    # Validate end_date (default to start_date if not provided)
+    if end_date:
+        end_date = end_date.strip().replace("\"", "")
+        if not validate_date_format(end_date):
+            return jsonify({'error': 'end_date must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS'}), 400
+    
+    if not end_date:
+        end_date = "9999-12-31 23:59:59"
+
+    # Validate top_n
+    if top_n <= 0:
+        return jsonify({'error': 'product_amount must be a positive integer greater than zero'}), 400
+
+    try:
+        least_sold_products = Product.fetch_least_sold_product(start_date, end_date, int(top_n))
+        products_list = [product.to_dict() for product in least_sold_products]
+
+        # Return as JSON
+        return jsonify(products_list), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
+def validate_date_format(date_string: str) -> bool:
+    """
+    Validate that a date string is in the format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.
+    Hours, minutes, and seconds are optional.
+    
+    Args:
+        date_string (str): The date string to validate
+        
+    Returns:
+        bool: True if valid format, False otherwise
+    """
+    # Pattern: YYYY-MM-DD with optional HH:MM:SS
+    pattern = r'^\d{4}-\d{2}-\d{2}(\s\d{2}:\d{2}:\d{2})?$'
+    return re.match(pattern, date_string) != None
 
 
 @app.route('/products/data', methods=['GET'])
