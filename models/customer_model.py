@@ -65,6 +65,56 @@ class Customer(BaseModel):
 	
 
 	@classmethod
+	def get_returning_customer_count(cls, start_date: str, end_date: str = None) -> int:
+		"""
+		Calculates the number of returning customers within a specified date range.
+
+		Args:
+			start_date (str): The start date in 'YYYY-MM-DD' format.
+			end_date (str, optional): The end date in 'YYYY-MM-DD' format. Defaults to start_date.
+
+		Returns:
+			int: The number of returning customers within the date range.
+		"""
+		if start_date is None:
+			raise ValueError("start_date must be provided")
+		
+		if end_date is None:
+			end_date = start_date
+
+		# Normalize the start and end dates
+		start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+		end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+		sql = f"""
+		SELECT COUNT(DISTINCT pa.customer_id) AS returning_customer_count
+		FROM Payments pa
+		JOIN {cls.DB_TABLE} cu ON pa.customer_id = cu.customer_id
+		WHERE pa.date BETWEEN :start_date AND :end_date
+		AND cu.join_date < :start_date;
+		"""
+
+		sql_values = {
+			"start_date": start_date,
+			"end_date": end_date
+		}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				cursor.row_factory = sqlite3.Row
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				rows = cursor.fetchone()
+
+				return int(rows["returning_customer_count"]) if rows["returning_customer_count"] is not None else 0
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occurred while calculating returning customers: {e}")
+
+
+	@classmethod
 	def _increase_customer_points(cls, customer_id: int, points: int, cursor: sqlite3.Cursor) -> None:
 		"""
 		Increases the reward points of a customer by a specified amount.
