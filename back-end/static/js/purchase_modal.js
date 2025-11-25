@@ -63,6 +63,6 @@ async function openReceiptModal(paymentId) {
 
     } catch (error) {
         console.log(error);
-        showToast("Error", "Something went wrong.", "error");
+        showToast("Error", "Something went with loading the receipts.", "error");
     }
 }
