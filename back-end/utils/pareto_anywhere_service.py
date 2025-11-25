@@ -13,7 +13,7 @@ class ParetoAnywhereService:
         Args:
             pareto_url (str): Base URL of Pareto Anywhere instance (e.g., http://raspberry-pi-ip:3001)
         """
-        self.pareto_url = pareto_url or os.getenv('PARETO_ANYWHERE_URL', 'http://192.168.0.187:3001')
+        self.pareto_url = pareto_url or os.getenv('PARETO_ANYWHERE_URL', 'http://localhost:3001')
         self.timeout = 5  # Request timeout in seconds
     
     def get_devices(self) -> Dict[str, Any]:

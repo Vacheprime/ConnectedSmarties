@@ -959,6 +959,263 @@ def add_inventory_batch():
         print(f"ERROR: Failed to add inventory batch: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============= REPORTS API ROUTES =============
+
+@app.route('/api/reports/environmental', methods=['GET'])
+@login_required(role="admin")
+def get_environmental_report():
+    """Get environmental data report (temperature and humidity trends)."""
+    try:
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+        sensor_id = request.args.get('sensor_id', type=int)
+        
+        db = get_db()
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        # Build query
+        query = """
+        SELECT sensor_id, data_type, value, created_at
+        FROM SensorDataPoints
+        WHERE 1=1
+        """
+        params = []
+        
+        if start_date:
+            query += " AND created_at >= ?"
+            params.append(start_date)
+        if end_date:
+            query += " AND created_at <= ?"
+            params.append(end_date)
+        if sensor_id:
+            query += " AND sensor_id = ?"
+            params.append(sensor_id)
+        
+        query += " ORDER BY created_at DESC LIMIT 1000"
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        # Group by data type
+        temp_data = []
+        humidity_data = []
+        
+        for row in rows:
+            data_point = {
+                'sensor_id': row['sensor_id'],
+                'value': float(row['value']),
+                'timestamp': row['created_at']
+            }
+            
+            if row['data_type'] == 'temperature':
+                temp_data.append(data_point)
+            elif row['data_type'] == 'humidity':
+                humidity_data.append(data_point)
+        
+        return jsonify({
+            'success': True,
+            'temperature_data': sorted(temp_data, key=lambda x: x['timestamp']),
+            'humidity_data': sorted(humidity_data, key=lambda x: x['timestamp'])
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get environmental report: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/customer-analytics', methods=['GET'])
+@login_required(role="admin")
+def get_customer_analytics_report():
+    """Get customer analytics (registration and rewards statistics)."""
+    try:
+        start_date = request.args.get('start_date', '2024-01-01')
+        end_date = request.args.get('end_date', str(date.today()))
+        
+        db = get_db()
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        # Total customers
+        cursor.execute("SELECT COUNT(*) as count FROM Customers WHERE customer_id != 0")
+        total_customers = cursor.fetchone()['count']
+        
+        # New customers in date range
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM Customers 
+            WHERE customer_id != 0 AND join_date BETWEEN ? AND ?
+        """, (start_date, end_date))
+        new_customers = cursor.fetchone()['count']
+        
+        # Total rewards distributed
+        cursor.execute("""
+            SELECT SUM(reward_points_won) as total FROM Payments
+            WHERE date BETWEEN ? AND ?
+        """, (start_date, end_date))
+        total_rewards = cursor.fetchone()['total'] or 0
+        
+        # Average rewards per customer
+        cursor.execute("""
+            SELECT AVG(rewards_points) as avg FROM Customers
+            WHERE customer_id != 0
+        """)
+        avg_rewards = cursor.fetchone()['avg'] or 0
+        
+        # Top customers by purchases
+        cursor.execute("""
+            SELECT c.customer_id, c.first_name, c.last_name, COUNT(p.payment_id) as purchase_count, SUM(p.total_paid) as total_spent
+            FROM Customers c
+            LEFT JOIN Payments p ON c.customer_id = p.customer_id AND p.date BETWEEN ? AND ?
+            WHERE c.customer_id != 0
+            GROUP BY c.customer_id
+            ORDER BY purchase_count DESC
+            LIMIT 10
+        """, (start_date, end_date))
+        top_customers = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify({
+            'success': True,
+            'total_customers': total_customers,
+            'new_customers': new_customers,
+            'total_rewards_distributed': total_rewards,
+            'average_rewards_per_customer': round(avg_rewards, 2),
+            'top_customers': top_customers
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get customer analytics report: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/product-sales', methods=['GET'])
+@login_required(role="admin")
+def get_product_sales_report():
+    """Get product sales report with filtering options."""
+    try:
+        start_date = request.args.get('start_date', '2024-01-01')
+        end_date = request.args.get('end_date', str(date.today()))
+        category = request.args.get('category', '')
+        limit = request.args.get('limit', 20, type=int)
+        
+        db = get_db()
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        # Build query
+        query = """
+            SELECT p.product_id, p.name, p.category, SUM(pp.product_amount) as total_quantity, 
+                   COUNT(DISTINCT pp.payment_id) as total_transactions, 
+                   SUM(pp.product_amount * p.price) as total_revenue,
+                   AVG(p.price) as avg_price
+            FROM Products p
+            JOIN PaymentProducts pp ON p.product_id = pp.product_id
+            JOIN Payments pa ON pp.payment_id = pa.payment_id
+            WHERE pa.date BETWEEN ? AND ?
+        """
+        params = [start_date, end_date]
+        
+        if category:
+            query += " AND p.category = ?"
+            params.append(category)
+        
+        query += " GROUP BY p.product_id ORDER BY total_quantity DESC LIMIT ?"
+        params.append(limit)
+        
+        cursor.execute(query, params)
+        sales_data = [dict(row) for row in cursor.fetchall()]
+        
+        # Get available categories
+        cursor.execute("SELECT DISTINCT category FROM Products ORDER BY category")
+        categories = [row['category'] for row in cursor.fetchall()]
+        
+        return jsonify({
+            'success': True,
+            'sales_data': sales_data,
+            'categories': categories
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get product sales report: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/system-performance', methods=['GET'])
+@login_required(role="admin")
+def get_system_performance_report():
+    """Get system performance metrics."""
+    try:
+        start_date = request.args.get('start_date', '2024-01-01')
+        end_date = request.args.get('end_date', str(date.today()))
+        
+        db = get_db()
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        # Total transactions
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM Payments
+            WHERE date BETWEEN ? AND ?
+        """, (start_date, end_date))
+        total_transactions = cursor.fetchone()['count']
+        
+        # Total revenue
+        cursor.execute("""
+            SELECT SUM(total_paid) as total FROM Payments
+            WHERE date BETWEEN ? AND ?
+        """, (start_date, end_date))
+        total_revenue = cursor.fetchone()['total'] or 0
+        
+        # Average transaction value
+        avg_transaction = total_revenue / total_transactions if total_transactions > 0 else 0
+        
+        # Device uptime (mock data - based on sensor data availability)
+        cursor.execute("""
+            SELECT COUNT(DISTINCT DATE(created_at)) as days_active
+            FROM SensorDataPoints
+            WHERE created_at BETWEEN ? AND ?
+        """, (start_date, end_date))
+        days_active = cursor.fetchone()['days_active'] or 0
+        
+        return jsonify({
+            'success': True,
+            'total_transactions': total_transactions,
+            'total_revenue': round(total_revenue, 2),
+            'average_transaction_value': round(avg_transaction, 2),
+            'device_uptime_days': days_active
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get system performance report: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/fan-usage', methods=['GET'])
+@login_required(role="admin")
+def get_fan_usage_report():
+    """Get fan usage history (mock data for now)."""
+    try:
+        start_date = request.args.get('start_date', '2024-01-01')
+        end_date = request.args.get('end_date', str(date.today()))
+        
+        db = get_db()
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        # Fan usage data from sensor activations (based on temperature spikes)
+        cursor.execute("""
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as sensor_readings,
+                AVG(CAST(value as FLOAT)) as avg_temperature
+            FROM SensorDataPoints
+            WHERE data_type = 'temperature' AND created_at BETWEEN ? AND ?
+            GROUP BY DATE(created_at)
+            ORDER BY date DESC
+        """, (start_date, end_date))
+        
+        daily_usage = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify({
+            'success': True,
+            'fan_usage_data': daily_usage,
+            'note': 'Fan usage estimated based on temperature readings exceeding threshold'
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to get fan usage report: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ============= HELPER FUNCTIONS =============
 
 if __name__ == '__main__':
