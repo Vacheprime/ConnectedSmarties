@@ -48,6 +48,17 @@ class Payment(BaseModel):
 
 
     @classmethod
+    def _build_payment_with_products(cls, row: sqlite3.row, cursor) -> Payment:
+        # Create the payment
+        payment = Payment(customer_id=row["customer_id"])
+        payment.date = row["date"]
+        payment.payment_id = int(row["payment_id"])
+        
+        # Fetch the associated products
+        pass
+
+
+    @classmethod
     def get_total_sales_amount(cls, start_date: str, end_date: str = None) -> float:
         """
         Calculates the total sales amount within a specified date range.
@@ -81,6 +92,72 @@ class Payment(BaseModel):
             except Exception as e:
                 raise DatabaseReadException(f"An unexpected error occurred while calculating total sales: {e}")
 
+
+    @classmethod
+    def fetch_payment_of_customer_by_product_id(cls, customer_id: int, product_id: int) -> list[tuple[Payment, int]]:
+        """
+        Fetches all payments that include a specific product.
+
+        Args:
+            product_id (int): The ID of the product.
+
+        Returns:
+            list[Payment]: A list of Payment objects that include the specified product.
+        """
+        sql = f"""
+        SELECT p.* FROM {cls.DB_TABLE} p
+        INNER JOIN PaymentProducts pp ON p.payment_id = pp.payment_id
+        WHERE pp.product_id = :product_id;
+        """
+
+        products_sql = f"""
+        SELECT * FROM Products p
+        INNER JOIN PaymentProducts pp ON p.product_id = pp.product_id
+        WHERE pp.payment_id = :payment_id;
+        """
+
+
+        payments = []
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(sql, {"customer_id": customer_id, "start_date": start_date, "end_date": end_date})
+                rows = cursor.fetchall()
+
+                for row in rows:
+                    # Create the payment
+                    payment = Payment(customer_id=row["customer_id"])
+                    payment.date = row["date"]
+                    payment.payment_id = row["payment_id"]
+
+                    # Fetch associated products
+                    cursor.execute(products_sql, {"payment_id": payment.payment_id})
+                    product_rows = cursor.fetchall()
+                    for product_row in product_rows:
+                        product = Product(
+                            product_row["name"],
+                            product_row["price"],
+                            product_row["epc"],
+                            product_row["upc"],
+                            product_row["category"],
+                            product_row["points_worth"]
+                        )
+                        product.product_id = product_row["product_id"]
+                        
+                        # Get quantity from PaymentProducts table
+                        quantity = product_row["product_amount"]
+
+                        # Add product to payment
+                        payment.add_product(product, quantity)
+
+                    # Append payment to the list
+                    payments.append(payment)
+
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching payments: {e}")
+
+        return payments
 
     @classmethod
     def fetch_payments_of_customer_by_date(cls, customer_id: int, start_date: str, end_date: str = None) -> list[tuple[Payment, int]]:
