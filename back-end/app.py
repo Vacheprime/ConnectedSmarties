@@ -676,20 +676,21 @@ def delete_product(product_id):
 # ============= RECEIPT DETAILS =============
 @app.get("/receipt-details/<int:payment_id>")
 def receipt_details(payment_id):
-
+    # Get the logged-in customer id from the session (if available)
     customer_id = session.get("user_id")
     all_payments = Payment.fetch_payment_by_customer_id(customer_id)
-    
+
     print("---- DEBUG ----")
     print("Payment ID requested:", payment_id)
     print("Payments available:", [p.payment_id for p in all_payments])
-    
+
     # Find the exact payment
     payment = Payment.get_payment_from_list(all_payments, payment_id)
 
     if not payment:
         return jsonify(success=False, error="Payment not found")
 
+    # Normalize date to ISO string if necessary
     payment_date = payment.date
     if isinstance(payment_date, (datetime, date)):
         payment_date = payment_date.isoformat()
@@ -704,12 +705,23 @@ def receipt_details(payment_id):
         for product, quantity in payment.products
     ]
 
+    # Retrieve customer first name from Customers table (prefer session user id)
+    customer_first_name = None
+    try:
+        if customer_id:
+            cust = Customer.fetch_customer_by_id(int(customer_id))
+            if cust:
+                customer_first_name = cust.first_name
+    except Exception as e:
+        print(f"WARNING: failed to fetch customer for receipt: {e}")
+
     return jsonify({
         "success": True,
-        "date": payment.date,
+        "date": payment_date,
         "total": float(payment.total_paid),
         "points": int(payment.get_reward_points_won()),
-        "products": product_list
+        "products": product_list,
+        "customer": {"first_name": customer_first_name}
     })
 
 # ============= SENSOR API ROUTES =============
