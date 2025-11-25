@@ -59,7 +59,9 @@ Order:
 - Inventory
     - Required Features
          Current number of available items for each product.
+      
          Real-time updates if inventory changes due to purchases.
+
          Optional: Stock-level alerts (e.g., "Low stock: less than 5 units") 
 - Sales (sold items)
     1. Number of sold items per product within a given time range.
@@ -69,6 +71,7 @@ Order:
         o A selected date range
     - Optional Enhancements
          Sales trends graph (line chart by day/week).
+      
          Category-based filters.
 - Customer
   Required Features
@@ -78,44 +81,57 @@ Order:
     - Overview of new vs. returning customers (optional) 
 #### 4.2. Notification & Messaging Management
 Examples:
- Low stock alerts
- Purchase confirmation messages
- System updates and error notifications 
+     Low stock alerts
+    
+     Purchase confirmation messages
+    
+     System updates and error notifications 
 ### Ishi
 #### 2.0 Report Generation Module
 Your system must generate multiple types of reports for both administrators and customers.
 The format, style, visualizations, and interaction flow of these reports are flexible and will
 influence `your final grade—more intuitive and visually appealing designs are encouraged`.
 You may use:
- Tables
- Bar charts / Pie charts / Line graphs
- Filters (date range, product category, customer ID, etc.)
+     Tables
+    
+     Bar charts / Pie charts / Line graphs
+    
+     Filters (date range, product category, customer ID, etc.)
 #### 4.1. Finalizing the GUI Style
- Consistent fonts, colors, spacing
- Clear hierarchy and intuitive layout
- Mobile responsiveness (optional but beneficial)
+     Consistent fonts, colors, spacing
+    
+     Clear hierarchy and intuitive layout
+    
+     Mobile responsiveness (optional but beneficial)
 #### 4.3. Theme Support
  Light and Dark mode
+
  Custom theme settings
 ### Florence
 - help Ishi for `exporting options` (e.g. PDF, CSV, or screenshots—optional ) 
 #### 3.2. Total Purchase Amount
 The account page must display:
- Total amount spent during a selected period.
- Optional: Summary graph of spending over time.
+     Total amount spent during a selected period.
+    
+     Optional: Summary graph of spending over time.
 #### 3.3. Search in Purchase History
 Customers must be able to search for a specific item and view:
- How many times it was purchased
- Dates and times of purchase
- Price of the item for each purchase instance
+     How many times it was purchased
+    
+     Dates and times of purchase
+    
+     Price of the item for each purchase instance
 ##### Example Search Output
 Item: Smart Plug
 Purchased: 3 times
 Details:
- 2025-02-04 @ 09:22 – $14.99
- 2025-02-10 @ 18:14 – $14.99
- 2025-03-01 @ 11:03 – $12.99
+     2025-02-04 @ 09:22 – $14.99
+    
+     2025-02-10 @ 18:14 – $14.99
+    
+     2025-03-01 @ 11:03 – $12.99
 #### 4.4. Any Additional Features
 Examples:
- Exportable reports
- Dashboard widgets 
+     Exportable reports
+    
+     Dashboard widgets 
