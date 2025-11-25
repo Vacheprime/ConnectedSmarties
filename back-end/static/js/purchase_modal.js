@@ -9,6 +9,12 @@ document.addEventListener("DOMContentLoaded", () => {
             openReceiptModal(paymentId);
         });
     });
+
+    // Setup PDF export button
+    const exportPdfBtn = document.getElementById("exportPdfBtn");
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener("click", exportReceiptAsPDF);
+    }
 });
 
 async function openReceiptModal(paymentId) {
@@ -34,6 +40,7 @@ async function openReceiptModal(paymentId) {
         `).join("");
 
         const html = `
+            <h4>Thank you for your purchase, ${data.customer && data.customer.first_name ? data.customer.first_name : ''}</h4>
             <p><strong>Receipt #:</strong> ${paymentId}</p>
             <p><strong>Date:</strong> ${data.date}</p>
 
@@ -64,5 +71,47 @@ async function openReceiptModal(paymentId) {
     } catch (error) {
         console.log(error);
         showToast("Error", "Something went with loading the receipts.", "error");
+    }
+}
+
+function exportReceiptAsPDF() {
+    try {
+        const receiptContent = document.querySelector("#receipt-content");
+        
+        if (!receiptContent || !receiptContent.innerHTML.trim()) {
+            showToast("Error", "No receipt to export.", "error");
+            return;
+        }
+
+        // Extract receipt number from the content
+        const receiptNumberMatch = receiptContent.innerHTML.match(/Receipt #:<\/strong> (\d+)/);
+        const receiptNumber = receiptNumberMatch ? receiptNumberMatch[1] : "Receipt";
+
+        // Create a new element to hold the printable content
+        const element = document.createElement("div");
+        element.innerHTML = receiptContent.innerHTML;
+        
+        // Style the element for better PDF appearance
+        element.style.padding = "20px";
+        element.style.fontFamily = "Arial, sans-serif";
+        element.style.fontSize = "12px";
+        element.style.lineHeight = "1.6";
+
+        // HTML to PDF options
+        const options = {
+            margin: 10,
+            filename: `receipt_${receiptNumber}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
+        };
+
+        // Generate PDF
+        html2pdf().set(options).from(element).save();
+        showToast("Success", "Receipt exported as PDF successfully.", "success");
+
+    } catch (error) {
+        console.error("PDF Export Error:", error);
+        showToast("Error", "Failed to export receipt as PDF.", "error");
     }
 }

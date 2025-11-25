@@ -136,6 +136,7 @@ const translations = {
     noPurchases: "No purchases yet.",
     receiptDetails: "Receipt Details",
     close: "Close",
+    exportPdf: "Export as PDF",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
@@ -285,6 +286,7 @@ const translations = {
     noPurchases: "Aucun achat pour le moment.",
     receiptDetails: "Détails du Reçu",
     close: "Fermer",
+    exportPdf: "Exporter en PDF",
 
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",
