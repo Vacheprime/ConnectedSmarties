@@ -53,7 +53,7 @@ function displayProducts(products) {
 // Function to validate inputs for adding a Product
 function validateProduct(data) {
   const errors = [];
-  const namePattern = /^[A-Za-z\s]+$/;
+  const namePattern = /^[A-Za-z0-9\s]+$/;
   const categoryPattern = /^[A-Za-z\s]+$/;
   const upcPattern = /^\d{12}$/;
   const epcPattern = /^[A-Za-z0-9]{4,24}$/;
@@ -65,7 +65,7 @@ function validateProduct(data) {
 
   // Name
   if (data.name && !namePattern.test(data.name)) {
-    errors.push("Product name must contain only letters and spaces.");
+    errors.push("Product name must contain only letters, numbers, and spaces.");
   }
 
   // Category

@@ -121,11 +121,33 @@ const translations = {
     backToSignIn: "Back to Sign In",
     logout: "Logout",
 
+    // Customer Account page
+    account: "Account",
+    accountDetails: "Account Details",
+    purchaseHistoryTitle: "Purchase History",
+    spendingSummary: "Spending Summary",
+    profileTitle: "Profile",
+    welcome: "Welcome",
+    emailLabel: "Email:",
+    rewardsPointsLabel: "Rewards Points:",
+    membershipNumber: "Membership #:",
+    joinedLabel: "Joined:",
+    receipt: "Receipt",
+    noPurchases: "No purchases yet.",
+    receiptDetails: "Receipt Details",
+    close: "Close",
+
     // Footer
     footer: "© 2025 ConnectedSmarties. All rights reserved.",
 
     // Messages
     required: "* Required fields",
+    // Search / Purchase History
+    searchPlaceholder: "Search items...",
+    purchased: "Purchased",
+    times: "times",
+    details: "Details",
+    noResults: "No results found.",
   },
   fr: {
     // Navigation
@@ -248,11 +270,33 @@ const translations = {
     backToSignIn: "Retour à la Connexion",
     logout: "Se déconnecter",
 
+    // Customer Account page
+    account: "Compte",
+    accountDetails: "Détails du Compte",
+    purchaseHistoryTitle: "Historique des Achats",
+    spendingSummary: "Résumé des Dépenses",
+    profileTitle: "Profil",
+    welcome: "Bienvenue",
+    emailLabel: "Courriel :",
+    rewardsPointsLabel: "Points de Récompense :",
+    membershipNumber: "N° d'Adhésion :",
+    joinedLabel: "Inscrit le :",
+    receipt: "Reçu",
+    noPurchases: "Aucun achat pour le moment.",
+    receiptDetails: "Détails du Reçu",
+    close: "Fermer",
+
     // Footer
     footer: "© 2025 ConnectedSmarties. Tous droits réservés.",
 
     // Messages
     required: "* Champs obligatoires",
+    // Search / Purchase History
+    searchPlaceholder: "Rechercher des articles...",
+    purchased: "Acheté",
+    times: "fois",
+    details: "Détails",
+    noResults: "Aucun résultat.",
   },
 }
 
@@ -316,7 +360,8 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePageLanguage()
 })
 
-export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage }
+// Export translation function for other modules
+export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage, t }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
@@ -324,4 +369,5 @@ if (typeof window !== "undefined") {
   window.getCurrentLanguage = getCurrentLanguage
   window.updatePageLanguage = updatePageLanguage
   window.toggleLanguage = toggleLanguage
+  window.t = t
 }

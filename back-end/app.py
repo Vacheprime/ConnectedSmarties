@@ -286,10 +286,24 @@ def account():
                 payment_date = p.date
             except Exception:
                 payment_date = None
+            # Serialize product-level details
+            products = []
+            for prod_pair in getattr(p, 'products', []) or []:
+                try:
+                    prod, qty = prod_pair
+                except Exception:
+                    continue
+                products.append({
+                    "product_id": getattr(prod, 'product_id', None),
+                    "name": getattr(prod, 'name', None),
+                    "price": getattr(prod, 'price', None),
+                    "quantity": qty,
+                })
             payments_list.append({
                 "payment_id": getattr(p, 'payment_id', None),
                 "date": payment_date,
-                "total_paid": getattr(p, 'total_paid', None)
+                "total_paid": getattr(p, 'total_paid', None),
+                "products": products,
             })
     except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500

@@ -9,6 +9,12 @@ body {
   margin-top: 1.5rem;
 }
 
+.receipt-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: .5rem;
+}
+
 .sidebar {
   background-color: var(--color-background-card);
   position: sticky;
