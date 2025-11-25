@@ -24,6 +24,16 @@ class PaymentProduct(BaseModel):
         self.product_points_worth: int = None
     
 
+    @classmethod
+    def from_product(cls, payment_id: int, product: Product, product_amount: int) -> PaymentProduct:
+        payment_product = cls(payment_id=payment_id, product_id=product.product_id, product_amount=product_amount)
+        payment_product.product_name = product.name
+        payment_product.product_price = product.price
+        payment_product.product_category = product.category
+        payment_product.product_points_worth = product.points_worth
+        return payment_product
+
+
     def to_dict(self) -> dict:
         return {
             "payment_id": self.payment_id,
@@ -74,16 +84,18 @@ class PaymentProduct(BaseModel):
     
     @classmethod
     def insert_payment_product(cls, payment_product: PaymentProduct) -> None:
-        # Fetch the product
-        product = Product.fetch_product_by_id(payment_product.product_id)
-        if product is None:
-            raise ValueError(f"Product with ID {payment_product.product_id} does not exist.")
-        
-        # Create a snapshot of values
-        payment_product.product_name = product.name
-        payment_product.product_price = product.price
-        payment_product.product_category = product.category
-        payment_product.product_points_worth = product.points_worth
+        # Fill out the payment if product details are missing
+        if payment_product.product_name is None:
+            # Get the product details
+            product = Product.fetch_product_by_id(payment_product.product_id)
+            if product is None:
+                raise ValueError(f"Product with ID {payment_product.product_id} does not exist.")
+            
+            # Create a snapshot of values
+            payment_product.product_name = product.name
+            payment_product.product_price = product.price
+            payment_product.product_category = product.category
+            payment_product.product_points_worth = product.points_worth
 
 
         insert_sql = f"""
