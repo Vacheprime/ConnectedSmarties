@@ -679,18 +679,17 @@ def receipt_details(payment_id):
     # Get the logged-in customer id from the session (if available)
     customer_id = session.get("user_id")
     all_payments = Payment.fetch_payment_by_customer_id(customer_id)
-
+    
     print("---- DEBUG ----")
     print("Payment ID requested:", payment_id)
     print("Payments available:", [p.payment_id for p in all_payments])
-
+    
     # Find the exact payment
     payment = Payment.get_payment_from_list(all_payments, payment_id)
 
     if not payment:
         return jsonify(success=False, error="Payment not found")
 
-    # Normalize date to ISO string if necessary
     payment_date = payment.date
     if isinstance(payment_date, (datetime, date)):
         payment_date = payment_date.isoformat()
