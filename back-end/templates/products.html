@@ -6,6 +6,7 @@
     <link rel="icon" type="image/png" href="../static/images/candy.png">
     <title>ConnectedSmarties - Products</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../static/styles/main.css">
     <link rel="stylesheet" href="../static/styles/products.css">
 </head>
@@ -31,16 +32,19 @@
                     <li><a href="/reports" data-i18n="navReports">Reports</a></li>
                     <!-- Added self-checkout link -->
                     <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
-                    <!-- Added language toggle button -->
+                    <!-- Added theme and language toggle buttons -->
+                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
                     <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% elif user_role == "customer" %}
                 <ul class="nav-menu">
                     <li><a href="/account" data-i18n="myAccount">My Account</a></li>
+                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
                     <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% else %}
                 <ul class="nav-menu">
+                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
                     <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
                 </ul>
                 {% endif %}
@@ -181,6 +185,7 @@
 
     <div id="toast-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/products.js') }}"></script>
