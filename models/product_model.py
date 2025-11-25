@@ -36,6 +36,184 @@ class Product(BaseModel):
             "producer_company": self.producer_company
         }
     
+    @classmethod
+    def fetch_products_sold(cls, start_date: str, end_date: str = None, include_not_sold: bool = False) -> list[dict[Product, int]]:
+        sql = f"""
+        SELECT p.*, COALESCE(SUM(pp.product_amount), 0) as total_sold FROM Products p
+        LEFT JOIN PaymentProducts pp ON p.product_id = pp.product_id
+        LEFT JOIN Payments pa on pa.payment_id = pp.payment_id
+        WHERE pa.date IS NULL OR pa.date BETWEEN :start_date AND :end_date
+        GROUP BY p.product_id
+        HAVING p.product_id != 0
+        """
+
+        if not include_not_sold:
+            sql += " AND total_sold > 0"
+        
+        sql += " ORDER BY total_sold DESC"
+
+        # Normalize start_date and end_date
+        start_date = start_date + " 00:00:00" if len(start_date) == 10 else start_date
+
+        if end_date is None:
+            end_date = "9999-12-31 23:59:59"
+        
+        end_date = end_date + " 23:59:59" if len(end_date) == 10 else end_date
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                
+                # Execute
+                cursor.execute(sql, {"start_date": start_date, "end_date": end_date})
+
+                # Get rows
+                rows = cursor.fetchall()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching products sold: {e}")
+        
+        # Convert data to products
+        products = []
+        for row in rows:
+            # Create product
+            product = Product(
+                row["name"],
+                float(row["price"]),
+                row["epc"],
+                int(row["upc"]),
+                row["category"],
+                row["points_worth"],
+                row["producer_company"]
+            )
+            # Set ID
+            product.product_id = int(row["product_id"])
+            # Add the product
+            products.append({"product": product, "number_sold": int(row["total_sold"])})
+
+        return products
+
+    @classmethod
+    def fetch_most_sold_products(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
+        if start_date is None:
+            raise ValueError("Start date must be provided.")
+
+        if top_n <= 0:
+            raise ValueError("top_n must be a positive integer.")
+
+        sql = f"""
+        SELECT pr.*, SUM(pp.product_amount) AS total_bought FROM products pr
+        JOIN PaymentProducts pp ON pr.product_id = pp.product_id
+        JOIN Payments pa on pa.payment_id = pp.payment_id
+        WHERE pa.date BETWEEN :start_date AND :end_date
+        GROUP BY pr.product_id
+        ORDER BY total_bought DESC
+        LIMIT :top_n
+        """
+
+        if end_date is None:
+            end_date = "9999-12-31 23:59:59"
+
+        sql_values = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "top_n": top_n
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                
+                # Execute
+                cursor.execute(sql, sql_values)
+
+                # Get rows
+                rows = cursor.fetchall()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching most sold products: {e}")
+        
+        # Convert data to products
+        products = []
+        for row in rows:
+            # Create product
+            product = Product(
+                row["name"],
+                float(row["price"]),
+                row["epc"],
+                int(row["upc"]),
+                row["category"],
+                row["points_worth"],
+                row["producer_company"]
+            )
+            # Set ID
+            product.product_id = int(row["product_id"])
+            # Add the product
+            products.append(product)
+        
+        return products
+
+
+    @classmethod
+    def fetch_least_sold_product(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
+        if start_date is None:
+            raise ValueError("Start date must be provided.")
+
+        if top_n <= 0:
+            raise ValueError("top_n must be a positive integer.")
+
+        sql = f"""
+        SELECT pr.*, SUM(pp.product_amount) AS total_bought FROM products pr
+        JOIN PaymentProducts pp ON pr.product_id = pp.product_id
+        JOIN Payments pa on pa.payment_id = pp.payment_id
+        WHERE pa.date BETWEEN :start_date AND :end_date
+        GROUP BY pr.product_id
+        ORDER BY total_bought asc
+        LIMIT :top_n
+        """
+
+        if end_date is None:
+            end_date = "9999-12-31 23:59:59"
+
+        sql_values = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "top_n": top_n
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                
+                # Execute
+                cursor.execute(sql, sql_values)
+
+                # Get rows
+                rows = cursor.fetchall()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching most sold products: {e}")
+        
+        # Convert data to products
+        products = []
+        for row in rows:
+            # Create product
+            product = Product(
+                row["name"],
+                float(row["price"]),
+                row["epc"],
+                int(row["upc"]),
+                row["category"],
+                row["points_worth"],
+                row["producer_company"]
+            )
+            # Set ID
+            product.product_id = int(row["product_id"])
+            # Add the product
+            products.append(product)
+        
+        return products
+    
 
     # specify the date that the inventory batch was added
     @classmethod

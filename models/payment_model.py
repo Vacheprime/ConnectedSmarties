@@ -48,6 +48,41 @@ class Payment(BaseModel):
 
 
     @classmethod
+    def get_total_sales_amount(cls, start_date: str, end_date: str = None) -> float:
+        """
+        Calculates the total sales amount within a specified date range.
+
+        Args:
+            start_date (str): The start date in 'YYYY-MM-DD' format.
+            end_date (str, optional): The end date in 'YYYY-MM-DD' format. Defaults to start_date.
+
+        Returns:
+            float: The total sales amount within the date range.
+        """
+        if start_date is None:
+            raise ValueError("start_date must be provided")
+        
+        if end_date is None:
+            end_date = start_date
+
+        sql = f"""
+        SELECT SUM(total_paid) as total_sales FROM {cls.DB_TABLE}
+        WHERE date BETWEEN :start_date AND :end_date;
+        """
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(sql, {"start_date": start_date, "end_date": end_date})
+                row = cursor.fetchone()
+                total_sales = row["total_sales"] if row["total_sales"] is not None else 0.0
+                return round(total_sales, 2)
+
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while calculating total sales: {e}")
+
+
+    @classmethod
     def fetch_payment_by_customer_id(cls, customer_id: int) -> list[Payment]:
         """
         Fetches all payments made by a specific customer.
@@ -110,13 +145,6 @@ class Payment(BaseModel):
                 raise DatabaseReadException(f"An unexpected error occurred while fetching payments: {e}")
 
         return payments
-    
-    # @classmethod
-    # def get_payment_from_list(cls, payments: list, payment_id: int):
-    #     for p in payments:
-    #         if p.payment_id == payment_id:
-    #             return p
-    #     return None
 
     @staticmethod
     def get_payment_from_list(payments, payment_id):
