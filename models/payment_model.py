@@ -38,7 +38,7 @@ class Payment(BaseModel):
 
 
     def add_product(self, product: Product, product_amount: int) -> None:
-        self.products.append(PaymentProduct(payment_id=None, product=product, product_amount=product_amount))
+        self.products.append(PaymentProduct.from_product(payment_id=None, product=product, product_amount=product_amount))
     
 
     def add_all_products(self, payment_products: list[PaymentProduct]) -> None:
@@ -139,7 +139,7 @@ class Payment(BaseModel):
         return payments
 
     @classmethod
-    def fetch_payments_of_customer_by_date(cls, customer_id: int, start_date: str, end_date: str = None) -> list[tuple[Payment, int]]:
+    def fetch_payments_of_customer_by_date(cls, customer_id: int, start_date: str, end_date: str = None) -> list[Payment]:
         """
         Fetches payments made by a specific customer within a date range.
 
@@ -167,12 +167,6 @@ class Payment(BaseModel):
         AND date BETWEEN :start_date AND :end_date;
         """
 
-        products_sql = f"""
-        SELECT * FROM Products p
-        INNER JOIN PaymentProducts pp ON p.product_id = pp.product_id
-        WHERE pp.payment_id = :payment_id;
-        """
-
         payments = []
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
@@ -183,30 +177,7 @@ class Payment(BaseModel):
 
                 for row in rows:
                     # Create the payment
-                    payment = Payment(customer_id=row["customer_id"])
-                    payment.date = row["date"]
-                    payment.payment_id = row["payment_id"]
-
-                    # Fetch associated products
-                    cursor.execute(products_sql, {"payment_id": payment.payment_id})
-                    product_rows = cursor.fetchall()
-                    for product_row in product_rows:
-                        product = Product(
-                            product_row["name"],
-                            product_row["price"],
-                            product_row["epc"],
-                            product_row["upc"],
-                            product_row["category"],
-                            product_row["points_worth"]
-                        )
-                        product.product_id = product_row["product_id"]
-                        
-                        # Get quantity from PaymentProducts table
-                        quantity = product_row["product_amount"]
-
-                        # Add product to payment
-                        payment.add_product(product, quantity)
-
+                    payment = Payment._build_payment_with_products(row)
                     # Append payment to the list
                     payments.append(payment)
 
@@ -248,30 +219,7 @@ class Payment(BaseModel):
 
                 for row in rows:
                     # Create the payment
-                    payment = Payment(customer_id=row["customer_id"])
-                    payment.date = row["date"]
-                    payment.payment_id = row["payment_id"]
-
-                    # Fetch associated products
-                    cursor.execute(products_sql, {"payment_id": payment.payment_id})
-                    product_rows = cursor.fetchall()
-                    for product_row in product_rows:
-                        product = Product(
-                            product_row["name"],
-                            product_row["price"],
-                            product_row["epc"],
-                            product_row["upc"],
-                            product_row["category"],
-                            product_row["points_worth"]
-                        )
-                        product.product_id = product_row["product_id"]
-                        
-                        # Get quantity from PaymentProducts table
-                        quantity = product_row["product_amount"]
-
-                        # Add product to payment
-                        payment.add_product(product, quantity)
-
+                    payment = Payment._build_payment_with_products(row)
                     # Append payment to the list
                     payments.append(payment)
 
@@ -300,11 +248,6 @@ class Payment(BaseModel):
         VALUES (:customer_id, :total_paid, :reward_points_won);
         """
 
-        sql_insert_payment_product = """
-        INSERT INTO PaymentProducts (payment_id, product_id, product_amount)
-        VALUES (:payment_id, :product_id, :product_amount);
-        """
-
         sql_fetch_payment = f"""
         SELECT date FROM {cls.DB_TABLE} WHERE payment_id = :payment_id;
         """
@@ -328,17 +271,12 @@ class Payment(BaseModel):
                 # Update the customer's reward points
                 Customer._increase_customer_points(payment.customer_id, payment.get_reward_points_won(), cursor)
 
-                # Insert each product and its quantity into PaymentProducts
-                for product, quantity in payment.products:
-                    Product._decrease_inventory(product.product_id, quantity, cursor)
-                    # Insert into PaymentProducts
-                    cursor.execute(sql_insert_payment_product, {
-                        "payment_id": payment_id,
-                        "product_id": product.product_id,
-                        "product_amount": quantity
-                    })
-
             except Exception as e:
                 raise DatabaseInsertException(f"An unexpected error occurred while inserting payment: {e}")
+
+        # Insert the payment products
+        payment._assign_payment_id_to_products(payment.payment_id)
+        for payment_product in payment.products:
+            PaymentProduct.insert_payment_product(payment_product)
 
 
