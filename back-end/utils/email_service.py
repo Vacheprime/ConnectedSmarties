@@ -6,6 +6,8 @@ import os
 import qrcode
 from io import BytesIO
 
+from models.payment_model import Payment
+
 class EmailService:
     """Service for sending email notifications."""
     
@@ -248,7 +250,7 @@ class EmailService:
         result = self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
         return result
     
-    def send_payment_receipt(self, recipient_email: str, payment) -> bool:
+    def send_payment_receipt(self, recipient_email: str, payment: Payment) -> bool:
         """
         Send an email receipt for a completed payment.
         
@@ -268,13 +270,13 @@ class EmailService:
             
             # Format product rows
             product_rows = ""
-            for product, quantity in payment.products:
-                product_total = round(product.price * quantity, 2)
+            for payment_product in payment.products:
+                product_total = round(payment_product.product_price * payment_product.product_amount, 2)
                 product_rows += f"""
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; text-align: left;">{product.name}</td>
-                    <td style="padding: 12px; text-align: center;">{quantity}</td>
-                    <td style="padding: 12px; text-align: right;">${product.price:.2f}</td>
+                    <td style="padding: 12px; text-align: left;">{payment_product.product_name}</td>
+                    <td style="padding: 12px; text-align: center;">{payment_product.product_amount}</td>
+                    <td style="padding: 12px; text-align: right;">${payment_product.product_price:.2f}</td>
                     <td style="padding: 12px; text-align: right;">${product_total:.2f}</td>
                 </tr>
                 """

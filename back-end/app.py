@@ -678,7 +678,7 @@ def delete_product(product_id):
 def receipt_details(payment_id):
     # Get the logged-in customer id from the session (if available)
     customer_id = session.get("user_id")
-    all_payments = Payment.fetch_payment_by_customer_id(customer_id)
+    all_payments: list[Payment] = Payment.fetch_payment_by_customer_id(customer_id)
     
     print("---- DEBUG ----")
     print("Payment ID requested:", payment_id)
@@ -697,11 +697,11 @@ def receipt_details(payment_id):
     # Format product list
     product_list = [
         {
-            "name": product.name,
-            "quantity": int(quantity),
-            "price": float(product.price)
+            "name": payment_product.product_name,
+            "quantity": int(payment_product.product_amount),
+            "price": float(payment_product.product_price)
         }
-        for product, quantity in payment.products
+        for payment_product in payment.products
     ]
 
     # Retrieve customer first name from Customers table (prefer session user id)
