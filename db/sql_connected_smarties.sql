@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS PaymentProducts (
     payment_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL DEFAULT 0,
     product_amount INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    product_price REAL NOT NULL,
+    product_category TEXT,
+    product_points_worth INTEGER DEFAULT 0,
     PRIMARY KEY (payment_id, product_id),
     FOREIGN KEY (payment_id) REFERENCES Payments(payment_id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE SET DEFAULT
@@ -183,19 +187,19 @@ INSERT INTO Payments (payment_id, customer_id, total_paid, reward_points_won) VA
 (4, 3, 17.97, 36),
 (5, 3, 12.98, 28);
 
-INSERT INTO PaymentProducts (payment_id, product_id, product_amount) VALUES
+INSERT INTO PaymentProducts (payment_id, product_id, product_amount, product_name, product_price, product_category, product_points_worth) VALUES
 -- payment_id 1 
-(1, 2, 2),
-(1, 5, 1),
+(1, 2, 2, 'Tropical Mango Smoothie 500ml', 6.99, 'Beverages', 15),
+(1, 5, 1, 'Fresh Pineapple', 5.99, 'Fruits', 12),
 -- payment_id 2 (customer 1)
-(2, 3, 1),
+(2, 3, 1, 'Dark Roast Coffee Beans 1kg', 14.99, 'Groceries', 30),
 -- payment_id 3 (customer 2)
-(3, 6, 1),
-(3, 7, 1),
+(3, 6, 1, 'Avocado Toast Pack', 9.99, 'Snacks', 20),
+(3, 7, 1, 'Coconut Water 1L', 4.99, 'Beverages', 10),
 -- payment_id 4 (customer 3)
-(4, 1, 1),
-(4, 4, 2),
-(4, 10, 1),
+(4, 1, 1, 'Organic Apple Juice 1L', 4.99, 'Beverages', 10),
+(4, 4, 2, 'Whole Grain Bread', 3.99, 'Bakery', 8),
+(4, 10, 1, 'Green Tea Bags 25ct', 4.99, 'Beverages', 10),
 -- payment_id 5 (customer 3)
-(5, 8, 1),
-(5, 9, 1);
+(5, 8, 1, 'Chocolate Chip Cookies', 7.99, 'Snacks', 16),
+(5, 9, 1, 'Vanilla Yogurt 4-pack', 5.99, 'Dairy', 12);
