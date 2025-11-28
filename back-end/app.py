@@ -8,6 +8,7 @@ from flask_cors import CORS
 from models.payment_model import Payment
 from models.customer_model import Customer
 from models.product_model import Product
+from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
@@ -938,18 +939,29 @@ def add_inventory_batch():
     try:
         data = request.get_json()
         product_id = data.get('product_id')
-        quantity = data.get('quantity')
+        epcs = data.get('epcs')
         received_date = data.get('received_date')
         
         # Validate inputs
-        if not product_id or not quantity:
-            return jsonify({'error': 'Product ID and quantity are required'}), 400
+        if not product_id or not epcs:
+            return jsonify({'error': 'Product ID and EPCs are required'}), 400
         
-        if int(quantity) <= 0:
-            return jsonify({'error': 'Quantity must be positive'}), 400
+        if type(epcs) != list or len(epcs) == 0:
+            return jsonify({'error': 'At least one EPC must be provided'}), 400
+        
+        # Determine quantity from EPCs
+        quantity = len(epcs)
+
+        # Validate the epcs
+        duplicate_epc = ProductItem.exists_product_item_with_epc_bulk(epcs)
+        if duplicate_epc:
+            return jsonify({'error': f'One or many duplicate EPCs found. First occurrence: {duplicate_epc}'}), 400
         
         # Add inventory batch
-        Product.add_inventory_batch(int(product_id), int(quantity), received_date)
+        inv_batch_id = Product.add_inventory_batch(int(product_id), quantity, received_date)
+
+        # Add each product item
+        ProductItem.insert_bulk_items(epcs, inv_batch_id)
         
         return jsonify({'message': 'Inventory batch added successfully'}), 200
     except DatabaseInsertException as e:
