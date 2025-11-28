@@ -32,10 +32,10 @@ def validate_customer(data):
 def validate_product(data):
     errors = []
     
-    required_fields = ["name", "price", "epc", "upc", "category", "points_worth"]
+    required_fields = ["name", "price", "upc", "category", "points_worth"]
     
-    if not data.get("name") or not data.get("price") or not data.get("epc"):
-        errors.append("Field is missing, must require the following fields: name, price, epc.")
+    if not data.get("name") or not data.get("price") or not data.get("upc"):
+        errors.append("Field is missing, must require the following fields: name, price, upc.")
         
     # Validate name (allow letters, numbers and spaces)
     if data.get("name") and not re.match(r"^[A-Za-z0-9\s]+$", data["name"]):
@@ -57,11 +57,6 @@ def validate_product(data):
     upc = str(data.get("upc", "")).strip()
     if not re.fullmatch(r"\d{12}", upc):
         errors.append("UPC must be exactly 12 digits.")
-    
-    # EPC Validation (example: alphanumeric 4–24 characters)
-    epc = str(data.get("epc", "")).strip()
-    if not re.fullmatch(r"[A-Za-z0-9]{4,24}", epc):
-        errors.append("EPC must be 4-24 alphanumeric characters (no spaces or symbols).")
     
     # Print errors in the terminal
     if errors:

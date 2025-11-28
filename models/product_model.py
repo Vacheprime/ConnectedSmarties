@@ -11,12 +11,11 @@ class Product(BaseModel):
     INVENTORY_TABLE = "ProductInventory"
     INVENTORY_BATCH_TABLE = "InventoryBatches"
 
-    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
+    def __init__(self, name: str, price: float, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
         super().__init__(Product.DB_TABLE)
         self.product_id = None
         self.name = name
         self.price = price
-        self.epc = epc
         self.upc = upc
         self.category = category
         self.points_worth = points_worth
@@ -28,7 +27,6 @@ class Product(BaseModel):
             "product_id": self.product_id,
             "name": self.name,
             "price": self.price,
-            "epc": self.epc,
             "upc": self.upc,
             "category": self.category,
             "available_stock": self.get_inventory(self.product_id),
@@ -80,7 +78,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -140,7 +137,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -201,7 +197,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -327,15 +322,14 @@ class Product(BaseModel):
     @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth, producer_company)
+        INSERT INTO {cls.DB_TABLE} (name, price, upc, category, points_worth, producer_company)
         VALUES
-        (:name, :price, :epc, :upc, :category, :points_worth, :producer_company);
+        (:name, :price, :upc, :category, :points_worth, :producer_company);
         """
 
         sql_values = {
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
@@ -377,7 +371,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -420,7 +413,6 @@ class Product(BaseModel):
         product = Product(
             row["name"],
             float(row["price"]),
-            row["epc"],
             int(row["upc"]),
             row["category"],
             row["points_worth"],
@@ -438,7 +430,6 @@ class Product(BaseModel):
         UPDATE {cls.DB_TABLE}
         SET name = :name,
             price = :price,
-            epc = :epc,
             upc = :upc,
             category = :category,
             points_worth = :points_worth,
@@ -450,7 +441,6 @@ class Product(BaseModel):
             "product_id": product.product_id,
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,

@@ -34,7 +34,6 @@ function displayProducts(products) {
             <td>${product.product_id}</td>
             <td>${product.name}</td>
             <td>$${Number.parseFloat(product.price).toFixed(2)}</td>
-            <td>${product.epc}</td>
             <td>${product.upc || "-"}</td>
             <td>${product.available_stock || 0}</td>
             <td>${product.category || "-"}</td>
@@ -56,11 +55,10 @@ function validateProduct(data) {
   const namePattern = /^[A-Za-z0-9\s]+$/;
   const categoryPattern = /^[A-Za-z\s]+$/;
   const upcPattern = /^\d{12}$/;
-  const epcPattern = /^[A-Za-z0-9]{4,24}$/;
 
   // Required fields
-  if (!data.name || !data.price || !data.epc) {
-    errors.push("Field is missing, must require the following fields: name, price, epc.");
+  if (!data.name || !data.price) {
+    errors.push("Field is missing, must require the following fields: name, price");
   }
 
   // Name
@@ -87,12 +85,6 @@ function validateProduct(data) {
     errors.push("UPC must be exactly 12 digits.");
   }
 
-  // EPC
-  const epc = String(data.epc || "").trim();
-  if (!epcPattern.test(epc)) {
-    errors.push("EPC must be 4-24 alphanumeric characters (no spaces or symbols).");
-  }
-
   return errors;
 }
 
@@ -109,7 +101,6 @@ async function saveProduct(event) {
     const data = {
     name: formData.get("name").trim(),
     price: formData.get("price").trim(),
-    epc: formData.get("epc").trim(),
     upc: formData.get("upc").trim(),
     category: formData.get("category").trim(),
     points_worth: formData.get("points_worth").trim() || "0",
@@ -164,7 +155,6 @@ async function editProduct(productId) {
       document.getElementById("product_id").value = product.product_id
       document.getElementById("name").value = product.name
       document.getElementById("price").value = product.price
-      document.getElementById("epc").value = product.epc
       document.getElementById("upc").value = product.upc || ""
       document.getElementById("category").value = product.category || ""
       document.getElementById("points_worth").value = product.points_worth || 0
