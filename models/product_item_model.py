@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from models.product_model import Product
+
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from .exceptions.database_read_exception import DatabaseReadException
@@ -23,6 +25,14 @@ class ProductItem(BaseModel):
             "epc": self.epc,
             "inventory_batch_id": self.inventory_batch_id
         }
+
+    
+    @property
+    def product(self) -> Product | None:
+        if self.inventory_batch_id is None:
+            return None
+        
+        return Product.fetch_product_by_inventory_batch_id(self.inventory_batch_id)
 
     
     @classmethod
