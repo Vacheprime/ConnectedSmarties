@@ -3,27 +3,32 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 import os
+from pathlib import Path
+import threading
 import qrcode
 from io import BytesIO
-
+from dotenv import load_dotenv
 from models.payment_model import Payment
 
 class EmailService:
-    """Service for sending email notifications."""
-    
-    def __init__(self, recipient_email: str = None):
+    """Service for sending email notifications."""    
+    def __init__(self):
+        base_dir = Path(__file__).resolve().parent
+        # Load email config
+        load_dotenv(dotenv_path=base_dir / "config/.env")  # Load environment variables from .env file
         # Email configuration - should be set via environment variables
         self.smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
         self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
         self.sender_email = os.getenv('SENDER_EMAIL', '')
         self.sender_password = os.getenv('SENDER_PASSWORD', '')
-        self.recipient_email = recipient_email if recipient_email else os.getenv('RECIPIENT_EMAIL')
+
     
-    def _send_email(self, subject: str, html_body: str, attachments: list = None) -> bool:
+    def _send_email_threaded(self, recipient_emails: str | list[str], subject: str, html_body: str, attachments: list = None) -> threading.Thread: 
         """
         Send an email with the given subject and HTML body.
         
         Args:
+            recipient_emails (str | list[str]): Email address or list of email addresses to send to
             subject (str): Email subject line
             html_body (str): HTML content of the email
             attachments (list): Optional list of tuples (mime_part, content_id) for inline attachments
@@ -31,7 +36,11 @@ class EmailService:
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        if not self.sender_email or not self.sender_password or not self.recipient_email:
+        # Convert single email to list for uniform processing
+        if isinstance(recipient_emails, str):
+            recipient_emails = [recipient_emails]
+        
+        if not self.sender_email or not self.sender_password or not recipient_emails:
             print("WARNING: Email configuration not set. Skipping email notification.")
             return False
         
@@ -41,7 +50,7 @@ class EmailService:
             message = MIMEMultipart(message_type)
             message["Subject"] = subject
             message["From"] = self.sender_email
-            message["To"] = self.recipient_email
+            message["To"] = ", ".join(recipient_emails)
             
             # Attach HTML body
             html_part = MIMEText(html_body, "html")
@@ -57,20 +66,29 @@ class EmailService:
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.sender_email, self.sender_password)
-                server.sendmail(self.sender_email, self.recipient_email, message.as_string())
+                server.sendmail(self.sender_email, recipient_emails, message.as_string())
             
-            print(f"SUCCESS: Email sent - {subject}")
+            print(f"SUCCESS: Email sent to {', '.join(recipient_emails)} - {subject}")
             return True
             
         except Exception as e:
             print(f"ERROR: Failed to send email: {e}")
             return False
     
-    def send_threshold_alert(self, sensor_location: str, sensor_type: str, current_value: float, threshold: float, sensor_id: int):
+
+    def _send_email(self, recipient_emails: str | list[str], subject: str, html_body: str, attachments: list = None) -> bool:
+        """Wrapper to send email in a separate thread."""
+        thread = threading.Thread(target=self._send_email_threaded, args=(recipient_emails, subject, html_body, attachments))
+        thread.start()
+        return True
+        
+    
+    def send_threshold_alert(self, recipient_emails: str | list[str], sensor_location: str, sensor_type: str, current_value: float, threshold: float, sensor_id: int):
         """
         Send an email alert when a sensor threshold is exceeded.
         
         Args:
+            recipient_emails (str | list[str]): Email address or list of email addresses to send alert to
             sensor_location (str): Location of the sensor (e.g., "Frig1")
             sensor_type (str): Type of sensor (e.g., "temperature", "humidity")
             current_value (float): Current sensor reading
@@ -111,13 +129,14 @@ class EmailService:
         </html>
         """
         
-        return self._send_email(subject, html_body)
+        return self._send_email(recipient_emails, subject, html_body)
     
-    def send_threshold_update(self, high_threshold: float, low_threshold: float) -> bool:
+    def send_threshold_update(self, recipient_emails: str | list[str], high_threshold: float, low_threshold: float) -> bool:
         """
         Send an email notification when temperature thresholds are updated.
         
         Args:
+            recipient_emails (str | list[str]): Email address or list of email addresses to send notification to
             high_threshold (float): New high temperature threshold in Celsius
             low_threshold (float): New low temperature threshold in Celsius
             
@@ -169,15 +188,15 @@ class EmailService:
         </html>
         """
         
-        return self._send_email(subject, html_body)
+        return self._send_email(recipient_emails, subject, html_body)
     
-    def send_qr_code(self, data: str, recipient_email: str, recipient_name: str = "User", subject: str = None) -> bool:
+    def send_qr_code(self, recipient_emails: str | list[str], data: str, recipient_name: str = "User", subject: str = None) -> bool:
         """
         Send an email with a QR code encoding the provided alphanumeric string.
         
         Args:
+            recipient_emails (str | list[str]): Email address or list of email addresses to send the QR code to
             data (str): The alphanumeric string to encode in the QR code
-            recipient_email (str): Email address to send the QR code to
             recipient_name (str): Name of the recipient for personalization
             subject (str): Optional custom subject line
             
@@ -187,10 +206,6 @@ class EmailService:
         if not self.sender_email or not self.sender_password:
             print("WARNING: Email configuration not set. Skipping email notification.")
             return False
-        
-        # Temporarily override recipient for this email
-        original_recipient = self.recipient_email
-        self.recipient_email = recipient_email
         
         try:
             # Generate QR code
@@ -247,24 +262,20 @@ class EmailService:
         qr_image_part.add_header('Content-Disposition', 'inline', filename='qrcode.png')
         
         # Send email with attachment
-        result = self._send_email(subject, html_body, attachments=[(qr_image_part, 'qrcode')])
+        result = self._send_email(recipient_emails, subject, html_body, attachments=[(qr_image_part, 'qrcode')])
         return result
     
-    def send_payment_receipt(self, recipient_email: str, payment: Payment) -> bool:
+    def send_payment_receipt(self, recipient_emails: str | list[str], payment: Payment) -> bool:
         """
         Send an email receipt for a completed payment.
         
         Args:
-            recipient_email (str): Email address to send receipt to
+            recipient_emails (str | list[str]): Email address or list of email addresses to send receipt to
             payment (Payment): Payment object containing order details
             
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        # Temporarily override recipient for this email
-        original_recipient = self.recipient_email
-        self.recipient_email = recipient_email
-        
         try:
             subject = f"Receipt #{payment.payment_id} - ConnectedSmarties"
             
@@ -328,12 +339,9 @@ class EmailService:
             </html>
             """
             
-            result = self._send_email(subject, html_body)
+            result = self._send_email(recipient_emails, subject, html_body)
             return result
             
         except Exception as e:
             print(f"ERROR: Failed to send payment receipt: {e}")
             return False
-        finally:
-            # Restore original recipient
-            self.recipient_email = original_recipient
