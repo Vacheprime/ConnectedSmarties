@@ -214,32 +214,177 @@ function resetForm() {
 
 // Inventory batch functions
 let currentProductId = null;
+let generatedEPCs = [];
 
 function openInventoryModal() {
     currentProductId = document.getElementById('product_id').value;
     if (!currentProductId) {
-        showToast('Please save the product first before adding inventory.', 'error');
+        showToast('Error', 'Please save the product first before adding inventory.', 'error');
         return;
     }
     
-    // Clear the form
+    // Reset the form and EPC list
     document.getElementById('inventory-batch-form').reset();
-    document.getElementById('batch_quantity-error').textContent = '';
+    generatedEPCs = [];
+    updateEPCDisplay();
+    clearEPCErrors();
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('inventoryBatchModal'));
     modal.show();
 }
 
-async function submitInventoryBatch() {
-    const quantity = parseInt(document.getElementById('batch_quantity').value);
-    const receivedDateInput = document.getElementById('batch_received_date').value;
+function generateEPCsFromRange() {
+    clearEPCErrors();
     
-    // Validate quantity
-    if (!quantity || quantity <= 0) {
-        document.getElementById('batch_quantity-error').textContent = 'Quantity must be a positive integer';
+    const prefix = document.getElementById('epc_prefix').value.trim();
+    const start = parseInt(document.getElementById('epc_start').value);
+    const end = parseInt(document.getElementById('epc_end').value);
+    
+    // Validate inputs
+    if (!prefix) {
+        showFieldError('epc_range', 'Prefix is required');
         return;
     }
+    
+    if (isNaN(start) || isNaN(end)) {
+        showFieldError('epc_range', 'Start and end numbers must be valid integers');
+        return;
+    }
+    
+    if (start < 0 || end < 0) {
+        showFieldError('epc_range', 'Start and end numbers must be non-negative');
+        return;
+    }
+    
+    if (start > end) {
+        showFieldError('epc_range', 'Start number must be less than or equal to end number');
+        return;
+    }
+    
+    const epcLength = 24;
+    const maxNumberLength = String(end).length;
+    
+    if (prefix.length + maxNumberLength > epcLength) {
+        showFieldError('epc_range', `Prefix and number range exceed maximum EPC length of ${epcLength} characters`);
+        return;
+    }
+    
+    // Generate EPCs
+    const newEPCs = [];
+    const duplicates = [];
+    for (let i = start; i <= end; i++) {
+        const numberStr = String(i);
+        const paddingLength = epcLength - prefix.length - numberStr.length;
+        const padding = '0'.repeat(paddingLength);
+        const epc = `${prefix}${padding}${numberStr}`;
+        
+        // Check if EPC already exists in the list
+        if (generatedEPCs.includes(epc)) {
+            duplicates.push(epc);
+        } else {
+            newEPCs.push(epc);
+        }
+    }
+    
+    // Warn user if duplicates were found
+    if (duplicates.length > 0) {
+        showToast('Warning', `Skipped ${duplicates.length} duplicate EPC(s)`, 'warning');
+    }
+    
+    // Only add non-duplicate EPCs
+    if (newEPCs.length === 0) {
+        showFieldError('epc_range', 'All EPCs in this range already exist in the list');
+        return;
+    }
+    
+    generatedEPCs = [...generatedEPCs, ...newEPCs];
+    updateEPCDisplay();
+    
+    // Clear range inputs
+    document.getElementById('epc_prefix').value = '';
+    document.getElementById('epc_start').value = '';
+    document.getElementById('epc_end').value = '';
+    
+    showToast('Success', `Generated ${newEPCs.length} EPC(s) (${duplicates.length} duplicate(s) skipped)`, 'success');
+}
+
+function addManualEPC() {
+    clearEPCErrors();
+    
+    const epcInput = document.getElementById('manual_epc').value.trim().toUpperCase();
+    
+    // Validate EPC
+    if (!epcInput) {
+        showFieldError('manual_epc', 'Please enter an EPC');
+        return;
+    }
+    
+    if (epcInput.length !== 24) {
+        showFieldError('manual_epc', 'EPC must be exactly 24 characters');
+        return;
+    }
+    
+    if (!/^[0-9A-Fa-f]{24}$/.test(epcInput)) {
+        showFieldError('manual_epc', 'EPC must contain only hexadecimal characters (0-9, A-F)');
+        return;
+    }
+    
+    if (generatedEPCs.includes(epcInput)) {
+        showFieldError('manual_epc', 'This EPC has already been added');
+        return;
+    }
+    
+    // Add EPC
+    generatedEPCs.push(epcInput);
+    updateEPCDisplay();
+    
+    // Clear input
+    document.getElementById('manual_epc').value = '';
+    showToast('Success', 'EPC added', 'success');
+}
+
+function removeEPC(epc) {
+    generatedEPCs = generatedEPCs.filter(e => e !== epc);
+    updateEPCDisplay();
+}
+
+function updateEPCDisplay() {
+    const epcList = document.getElementById('epc_list');
+    const epcCount = document.getElementById('epc_count');
+    
+    epcCount.textContent = generatedEPCs.length;
+    
+    if (generatedEPCs.length === 0) {
+        epcList.innerHTML = '<p class="text-muted">No EPCs added yet</p>';
+        return;
+    }
+    
+    epcList.innerHTML = generatedEPCs
+        .map(epc => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><code>${epc}</code></span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeEPC('${epc}')">Remove</button>
+            </div>
+        `)
+        .join('');
+}
+
+function clearEPCErrors() {
+    document.getElementById('epc_range-error').textContent = '';
+    document.getElementById('manual_epc-error').textContent = '';
+}
+
+async function submitInventoryBatch() {
+    clearEPCErrors();
+    
+    // Validate that EPCs have been added
+    if (generatedEPCs.length === 0) {
+        showToast('Error', 'Please add at least one EPC', 'error');
+        return;
+    }
+    
+    const receivedDateInput = document.getElementById('batch_received_date').value;
     
     // Format received_date to "YYYY-MM-DD HH:MM:SS" and validate it's not in the future
     let receivedDate = null;
@@ -249,7 +394,7 @@ async function submitInventoryBatch() {
         
         // Check if date is in the future
         if (dateObj > now) {
-            document.getElementById('batch_quantity-error').textContent = 'Received date cannot be in the future';
+            showFieldError('batch_quantity', 'Received date cannot be in the future');
             return;
         }
         
@@ -265,7 +410,7 @@ async function submitInventoryBatch() {
     try {
         const payload = {
             product_id: currentProductId,
-            quantity: quantity,
+            epcs: generatedEPCs,
             received_date: receivedDate
         };
         
@@ -280,14 +425,15 @@ async function submitInventoryBatch() {
         const data = await response.json();
         
         if (response.ok) {
-            showToast('Inventory batch added successfully!', 'success');
+            showToast('Success', 'Inventory batch added successfully!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('inventoryBatchModal')).hide();
             loadProducts(); // Refresh the products table
+            generatedEPCs = []; // Clear EPCs after successful submission
         } else {
-            showToast(data.error || 'Failed to add inventory batch', 'error');
+            showToast('Error', data.error || 'Failed to add inventory batch', 'error');
         }
     } catch (error) {
-        showToast('Error: ' + error.message, 'error');
+        showToast('Error', error.message, 'error');
     }
 }
 
@@ -348,4 +494,7 @@ if (typeof window !== "undefined") {
   window.loadProducts = loadProducts
   window.openInventoryModal = openInventoryModal
   window.submitInventoryBatch = submitInventoryBatch
+  window.generateEPCsFromRange = generateEPCsFromRange
+  window.addManualEPC = addManualEPC
+  window.removeEPC = removeEPC
 }
