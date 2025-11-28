@@ -276,6 +276,16 @@ class Product(BaseModel):
         # Return the inventory batch ID
         return inventory_batch_id
     
+
+    @classmethod
+    def decrease_inventory(cls, product_id: int, quantity: int) -> None:
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cls._decrease_inventory(product_id, quantity, cursor)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while decreasing product inventory: {e}")
+
+    
     @classmethod
     def _decrease_inventory(cls, product_id: int, quantity: int, cursor: sqlite3.Cursor) -> None:
         # Check if product exists

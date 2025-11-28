@@ -46,6 +46,30 @@ class ProductItem(BaseModel):
     
 
     @classmethod
+    def fetch_by_product_id(cls, product_id: int) -> list[ProductItem]:
+        sql = f"""
+        SELECT pi.* FROM {cls.DB_TABLE} pi
+        JOIN InventoryBatches ib ON pi.inventory_batch_id = ib.inventory_batch_id
+        WHERE ib.product_id = :product_id;
+        """
+
+        sql_params = {
+            "product_id": product_id
+        }
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(sql, sql_params)
+                rows = cursor.fetchall()
+            except sqlite3.Error as e:
+                raise DatabaseReadException(f"Failed to read ProductItems for product_id {product_id} from database: {e}") from e
+            
+        product_items = [cls.from_row(row) for row in rows]
+        return product_items
+
+
+    @classmethod
     def fetch_by_epc(cls, epc: str) -> ProductItem | None:
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
