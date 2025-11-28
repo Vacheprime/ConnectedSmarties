@@ -144,17 +144,11 @@ Examples:
 
 Tasks to do:
 
-- Implement the database for EPC (Danat, COMPLETED)
-
 - Implement proper input validation
 
 - In the Account page, add a navigation button to go back to self-checkout
 
-- In the self-checkout, after you pay, the rewards points won field is not being reset.
-
 - Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat)
-
-- Adding products by EPC or by range. (Danat)
 
 - Implement inventory report
 
@@ -173,3 +167,9 @@ Tasks to do:
 - Send email when adding a customer through the admin customer page.
 
 - Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
+
+- Implement the database for EPC (Danat, COMPLETED)
+
+- In the self-checkout, after you pay, the rewards points won field is not being reset. (Danat, COMPLETED: Field was removed.)
+
+- Adding products by EPC or by range. (Danat, COMPLETED)
