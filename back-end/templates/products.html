@@ -217,6 +217,34 @@
             </div>
         </div>
 
+        <!-- View EPCs Modal -->
+        <div class="modal fade" id="viewEPCsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Product EPCs - <span id="epc_modal_product_name"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="epcs_loading" class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="epcs_list_container" style="max-height: 400px; overflow-y: auto; display: none;">
+                            <div id="epcs_list" class="list-group"></div>
+                        </div>
+                        <div id="epcs_empty_message" class="text-muted text-center py-3" style="display: none;">
+                            No EPCs found for this product.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p data-i18n="footer">&copy; 2025 ConnectedSmarties. All rights reserved.</p>
         </footer>

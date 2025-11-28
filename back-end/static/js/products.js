@@ -42,6 +42,7 @@ function displayProducts(products) {
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct(${product.product_id})">Edit</button>
                 <button class="action-btn delete-btn" onclick="deleteProduct(${product.product_id})">Delete</button>
+                <button class="action-btn" onclick="openViewEPCsModal(${product.product_id}, '${product.name}')">EPCs</button>
             </td>
         </tr>
     `,
@@ -437,6 +438,127 @@ async function submitInventoryBatch() {
     }
 }
 
+// EPC viewing and deleting functions
+async function openViewEPCsModal(productId, productName) {
+    document.getElementById('epc_modal_product_name').textContent = productName;
+    document.getElementById('epcs_loading').style.display = 'block';
+    document.getElementById('epcs_list_container').style.display = 'none';
+    document.getElementById('epcs_empty_message').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('viewEPCsModal'));
+    modal.show();
+    
+    try {
+        const response = await fetch(`/api/products/${productId}/epcs`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayEPCsList(data.epcs);
+        } else {
+            throw new Error('Failed to load EPCs');
+        }
+    } catch (error) {
+        console.error('Error loading EPCs:', error);
+        document.getElementById('epcs_loading').style.display = 'none';
+        document.getElementById('epcs_empty_message').style.display = 'block';
+        document.getElementById('epcs_empty_message').textContent = 'Error loading EPCs';
+        showToast('Error', error.message, 'error');
+    }
+}
+
+function displayEPCsList(epcs) {
+    const epcsList = document.getElementById('epcs_list');
+    const emptyMessage = document.getElementById('epcs_empty_message');
+    const loadingSpinner = document.getElementById('epcs_loading');
+    
+    loadingSpinner.style.display = 'none';
+    
+    if (!epcs || epcs.length === 0) {
+        emptyMessage.style.display = 'block';
+        document.getElementById('epcs_list_container').style.display = 'none';
+        return;
+    }
+    
+    epcsList.innerHTML = epcs
+        .map(epc => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><code>${epc}</code></span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteProductEPC('${epc}')">Delete</button>
+            </div>
+        `)
+        .join('');
+    
+    document.getElementById('epcs_list_container').style.display = 'block';
+    emptyMessage.style.display = 'none';
+}
+
+async function deleteProductEPC(epc) {
+    if (!confirm(`Are you sure you want to delete this EPC: ${epc}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/products/epc/${epc}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'EPC deleted successfully', 'success');
+            
+            // Get the product ID from the modal title
+            const productNameElement = document.getElementById('epc_modal_product_name');
+            const productName = productNameElement.textContent;
+            
+            // Find the product ID by searching through the table
+            const productRows = document.querySelectorAll('#products-tbody tr');
+            let productId = null;
+            
+            for (const row of productRows) {
+                const nameCell = row.cells[1];
+                if (nameCell && nameCell.textContent === productName) {
+                    productId = row.cells[0].textContent;
+                    break;
+                }
+            }
+            
+            // Refresh the EPCs list if we found the product ID
+            if (productId) {
+                loadProducts();
+                
+                // Refresh the EPCs list
+                document.getElementById('epcs_loading').style.display = 'block';
+                document.getElementById('epcs_list_container').style.display = 'none';
+                document.getElementById('epcs_empty_message').style.display = 'none';
+                
+                try {
+                    const epcResponse = await fetch(`/api/products/${productId}/epcs`);
+                    if (epcResponse.ok) {
+                        const data = await epcResponse.json();
+                        displayEPCsList(data.epcs);
+                    } else {
+                        throw new Error('Failed to refresh EPCs');
+                    }
+                } catch (error) {
+                    console.error('Error refreshing EPCs:', error);
+                    document.getElementById('epcs_loading').style.display = 'none';
+                    document.getElementById('epcs_empty_message').style.display = 'block';
+                    document.getElementById('epcs_empty_message').textContent = 'Error refreshing EPCs';
+                    showToast('Error', error.message, 'error');
+                }
+            } else {
+                // Fallback: reload all products
+                loadProducts();
+            }
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete EPC');
+        }
+    } catch (error) {
+        console.error('Error deleting EPC:', error);
+        showToast('Error', error.message, 'error');
+    }
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", () => {
   loadProducts()
@@ -497,4 +619,7 @@ if (typeof window !== "undefined") {
   window.generateEPCsFromRange = generateEPCsFromRange
   window.addManualEPC = addManualEPC
   window.removeEPC = removeEPC
+  window.openViewEPCsModal = openViewEPCsModal
+  window.deleteProductEPC = deleteProductEPC
+  window.displayEPCsList = displayEPCsList
 }
