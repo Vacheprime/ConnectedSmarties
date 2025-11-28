@@ -225,7 +225,7 @@ class Product(BaseModel):
 
     # specify the date that the inventory batch was added
     @classmethod
-    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> None:
+    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> int:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -265,11 +265,16 @@ class Product(BaseModel):
             try:
                 # Insert batch record
                 cursor.execute(sql_insert_batch, sql_values)
+                # Get the inserted inventory batch ID
+                inventory_batch_id = cursor.lastrowid
                 # Upsert inventory total_stock
                 cursor.execute(sql_upsert_inventory, {"product_id": product_id, "quantity": quantity})
             except Exception as e:
                 # Any failure should be reported as an insert error (transaction will roll back)
                 raise DatabaseInsertException(f"An unexpected error occurred while adding inventory batch: {e}")
+
+        # Return the inventory batch ID
+        return inventory_batch_id
     
     @classmethod
     def _decrease_inventory(cls, product_id: int, quantity: int, cursor: sqlite3.Cursor) -> None:
