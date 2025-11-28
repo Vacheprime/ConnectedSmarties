@@ -171,3 +171,5 @@ Tasks to do:
 - Do multiple reading of RFID possibly.
 
 - Send email when adding a customer through the admin customer page.
+
+- Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
