@@ -673,6 +673,48 @@ def delete_product(product_id):
         print(f"ERROR: Failed to delete product: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/products/<int:product_id>/epcs', methods=['GET'])
+@login_required(role="admin")
+def get_product_epcs(product_id):
+    """Get all EPCs for a specific product."""
+    try:
+        # Check if product exists
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Fetch EPCs
+        epcs = ProductItem.fetch_by_product_id(product_id)
+        epcs = [item.epc for item in epcs]
+        
+        return jsonify({'epcs': epcs}), 200
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product EPCs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products/epc/<string:epc>', methods=['DELETE'])
+@login_required(role="admin")
+def delete_product_epc(epc):
+    """Delete a specific EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Delete the product item
+        ProductItem.delete_items_from_epcs([epc])
+
+        # Reduce inventory count for the associated product
+        Product.decrease_inventory(product_item.product.product_id, 1)
+        
+        return jsonify({'message': 'EPC deleted successfully'}), 200
+    except DatabaseDeleteException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to delete EPC: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= RECEIPT DETAILS =============
 @app.get("/receipt-details/<int:payment_id>")
 def receipt_details(payment_id):
