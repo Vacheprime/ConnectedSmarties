@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/customer_account.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/selfcheckout.css') }}">
 </head>
 
 <body>
@@ -22,9 +23,11 @@
           <div class="nav-brand fs-4">ConnectedSmarties</div>
         </div>
         <div class="ms-auto d-flex gap-2">
-          <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
-          <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()"
-            style="padding: 0.5rem 1rem;">EN</button>
+          <ul class="nav-menu">
+            <a href="/selfcheckout" class="active" data-i18n="navSelfCheckout">Self-Checkout</a>
+            <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+            <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
+          </ul>
         </div>
       </nav>
     </header>
