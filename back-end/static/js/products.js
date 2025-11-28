@@ -34,7 +34,6 @@ function displayProducts(products) {
             <td>${product.product_id}</td>
             <td>${product.name}</td>
             <td>$${Number.parseFloat(product.price).toFixed(2)}</td>
-            <td>${product.epc}</td>
             <td>${product.upc || "-"}</td>
             <td>${product.available_stock || 0}</td>
             <td>${product.category || "-"}</td>
@@ -43,6 +42,7 @@ function displayProducts(products) {
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct(${product.product_id})">Edit</button>
                 <button class="action-btn delete-btn" onclick="deleteProduct(${product.product_id})">Delete</button>
+                <button class="action-btn" onclick="openViewEPCsModal(${product.product_id}, '${product.name}')">EPCs</button>
             </td>
         </tr>
     `,
@@ -56,11 +56,10 @@ function validateProduct(data) {
   const namePattern = /^[A-Za-z0-9\s]+$/;
   const categoryPattern = /^[A-Za-z\s]+$/;
   const upcPattern = /^\d{12}$/;
-  const epcPattern = /^[A-Za-z0-9]{4,24}$/;
 
   // Required fields
-  if (!data.name || !data.price || !data.epc) {
-    errors.push("Field is missing, must require the following fields: name, price, epc.");
+  if (!data.name || !data.price) {
+    errors.push("Field is missing, must require the following fields: name, price");
   }
 
   // Name
@@ -87,12 +86,6 @@ function validateProduct(data) {
     errors.push("UPC must be exactly 12 digits.");
   }
 
-  // EPC
-  const epc = String(data.epc || "").trim();
-  if (!epcPattern.test(epc)) {
-    errors.push("EPC must be 4-24 alphanumeric characters (no spaces or symbols).");
-  }
-
   return errors;
 }
 
@@ -109,7 +102,6 @@ async function saveProduct(event) {
     const data = {
     name: formData.get("name").trim(),
     price: formData.get("price").trim(),
-    epc: formData.get("epc").trim(),
     upc: formData.get("upc").trim(),
     category: formData.get("category").trim(),
     points_worth: formData.get("points_worth").trim() || "0",
@@ -164,7 +156,6 @@ async function editProduct(productId) {
       document.getElementById("product_id").value = product.product_id
       document.getElementById("name").value = product.name
       document.getElementById("price").value = product.price
-      document.getElementById("epc").value = product.epc
       document.getElementById("upc").value = product.upc || ""
       document.getElementById("category").value = product.category || ""
       document.getElementById("points_worth").value = product.points_worth || 0
@@ -224,32 +215,177 @@ function resetForm() {
 
 // Inventory batch functions
 let currentProductId = null;
+let generatedEPCs = [];
 
 function openInventoryModal() {
     currentProductId = document.getElementById('product_id').value;
     if (!currentProductId) {
-        showToast('Please save the product first before adding inventory.', 'error');
+        showToast('Error', 'Please save the product first before adding inventory.', 'error');
         return;
     }
     
-    // Clear the form
+    // Reset the form and EPC list
     document.getElementById('inventory-batch-form').reset();
-    document.getElementById('batch_quantity-error').textContent = '';
+    generatedEPCs = [];
+    updateEPCDisplay();
+    clearEPCErrors();
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('inventoryBatchModal'));
     modal.show();
 }
 
-async function submitInventoryBatch() {
-    const quantity = parseInt(document.getElementById('batch_quantity').value);
-    const receivedDateInput = document.getElementById('batch_received_date').value;
+function generateEPCsFromRange() {
+    clearEPCErrors();
     
-    // Validate quantity
-    if (!quantity || quantity <= 0) {
-        document.getElementById('batch_quantity-error').textContent = 'Quantity must be a positive integer';
+    const prefix = document.getElementById('epc_prefix').value.trim();
+    const start = parseInt(document.getElementById('epc_start').value);
+    const end = parseInt(document.getElementById('epc_end').value);
+    
+    // Validate inputs
+    if (!prefix) {
+        showFieldError('epc_range', 'Prefix is required');
         return;
     }
+    
+    if (isNaN(start) || isNaN(end)) {
+        showFieldError('epc_range', 'Start and end numbers must be valid integers');
+        return;
+    }
+    
+    if (start < 0 || end < 0) {
+        showFieldError('epc_range', 'Start and end numbers must be non-negative');
+        return;
+    }
+    
+    if (start > end) {
+        showFieldError('epc_range', 'Start number must be less than or equal to end number');
+        return;
+    }
+    
+    const epcLength = 24;
+    const maxNumberLength = String(end).length;
+    
+    if (prefix.length + maxNumberLength > epcLength) {
+        showFieldError('epc_range', `Prefix and number range exceed maximum EPC length of ${epcLength} characters`);
+        return;
+    }
+    
+    // Generate EPCs
+    const newEPCs = [];
+    const duplicates = [];
+    for (let i = start; i <= end; i++) {
+        const numberStr = String(i);
+        const paddingLength = epcLength - prefix.length - numberStr.length;
+        const padding = '0'.repeat(paddingLength);
+        const epc = `${prefix}${padding}${numberStr}`;
+        
+        // Check if EPC already exists in the list
+        if (generatedEPCs.includes(epc)) {
+            duplicates.push(epc);
+        } else {
+            newEPCs.push(epc);
+        }
+    }
+    
+    // Warn user if duplicates were found
+    if (duplicates.length > 0) {
+        showToast('Warning', `Skipped ${duplicates.length} duplicate EPC(s)`, 'warning');
+    }
+    
+    // Only add non-duplicate EPCs
+    if (newEPCs.length === 0) {
+        showFieldError('epc_range', 'All EPCs in this range already exist in the list');
+        return;
+    }
+    
+    generatedEPCs = [...generatedEPCs, ...newEPCs];
+    updateEPCDisplay();
+    
+    // Clear range inputs
+    document.getElementById('epc_prefix').value = '';
+    document.getElementById('epc_start').value = '';
+    document.getElementById('epc_end').value = '';
+    
+    showToast('Success', `Generated ${newEPCs.length} EPC(s) (${duplicates.length} duplicate(s) skipped)`, 'success');
+}
+
+function addManualEPC() {
+    clearEPCErrors();
+    
+    const epcInput = document.getElementById('manual_epc').value.trim().toUpperCase();
+    
+    // Validate EPC
+    if (!epcInput) {
+        showFieldError('manual_epc', 'Please enter an EPC');
+        return;
+    }
+    
+    if (epcInput.length !== 24) {
+        showFieldError('manual_epc', 'EPC must be exactly 24 characters');
+        return;
+    }
+    
+    if (!/^[0-9A-Fa-f]{24}$/.test(epcInput)) {
+        showFieldError('manual_epc', 'EPC must contain only hexadecimal characters (0-9, A-F)');
+        return;
+    }
+    
+    if (generatedEPCs.includes(epcInput)) {
+        showFieldError('manual_epc', 'This EPC has already been added');
+        return;
+    }
+    
+    // Add EPC
+    generatedEPCs.push(epcInput);
+    updateEPCDisplay();
+    
+    // Clear input
+    document.getElementById('manual_epc').value = '';
+    showToast('Success', 'EPC added', 'success');
+}
+
+function removeEPC(epc) {
+    generatedEPCs = generatedEPCs.filter(e => e !== epc);
+    updateEPCDisplay();
+}
+
+function updateEPCDisplay() {
+    const epcList = document.getElementById('epc_list');
+    const epcCount = document.getElementById('epc_count');
+    
+    epcCount.textContent = generatedEPCs.length;
+    
+    if (generatedEPCs.length === 0) {
+        epcList.innerHTML = '<p class="text-muted">No EPCs added yet</p>';
+        return;
+    }
+    
+    epcList.innerHTML = generatedEPCs
+        .map(epc => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><code>${epc}</code></span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeEPC('${epc}')">Remove</button>
+            </div>
+        `)
+        .join('');
+}
+
+function clearEPCErrors() {
+    document.getElementById('epc_range-error').textContent = '';
+    document.getElementById('manual_epc-error').textContent = '';
+}
+
+async function submitInventoryBatch() {
+    clearEPCErrors();
+    
+    // Validate that EPCs have been added
+    if (generatedEPCs.length === 0) {
+        showToast('Error', 'Please add at least one EPC', 'error');
+        return;
+    }
+    
+    const receivedDateInput = document.getElementById('batch_received_date').value;
     
     // Format received_date to "YYYY-MM-DD HH:MM:SS" and validate it's not in the future
     let receivedDate = null;
@@ -259,7 +395,7 @@ async function submitInventoryBatch() {
         
         // Check if date is in the future
         if (dateObj > now) {
-            document.getElementById('batch_quantity-error').textContent = 'Received date cannot be in the future';
+            showFieldError('batch_quantity', 'Received date cannot be in the future');
             return;
         }
         
@@ -275,7 +411,7 @@ async function submitInventoryBatch() {
     try {
         const payload = {
             product_id: currentProductId,
-            quantity: quantity,
+            epcs: generatedEPCs,
             received_date: receivedDate
         };
         
@@ -290,14 +426,136 @@ async function submitInventoryBatch() {
         const data = await response.json();
         
         if (response.ok) {
-            showToast('Inventory batch added successfully!', 'success');
+            showToast('Success', 'Inventory batch added successfully!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('inventoryBatchModal')).hide();
             loadProducts(); // Refresh the products table
+            generatedEPCs = []; // Clear EPCs after successful submission
         } else {
-            showToast(data.error || 'Failed to add inventory batch', 'error');
+            showToast('Error', data.error || 'Failed to add inventory batch', 'error');
         }
     } catch (error) {
-        showToast('Error: ' + error.message, 'error');
+        showToast('Error', error.message, 'error');
+    }
+}
+
+// EPC viewing and deleting functions
+async function openViewEPCsModal(productId, productName) {
+    document.getElementById('epc_modal_product_name').textContent = productName;
+    document.getElementById('epcs_loading').style.display = 'block';
+    document.getElementById('epcs_list_container').style.display = 'none';
+    document.getElementById('epcs_empty_message').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('viewEPCsModal'));
+    modal.show();
+    
+    try {
+        const response = await fetch(`/api/products/${productId}/epcs`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayEPCsList(data.epcs);
+        } else {
+            throw new Error('Failed to load EPCs');
+        }
+    } catch (error) {
+        console.error('Error loading EPCs:', error);
+        document.getElementById('epcs_loading').style.display = 'none';
+        document.getElementById('epcs_empty_message').style.display = 'block';
+        document.getElementById('epcs_empty_message').textContent = 'Error loading EPCs';
+        showToast('Error', error.message, 'error');
+    }
+}
+
+function displayEPCsList(epcs) {
+    const epcsList = document.getElementById('epcs_list');
+    const emptyMessage = document.getElementById('epcs_empty_message');
+    const loadingSpinner = document.getElementById('epcs_loading');
+    
+    loadingSpinner.style.display = 'none';
+    
+    if (!epcs || epcs.length === 0) {
+        emptyMessage.style.display = 'block';
+        document.getElementById('epcs_list_container').style.display = 'none';
+        return;
+    }
+    
+    epcsList.innerHTML = epcs
+        .map(epc => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><code>${epc}</code></span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteProductEPC('${epc}')">Delete</button>
+            </div>
+        `)
+        .join('');
+    
+    document.getElementById('epcs_list_container').style.display = 'block';
+    emptyMessage.style.display = 'none';
+}
+
+async function deleteProductEPC(epc) {
+    if (!confirm(`Are you sure you want to delete this EPC: ${epc}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/products/epc/${epc}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showToast('Success', 'EPC deleted successfully', 'success');
+            
+            // Get the product ID from the modal title
+            const productNameElement = document.getElementById('epc_modal_product_name');
+            const productName = productNameElement.textContent;
+            
+            // Find the product ID by searching through the table
+            const productRows = document.querySelectorAll('#products-tbody tr');
+            let productId = null;
+            
+            for (const row of productRows) {
+                const nameCell = row.cells[1];
+                if (nameCell && nameCell.textContent === productName) {
+                    productId = row.cells[0].textContent;
+                    break;
+                }
+            }
+            
+            // Refresh the EPCs list if we found the product ID
+            if (productId) {
+                loadProducts();
+                
+                // Refresh the EPCs list
+                document.getElementById('epcs_loading').style.display = 'block';
+                document.getElementById('epcs_list_container').style.display = 'none';
+                document.getElementById('epcs_empty_message').style.display = 'none';
+                
+                try {
+                    const epcResponse = await fetch(`/api/products/${productId}/epcs`);
+                    if (epcResponse.ok) {
+                        const data = await epcResponse.json();
+                        displayEPCsList(data.epcs);
+                    } else {
+                        throw new Error('Failed to refresh EPCs');
+                    }
+                } catch (error) {
+                    console.error('Error refreshing EPCs:', error);
+                    document.getElementById('epcs_loading').style.display = 'none';
+                    document.getElementById('epcs_empty_message').style.display = 'block';
+                    document.getElementById('epcs_empty_message').textContent = 'Error refreshing EPCs';
+                    showToast('Error', error.message, 'error');
+                }
+            } else {
+                // Fallback: reload all products
+                loadProducts();
+            }
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete EPC');
+        }
+    } catch (error) {
+        console.error('Error deleting EPC:', error);
+        showToast('Error', error.message, 'error');
     }
 }
 
@@ -358,4 +616,10 @@ if (typeof window !== "undefined") {
   window.loadProducts = loadProducts
   window.openInventoryModal = openInventoryModal
   window.submitInventoryBatch = submitInventoryBatch
+  window.generateEPCsFromRange = generateEPCsFromRange
+  window.addManualEPC = addManualEPC
+  window.removeEPC = removeEPC
+  window.openViewEPCsModal = openViewEPCsModal
+  window.deleteProductEPC = deleteProductEPC
+  window.displayEPCsList = displayEPCsList
 }

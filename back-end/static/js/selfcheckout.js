@@ -1,7 +1,6 @@
 import { showToast } from "./notifications.js"
 // Self-checkout functionality
 let cart = []
-let customerPoints = 0
 
 // QR scanner buffer
 let scannerBuffer = ""
@@ -11,8 +10,6 @@ const SCANNER_TIMEOUT_MS = 50 // Time window to detect scanner input (ms)
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
-  // Load customer points (you can modify this to load from a logged-in customer)
-  loadCustomerPoints()
 
   // Allow Enter key to scan
   document.getElementById("scan-input").addEventListener("keypress", (e) => {
@@ -37,14 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCart()
 })
 
-// Load customer points (placeholder - replace with actual customer data)
-function loadCustomerPoints() {
-  // For demo purposes, starting with 0 points
-  // In production, this would load from the logged-in customer
-  customerPoints = 0
-  updateTotals()
-}
-
 
 async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
@@ -59,22 +48,30 @@ async function manuallyScanItem() {
 async function scanItem(code) {
   console.log("Scanning item with code:", code)
   if (!code) {
-    showToast("Error", "Please enter a UPC or EPC code", "error")
+    showToast("Error", "Please enter an EPC code", "error")
     return
   }
 
   try {
     // Fetch all products and find matching item
-    const response = await fetch("/api/products")
+    const response = await fetch(`/api/products/epc/${code}`)
     if (!response.ok) {
+      if (response.status === 404) {
+        showToast("Not Found", "Item not found. Please try again.", "warning")
+        return
+      }
       throw new Error("Failed to fetch products")
     }
 
-    const products = await response.json()
-    const product = products.find((p) => p.upc == code || p.epc == code)
+    const product = await response.json()
 
     if (!product) {
       showToast("Not Found", "Item not found. Please try again.", "warning")
+      return
+    }
+
+    // Check if epc already scanned
+    if (cart.some((item) => item.epcs.includes(code))) {
       return
     }
 
@@ -83,9 +80,11 @@ async function scanItem(code) {
 
     if (existingItem) {
       existingItem.quantity++
+      existingItem.epcs.push(code)
     } else {
       cart.push({
         ...product,
+        epcs: [code],
         quantity: 1,
       })
     }
@@ -133,6 +132,7 @@ async function signInCustomer(customerId = null) {
     showToast("Error", "Membership number not found.", "error");
     return;
   }
+
 
   // Success - show confirmation screen
   showMembershipConfirmation(customerId);
@@ -238,11 +238,9 @@ function renderCart() {
 function updateTotals() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const pointsEarned = cart.reduce((sum, item) => sum + item.points_worth * item.quantity, 0)
-  const totalPoints = customerPoints + pointsEarned
 
   document.getElementById("subtotal-value").textContent = `$${subtotal.toFixed(2)}`
   document.getElementById("points-earned-value").textContent = pointsEarned
-  document.getElementById("total-points-value").textContent = totalPoints
   document.getElementById("total-value").textContent = `$${subtotal.toFixed(2)}`
 
   // Enable/disable pay button
@@ -297,9 +295,6 @@ async function processPayment(membershipNumber = null) {
 
   showToast("Success", message, "success")
 
-  // Update customer points
-  customerPoints += pointsEarned
-
   console.log("Cart:" + JSON.stringify(cart))
 
   // Send the payment
@@ -310,7 +305,7 @@ async function processPayment(membershipNumber = null) {
     },
     body: JSON.stringify({
       membership_number: membershipNumber ?? "NONE",
-      products: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+      products: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity, epcs: item.epcs })),
     })
   })
 

@@ -8,6 +8,7 @@ from flask_cors import CORS
 from models.payment_model import Payment
 from models.customer_model import Customer
 from models.product_model import Product
+from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
@@ -395,22 +396,28 @@ def process_payment():
     
     # Create Payment object
     payment = Payment(customer.customer_id if customer else 0)
+    all_epcs = []
     # Loop and add products
     for item in products:
         try:
+            epcs = item.get("epcs", [])
             product = Product.fetch_product_by_id(int(item.get("product_id")))
             if not product:
                 return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
             quantity = int(item.get("quantity", 1))
-            payment.add_product(product, quantity)
+            Product.decrease_inventory(product.product_id, quantity)
+            all_epcs.extend(epcs)
         except DatabaseReadException as e:
             return jsonify({"success": False, "error": str(e)}), 500
         except ValueError:
             return jsonify({"success": False, "error": "Invalid quantity value."}), 400
 
-    # Insert the payment
+    
     try:
+        # Insert the payment
         Payment.insert_payment(payment)
+        # Delete the Product items
+        ProductItem.delete_items_from_epcs(all_epcs)
     except DatabaseInsertException as e:
         print(e)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -599,7 +606,7 @@ def register_product():
         return jsonify({'errors': errors}), 400
     
     # Create the product object
-    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
+    product = Product(data.get("name"), data.get("price"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
     try:
         # Insert the product
         Product.insert_product(product)
@@ -631,7 +638,6 @@ def update_product(product_id):
         # Update product fields
         product.name = data.get("name")
         product.price = float(data.get("price"))
-        product.epc = data.get("epc")
         product.upc = int(data.get("upc"))
         product.category = data.get("category")
         product.points_worth = data.get("points_worth")
@@ -671,6 +677,71 @@ def delete_product(product_id):
         return jsonify({'error': str(e)}), 500
     except Exception as e:
         print(f"ERROR: Failed to delete product: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products/<int:product_id>/epcs', methods=['GET'])
+@login_required(role="admin")
+def get_product_epcs(product_id):
+    """Get all EPCs for a specific product."""
+    try:
+        # Check if product exists
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Fetch EPCs
+        epcs = ProductItem.fetch_by_product_id(product_id)
+        epcs = [item.epc for item in epcs]
+        
+        return jsonify({'epcs': epcs}), 200
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product EPCs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/epc/<string:epc>', methods=['GET'])
+def get_product_by_epc(epc):
+    """Get product details by EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Fetch the associated product
+        product = product_item.product
+        if not product:
+            return jsonify({'error': 'Product not found for this EPC'}), 404
+        
+        return jsonify(product.to_dict()), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product by EPC: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/epc/<string:epc>', methods=['DELETE'])
+@login_required(role="admin")
+def delete_product_epc(epc):
+    """Delete a specific EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Delete the product item
+        ProductItem.delete_items_from_epcs([epc])
+
+        # Reduce inventory count for the associated product
+        Product.decrease_inventory(product_item.product.product_id, 1)
+        
+        return jsonify({'message': 'EPC deleted successfully'}), 200
+    except DatabaseDeleteException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to delete EPC: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ============= RECEIPT DETAILS =============
@@ -939,18 +1010,29 @@ def add_inventory_batch():
     try:
         data = request.get_json()
         product_id = data.get('product_id')
-        quantity = data.get('quantity')
+        epcs = data.get('epcs')
         received_date = data.get('received_date')
         
         # Validate inputs
-        if not product_id or not quantity:
-            return jsonify({'error': 'Product ID and quantity are required'}), 400
+        if not product_id or not epcs:
+            return jsonify({'error': 'Product ID and EPCs are required'}), 400
         
-        if int(quantity) <= 0:
-            return jsonify({'error': 'Quantity must be positive'}), 400
+        if type(epcs) != list or len(epcs) == 0:
+            return jsonify({'error': 'At least one EPC must be provided'}), 400
+        
+        # Determine quantity from EPCs
+        quantity = len(epcs)
+
+        # Validate the epcs
+        duplicate_epc = ProductItem.exists_product_item_with_epc_bulk(epcs)
+        if duplicate_epc:
+            return jsonify({'error': f'One or many duplicate EPCs found. First occurrence: {duplicate_epc}'}), 400
         
         # Add inventory batch
-        Product.add_inventory_batch(int(product_id), int(quantity), received_date)
+        inv_batch_id = Product.add_inventory_batch(int(product_id), quantity, received_date)
+
+        # Add each product item
+        ProductItem.insert_bulk_items(epcs, inv_batch_id)
         
         return jsonify({'message': 'Inventory batch added successfully'}), 200
     except DatabaseInsertException as e:

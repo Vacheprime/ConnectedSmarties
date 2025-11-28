@@ -11,12 +11,11 @@ class Product(BaseModel):
     INVENTORY_TABLE = "ProductInventory"
     INVENTORY_BATCH_TABLE = "InventoryBatches"
 
-    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
+    def __init__(self, name: str, price: float, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
         super().__init__(Product.DB_TABLE)
         self.product_id = None
         self.name = name
         self.price = price
-        self.epc = epc
         self.upc = upc
         self.category = category
         self.points_worth = points_worth
@@ -28,13 +27,25 @@ class Product(BaseModel):
             "product_id": self.product_id,
             "name": self.name,
             "price": self.price,
-            "epc": self.epc,
             "upc": self.upc,
             "category": self.category,
             "available_stock": self.get_inventory(self.product_id),
             "points_worth": self.points_worth,
             "producer_company": self.producer_company
         }
+    
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> Product:
+        product = cls(
+            name=row["name"],
+            price=float(row["price"]),
+            upc=int(row["upc"]),
+            category=row["category"],
+            points_worth=int(row["points_worth"]),
+            producer_company=row["producer_company"]
+        )
+        product.product_id = int(row["product_id"])
+        return product
     
     @classmethod
     def fetch_products_sold(cls, start_date: str, end_date: str = None, include_not_sold: bool = False) -> list[dict[Product, int]]:
@@ -80,7 +91,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -140,7 +150,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -201,7 +210,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -217,7 +225,7 @@ class Product(BaseModel):
 
     # specify the date that the inventory batch was added
     @classmethod
-    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> None:
+    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> int:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -257,11 +265,26 @@ class Product(BaseModel):
             try:
                 # Insert batch record
                 cursor.execute(sql_insert_batch, sql_values)
+                # Get the inserted inventory batch ID
+                inventory_batch_id = cursor.lastrowid
                 # Upsert inventory total_stock
                 cursor.execute(sql_upsert_inventory, {"product_id": product_id, "quantity": quantity})
             except Exception as e:
                 # Any failure should be reported as an insert error (transaction will roll back)
                 raise DatabaseInsertException(f"An unexpected error occurred while adding inventory batch: {e}")
+
+        # Return the inventory batch ID
+        return inventory_batch_id
+    
+
+    @classmethod
+    def decrease_inventory(cls, product_id: int, quantity: int) -> None:
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cls._decrease_inventory(product_id, quantity, cursor)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while decreasing product inventory: {e}")
+
     
     @classmethod
     def _decrease_inventory(cls, product_id: int, quantity: int, cursor: sqlite3.Cursor) -> None:
@@ -327,15 +350,14 @@ class Product(BaseModel):
     @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth, producer_company)
+        INSERT INTO {cls.DB_TABLE} (name, price, upc, category, points_worth, producer_company)
         VALUES
-        (:name, :price, :epc, :upc, :category, :points_worth, :producer_company);
+        (:name, :price, :upc, :category, :points_worth, :producer_company);
         """
 
         sql_values = {
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
@@ -377,7 +399,6 @@ class Product(BaseModel):
             product = Product(
                 row["name"],
                 float(row["price"]),
-                row["epc"],
                 int(row["upc"]),
                 row["category"],
                 row["points_worth"],
@@ -420,7 +441,6 @@ class Product(BaseModel):
         product = Product(
             row["name"],
             float(row["price"]),
-            row["epc"],
             int(row["upc"]),
             row["category"],
             row["points_worth"],
@@ -433,12 +453,40 @@ class Product(BaseModel):
     
 
     @classmethod
+    def fetch_product_by_inventory_batch_id(cls, inventory_batch_id: int) -> Product | None:
+        sql = f"""
+        SELECT p.* FROM {cls.DB_TABLE} p
+        JOIN {cls.INVENTORY_BATCH_TABLE} ib ON p.product_id = ib.product_id
+        WHERE ib.inventory_batch_id = :inventory_batch_id;
+        """
+
+        sql_values = {"inventory_batch_id": inventory_batch_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                # Execute
+                cursor.execute(sql, sql_values)
+                # Fetch one
+                row = cursor.fetchone()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching the product for inventory batch ID {inventory_batch_id}: {e}")
+        
+        # Return if no results
+        if row is None:
+            return None
+        
+        # Map row to Product
+        return cls.from_row(row)
+    
+
+    @classmethod
     def update_product(cls, product: Product) -> None:
         sql = f"""
         UPDATE {cls.DB_TABLE}
         SET name = :name,
             price = :price,
-            epc = :epc,
             upc = :upc,
             category = :category,
             points_worth = :points_worth,
@@ -450,7 +498,6 @@ class Product(BaseModel):
             "product_id": product.product_id,
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,

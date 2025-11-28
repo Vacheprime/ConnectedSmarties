@@ -278,5 +278,9 @@ class Payment(BaseModel):
         payment._assign_payment_id_to_products(payment.payment_id)
         for payment_product in payment.products:
             PaymentProduct.insert_payment_product(payment_product)
+        
+        # Decrease inventory for each product
+        for payment_product in payment.products:
+            Product.decrease_inventory(payment_product.product_id, payment_product.product_amount)
 
 
