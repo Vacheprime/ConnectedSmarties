@@ -135,3 +135,20 @@ Examples:
      Exportable reports
     
      Dashboard widgets 
+
+## Nov 28, 2025 
+
+Tasks to do:
+    - Implement the database for EPC
+    - Implement proper input validation
+    - In the Account page, add a navigation button to go back to self-checkout
+    - In the self-checkout, after you pay, the rewards points won field is not being reset.
+    - Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat)
+    - Adding products by EPC or by range.
+    - Implement inventory report
+    - Fix the weird bug with reports because of Product database change.
+    - Fix the search in purchase history method.
+    - Fix the exports for the reports and for the receipts
+    - (Optional): Fix I18N glitching sometimes
+    - Check the sensor stuff
+    - Do multiple reading of RFID possibly.
