@@ -396,22 +396,28 @@ def process_payment():
     
     # Create Payment object
     payment = Payment(customer.customer_id if customer else 0)
+    all_epcs = []
     # Loop and add products
     for item in products:
         try:
+            epcs = item.get("epcs", [])
             product = Product.fetch_product_by_id(int(item.get("product_id")))
             if not product:
                 return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
             quantity = int(item.get("quantity", 1))
-            payment.add_product(product, quantity)
+            Product.decrease_inventory(product.product_id, quantity)
+            all_epcs.extend(epcs)
         except DatabaseReadException as e:
             return jsonify({"success": False, "error": str(e)}), 500
         except ValueError:
             return jsonify({"success": False, "error": "Invalid quantity value."}), 400
 
-    # Insert the payment
+    
     try:
+        # Insert the payment
         Payment.insert_payment(payment)
+        # Delete the Product items
+        ProductItem.delete_items_from_epcs(all_epcs)
     except DatabaseInsertException as e:
         print(e)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -691,6 +697,29 @@ def get_product_epcs(product_id):
     except Exception as e:
         print(f"ERROR: Failed to fetch product EPCs: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/epc/<string:epc>', methods=['GET'])
+def get_product_by_epc(epc):
+    """Get product details by EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Fetch the associated product
+        product = product_item.product
+        if not product:
+            return jsonify({'error': 'Product not found for this EPC'}), 404
+        
+        return jsonify(product.to_dict()), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product by EPC: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/products/epc/<string:epc>', methods=['DELETE'])
 @login_required(role="admin")
