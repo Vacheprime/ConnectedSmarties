@@ -35,6 +35,19 @@ class Product(BaseModel):
         }
     
     @classmethod
+    def from_row(cls, row: sqlite3.Row) -> Product:
+        product = cls(
+            name=row["name"],
+            price=float(row["price"]),
+            upc=int(row["upc"]),
+            category=row["category"],
+            points_worth=int(row["points_worth"]),
+            producer_company=row["producer_company"]
+        )
+        product.product_id = int(row["product_id"])
+        return product
+    
+    @classmethod
     def fetch_products_sold(cls, start_date: str, end_date: str = None, include_not_sold: bool = False) -> list[dict[Product, int]]:
         sql = f"""
         SELECT p.*, COALESCE(SUM(pp.product_amount), 0) as total_sold FROM Products p
@@ -422,6 +435,35 @@ class Product(BaseModel):
         product.product_id = int(row["product_id"])
 
         return product
+    
+
+    @classmethod
+    def fetch_product_by_inventory_batch_id(cls, inventory_batch_id: int) -> Product | None:
+        sql = f"""
+        SELECT p.* FROM {cls.DB_TABLE} p
+        JOIN {cls.INVENTORY_BATCH_TABLE} ib ON p.product_id = ib.product_id
+        WHERE ib.inventory_batch_id = :inventory_batch_id;
+        """
+
+        sql_values = {"inventory_batch_id": inventory_batch_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                # Execute
+                cursor.execute(sql, sql_values)
+                # Fetch one
+                row = cursor.fetchone()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching the product for inventory batch ID {inventory_batch_id}: {e}")
+        
+        # Return if no results
+        if row is None:
+            return None
+        
+        # Map row to Product
+        return cls.from_row(row)
     
 
     @classmethod
