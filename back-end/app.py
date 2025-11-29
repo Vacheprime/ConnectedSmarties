@@ -1064,62 +1064,45 @@ def add_inventory_batch():
 @login_required(role="admin")
 def get_environmental_report():
     """Get environmental data report (temperature and humidity trends)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sensor_id = request.args.get('sensor_id', 1, type=int)
+
+    if not start_date or not sensor_id:
+        return jsonify({'error': 'start_date and sensor_id are required parameters.'}), 400
+
     try:
-        start_date = request.args.get('start_date', '')
-        end_date = request.args.get('end_date', '')
-        sensor_id = request.args.get('sensor_id', type=int)
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Build query
-        query = """
-        SELECT sensor_id, data_type, value, created_at
-        FROM SensorDataPoints
-        WHERE 1=1
-        """
-        params = []
-        
-        if start_date:
-            query += " AND created_at >= ?"
-            params.append(start_date)
-        if end_date:
-            query += " AND created_at <= ?"
-            params.append(end_date)
-        if sensor_id:
-            query += " AND sensor_id = ?"
-            params.append(sensor_id)
-        
-        query += " ORDER BY created_at DESC LIMIT 1000"
-        
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        
-        # Group by data type
-        temp_data = []
-        humidity_data = []
-        
-        for row in rows:
-            data_point = {
-                'sensor_id': row['sensor_id'],
-                'value': float(row['value']),
-                'timestamp': row['created_at']
+        temp_data_points = SensorDataPoint.fetch_sensor_data_over_time("temperature", start_date, end_date)
+        temp_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
             }
-            
-            if row['data_type'] == 'temperature':
-                temp_data.append(data_point)
-            elif row['data_type'] == 'humidity':
-                humidity_data.append(data_point)
+            for dp in temp_data_points
+        ]
+
+        humidity_data_points = SensorDataPoint.fetch_sensor_data_over_time("humidity", start_date, end_date)
+        humidity_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
+            }
+            for dp in humidity_data_points
+        ]
+
+        print(str(len(humidity_data_list)) + " " + str(len(temp_data_list)))
         
         return jsonify({
             'success': True,
-            'temperature_data': sorted(temp_data, key=lambda x: x['timestamp']),
-            'humidity_data': sorted(humidity_data, key=lambda x: x['timestamp'])
+            'temperature_data': temp_data_list,
+            'humidity_data': humidity_data_list
         }), 200
     except Exception as e:
         print(f"ERROR: Failed to get environmental report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/api/reports/customer-analytics', methods=['GET'])
 @login_required(role="admin")
