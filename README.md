@@ -158,15 +158,21 @@ Tasks to do:
 
 - (Optional): Fix I18N glitching sometimes
 
-- Check the sensor stuff
-
 - Do multiple reading of RFID possibly.
 
 - Send email when adding a customer through the admin customer page.
 
 - Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
 
-- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, )
+- Setup ParetoAnywhere properly so that it works and we can still send emails
+
+- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
+
+- Fix fan status not being properly updated (Danat, )
+
+- Fix fan control not working. (Danat, COMPLETED)
+
+- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, COMPLETED)
 
 - Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat, COMPLETED)
 
