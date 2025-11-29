@@ -152,8 +152,6 @@ Tasks to do:
 
 - Fix the weird bug with reports because of Product database change.
 
-- Fix the search in purchase history method.
-
 - Fix the exports for the reports and for the receipts
 
 - (Optional): Fix I18N glitching sometimes
@@ -166,9 +164,13 @@ Tasks to do:
 
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
 
+- Fix datetime conversion between local time and UTC time. (Danat, )
+
 - Fix fan status not being properly updated (Danat, )
 
-- Send email when adding a customer through the admin customer page. (Danat, IN PROGRESS)
+- Fix the search in purchase history method. (Danat, COMPLETED)
+
+- Send email when adding a customer through the admin customer page. (Danat, ALREADY IMPLEMENTED)
 
 - Fix fan control not working. (Danat, COMPLETED)
 
