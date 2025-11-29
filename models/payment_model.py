@@ -203,12 +203,6 @@ class Payment(BaseModel):
         WHERE customer_id = :customer_id;
         """
 
-        products_sql = f"""
-        SELECT * FROM Products p
-        INNER JOIN PaymentProducts pp ON p.product_id = pp.product_id
-        WHERE pp.payment_id = :payment_id;
-        """
-
         payments = []
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
