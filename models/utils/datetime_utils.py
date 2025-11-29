@@ -12,3 +12,14 @@ class DateTimeUtils:
         except Exception as e:
             # Fallback to original string
             return utc_datetime
+
+    @staticmethod
+    def local_to_utc(local_datetime: str, timezone='America/New_York') -> str:
+        try:
+            local_tz = pytz.timezone(timezone)
+            local = local_tz.localize(datetime.fromisoformat(local_datetime))
+            utc = local.astimezone(pytz.utc)
+            return utc.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            # Fallback to original string
+            return local_datetime

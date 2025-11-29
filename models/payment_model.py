@@ -6,6 +6,7 @@ from models.payment_product_model import PaymentProduct
 from .base_model import BaseModel
 from .customer_model import Customer
 from .exceptions.database_insert_exception import DatabaseInsertException
+from .utils.datetime_utils import DateTimeUtils
 from contextlib import closing
 import sqlite3
 
@@ -56,7 +57,7 @@ class Payment(BaseModel):
     def _build_payment_with_products(cls, row: sqlite3.row) -> Payment:
         # Create the payment
         payment = Payment(customer_id=row["customer_id"])
-        payment.date = row["date"]
+        payment.date = DateTimeUtils.utc_to_local(row["date"])
         payment.payment_id = int(row["payment_id"])
         
         # Fetch the associated products
@@ -82,6 +83,14 @@ class Payment(BaseModel):
         
         if end_date is None:
             end_date = start_date
+        
+        # Normalize dates
+        start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+        end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
 
         sql = f"""
         SELECT SUM(total_paid) as total_sales FROM {cls.DB_TABLE}
@@ -160,6 +169,10 @@ class Payment(BaseModel):
         # Normalize dates
         start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
         end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
 
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
@@ -260,7 +273,7 @@ class Payment(BaseModel):
                 cursor.execute(sql_fetch_payment, {"payment_id": payment_id})
                 payment_row = cursor.fetchone()
                 if payment_row:
-                    payment.date = payment_row["date"]
+                    payment.date = DateTimeUtils.utc_to_local(payment_row["date"])
 
                 # Update the customer's reward points
                 Customer._increase_customer_points(payment.customer_id, payment.get_reward_points_won(), cursor)

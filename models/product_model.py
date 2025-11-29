@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from models.utils.datetime_utils import DateTimeUtils
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from .exceptions.database_read_exception import DatabaseReadException
@@ -71,6 +73,11 @@ class Product(BaseModel):
         
         end_date = end_date + " 23:59:59" if len(end_date) == 10 else end_date
 
+        
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
                 # Set fetch mode
@@ -123,6 +130,10 @@ class Product(BaseModel):
 
         if end_date is None:
             end_date = "9999-12-31 23:59:59"
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
 
         sql_values = {
             "start_date": start_date,
@@ -189,6 +200,10 @@ class Product(BaseModel):
             "end_date": end_date,
             "top_n": top_n
         }
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:

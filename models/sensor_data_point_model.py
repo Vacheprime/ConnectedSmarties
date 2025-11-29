@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from models.utils.datetime_utils import DateTimeUtils
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from contextlib import closing
@@ -77,7 +79,7 @@ class SensorDataPoint(BaseModel):
             # Convert to SensorDataPoint object
             sensor_data_point = SensorDataPoint(row["sensor_id"], row["data_type"], row["value"])
             sensor_data_point.sensor_data_point_id = row["sensor_data_point_id"]
-            sensor_data_point.created_at = row["created_at"]
+            sensor_data_point.created_at = DateTimeUtils.local_to_utc(row["created_at"])
 
             return sensor_data_point
     
