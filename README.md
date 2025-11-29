@@ -150,8 +150,6 @@ Tasks to do:
 
 - Fix the weird bug with reports because of Product database change.
 
-- Fix the exports for the reports and for the receipts
-
 - (Optional): Fix I18N glitching sometimes
 
 - Do multiple reading of RFID possibly.
@@ -164,7 +162,9 @@ Tasks to do:
 
 - Fix fan status not being properly updated (Danat, )
 
-- Fix datetime conversion between local time and UTC time. (Danat, )
+- Fix the exports for the reports and for the receipts (Ishi, COMPLETED)
+
+- Fix datetime conversion between local time and UTC time. (Danat, COMPLETED)
 
 - In the Account page, add a navigation button to go back to self-checkout (Florence, COMPLETED)
 
