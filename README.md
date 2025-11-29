@@ -162,10 +162,10 @@ Tasks to do:
 
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
 
+- Fix fan status not being properly updated (Danat, )
+
 - Fix datetime conversion between local time and UTC time. (Danat, )
 
-- Fix fan status not being properly updated (Danat, )
-  
 - In the Account page, add a navigation button to go back to self-checkout (Florence, COMPLETED)
 
 - Fix the search in purchase history method. (Danat, COMPLETED)

@@ -14,7 +14,6 @@ from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
-from utils.datetime_utils import DateTimeUtils
 import re
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

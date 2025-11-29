@@ -3,6 +3,7 @@ from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from .exceptions.database_read_exception import DatabaseReadException
 from .exceptions.database_delete_exception import DatabaseDeleteException
+from .utils.datetime_utils import DateTimeUtils
 from contextlib import closing
 import sqlite3
 import string
@@ -86,6 +87,10 @@ class Customer(BaseModel):
 		start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
 		end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
 
+		# Convert to UTC for comparison
+		start_date = DateTimeUtils.local_to_utc(start_date)
+		end_date = DateTimeUtils.local_to_utc(end_date)
+
 		sql = f"""
 		SELECT COUNT(DISTINCT pa.customer_id) AS new_customer_count
 		FROM Payments pa
@@ -136,6 +141,10 @@ class Customer(BaseModel):
 		# Normalize the start and end dates
 		start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
 		end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+		# Convert to UTC for comparison
+		start_date = DateTimeUtils.local_to_utc(start_date)
+		end_date = DateTimeUtils.local_to_utc(end_date)
 
 		sql = f"""
 		SELECT COUNT(DISTINCT pa.customer_id) AS returning_customer_count
@@ -285,7 +294,7 @@ class Customer(BaseModel):
 					row["qr_identification"],
 					int(row["rewards_points"])
 				)
-				customer.join_date = row["join_date"]
+				customer.join_date = DateTimeUtils.utc_to_local(row["join_date"])
 
 				customer.customer_id = int(row["customer_id"])
 
@@ -327,7 +336,7 @@ class Customer(BaseModel):
 					row["qr_identification"],
 					int(row["rewards_points"])
 				)
-				customer.join_date = row["join_date"]
+				customer.join_date = DateTimeUtils.utc_to_local(row["join_date"])
 				customer.customer_id = int(row["customer_id"])
 
 				return customer
@@ -367,7 +376,7 @@ class Customer(BaseModel):
 				row["rewards_points"]
 			)
 			customer.customer_id = int(row["customer_id"])
-			customer.join_date = row["join_date"]
+			customer.join_date = DateTimeUtils.utc_to_local(row["join_date"])
 			customers.append(customer)
 
 		return customers
