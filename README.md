@@ -148,8 +148,6 @@ Tasks to do:
 
 - In the Account page, add a navigation button to go back to self-checkout
 
-- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat)
-
 - Implement inventory report
 
 - Fix the weird bug with reports because of Product database change.
@@ -167,6 +165,10 @@ Tasks to do:
 - Send email when adding a customer through the admin customer page.
 
 - Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
+
+- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, )
+
+- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat, COMPLETED)
 
 - Implement the database for EPC (Danat, COMPLETED)
 
