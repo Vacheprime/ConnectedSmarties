@@ -67,6 +67,8 @@ pareto_service = ParetoAnywhereService()
 # Temperature thresholds for alerts (in Celsius)
 TEMP_THRESHOLD_HIGH = 25.0  # Alert if temperature exceeds this
 TEMP_THRESHOLD_LOW = -5.0   # Alert if temperature drops below this
+TEMP_LAST_ALERT_TIME = {}  # To track last alert time per sensor
+TEMP_ALERT_INTERVAL = 60 * 5  # 5 minutes
 
 def check_temperature_threshold(sensor_id: int, temperature: float, location: str):
     """
@@ -79,15 +81,26 @@ def check_temperature_threshold(sensor_id: int, temperature: float, location: st
     """
     global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
 
+    # Check the last alert time to avoid spamming
+    last_alert_time = TEMP_LAST_ALERT_TIME.get(sensor_id)
+
+    # Skip alerting if within the interval
+    if last_alert_time and (datetime.now() - last_alert_time).total_seconds() < TEMP_ALERT_INTERVAL:
+        return  
+
     # Fetch all admin emails
     admin_emails = Admin.fetch_all_admin_emails()
     
     if temperature > TEMP_THRESHOLD_HIGH:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C > {TEMP_THRESHOLD_HIGH}°C")
         email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
+        
     elif temperature < TEMP_THRESHOLD_LOW:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C < {TEMP_THRESHOLD_LOW}°C")
         email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_LOW, sensor_id)
+    
+    TEMP_LAST_ALERT_TIME[sensor_id] = datetime.now()
+
 
 mqtt_service.set_threshold_callback(check_temperature_threshold)
 
@@ -411,7 +424,7 @@ def process_payment():
             
             quantity = int(item.get("quantity", 1))
             payment.add_product(product, quantity)
-            
+
             Product.decrease_inventory(product.product_id, quantity)
             all_epcs.extend(epcs)
         except DatabaseReadException as e:
@@ -945,7 +958,7 @@ def turn_fan_on():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Activate the fan via MQTT
-        mqtt_service.ActivateFan(topic)
+        mqtt_service.activate_fan(topic)
         
         print(f"INFO: Fan activated for {location}")
         return jsonify({'message': f'Fan turned on for {location}'}), 200
@@ -971,7 +984,7 @@ def turn_fan_off():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Deactivate the fan via MQTT
-        mqtt_service.DeactivateFan(topic)
+        mqtt_service.deactivate_fan(topic)
         
         print(f"INFO: Fan deactivated for {location}")
         return jsonify({'message': f'Fan turned off for {location}'}), 200
