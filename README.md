@@ -146,8 +146,6 @@ Tasks to do:
 
 - Implement proper input validation
 
-- In the Account page, add a navigation button to go back to self-checkout
-
 - Implement inventory report
 
 - Fix the weird bug with reports because of Product database change.
@@ -167,6 +165,8 @@ Tasks to do:
 - Fix datetime conversion between local time and UTC time. (Danat, )
 
 - Fix fan status not being properly updated (Danat, )
+  
+- In the Account page, add a navigation button to go back to self-checkout (Florence, COMPLETED)
 
 - Fix the search in purchase history method. (Danat, COMPLETED)
 
