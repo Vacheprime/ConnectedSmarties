@@ -8,11 +8,13 @@ from flask_cors import CORS
 from models.payment_model import Payment
 from models.customer_model import Customer
 from models.product_model import Product
+from models.payment_product_model import PaymentProduct
 from models.admin_model import Admin
 from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
+from utils.datetime_utils import DateTimeUtils
 import re
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -296,31 +298,23 @@ def account():
             redirect("/logout")
 
         # Fetch customer payments
-        payments = Payment.fetch_payment_by_customer_id(customer.customer_id)
+        payments: list[Payment] = Payment.fetch_payment_by_customer_id(customer.customer_id)
         # Convert Payment objects into JSON-serializable dicts for templates/JS
         payments_list = []
         for p in payments:
-            try:
-                payment_date = p.date
-            except Exception:
-                payment_date = None
             # Serialize product-level details
             products = []
-            for prod_pair in getattr(p, 'products', []) or []:
-                try:
-                    prod, qty = prod_pair
-                except Exception:
-                    continue
+            for payment_product in p.products:
                 products.append({
-                    "product_id": getattr(prod, 'product_id', None),
-                    "name": getattr(prod, 'name', None),
-                    "price": getattr(prod, 'price', None),
-                    "quantity": qty,
+                    "product_id": payment_product.product_id,
+                    "name": payment_product.product_name,
+                    "price": payment_product.product_price,
+                    "quantity": payment_product.product_amount,
                 })
             payments_list.append({
-                "payment_id": getattr(p, 'payment_id', None),
-                "date": payment_date,
-                "total_paid": getattr(p, 'total_paid', None),
+                "payment_id": p.payment_id,
+                "date": p.date,
+                "total_paid": p.total_paid,
                 "products": products,
             })
     except DatabaseReadException as e:
