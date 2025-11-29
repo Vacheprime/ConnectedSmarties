@@ -8,6 +8,7 @@ from flask_cors import CORS
 from models.payment_model import Payment
 from models.customer_model import Customer
 from models.product_model import Product
+from models.admin_model import Admin
 from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
@@ -66,6 +67,8 @@ pareto_service = ParetoAnywhereService()
 # Temperature thresholds for alerts (in Celsius)
 TEMP_THRESHOLD_HIGH = 25.0  # Alert if temperature exceeds this
 TEMP_THRESHOLD_LOW = -5.0   # Alert if temperature drops below this
+TEMP_LAST_ALERT_TIME = {}  # To track last alert time per sensor
+TEMP_ALERT_INTERVAL = 60 * 5  # 5 minutes
 
 def check_temperature_threshold(sensor_id: int, temperature: float, location: str):
     """
@@ -77,13 +80,27 @@ def check_temperature_threshold(sensor_id: int, temperature: float, location: st
         location (str): Location of the sensor (e.g., "Frig1")
     """
     global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+
+    # Check the last alert time to avoid spamming
+    last_alert_time = TEMP_LAST_ALERT_TIME.get(sensor_id)
+
+    # Skip alerting if within the interval
+    if last_alert_time and (datetime.now() - last_alert_time).total_seconds() < TEMP_ALERT_INTERVAL:
+        return  
+
+    # Fetch all admin emails
+    admin_emails = Admin.fetch_all_admin_emails()
     
     if temperature > TEMP_THRESHOLD_HIGH:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C > {TEMP_THRESHOLD_HIGH}°C")
-        email_service.send_threshold_alert(location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
+        email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
+        
     elif temperature < TEMP_THRESHOLD_LOW:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C < {TEMP_THRESHOLD_LOW}°C")
-        email_service.send_threshold_alert(location, "temperature", temperature, TEMP_THRESHOLD_LOW, sensor_id)
+        email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_LOW, sensor_id)
+    
+    TEMP_LAST_ALERT_TIME[sensor_id] = datetime.now()
+
 
 mqtt_service.set_threshold_callback(check_temperature_threshold)
 
@@ -233,7 +250,7 @@ def register_customer():
     
     # Send an email confirmation with the member QR Code
     try:
-        email_service.send_qr_code(customer.qr_identification, customer.email, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
+        email_service.send_qr_code(customer.email, customer.qr_identification, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
     except Exception as e:
         return jsonify({'success': True, "message": "Registration successful, but failed to send confirmation email."}), 200
 
@@ -404,7 +421,10 @@ def process_payment():
             product = Product.fetch_product_by_id(int(item.get("product_id")))
             if not product:
                 return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
+            
             quantity = int(item.get("quantity", 1))
+            payment.add_product(product, quantity)
+
             Product.decrease_inventory(product.product_id, quantity)
             all_epcs.extend(epcs)
         except DatabaseReadException as e:
@@ -890,6 +910,10 @@ def get_threshold():
 def update_threshold():
     """Update temperature thresholds."""
     global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+
+    # Get admin emails
+    admin_emails = Admin.fetch_all_admin_emails()
+
     try:
         data = request.get_json()
         
@@ -902,7 +926,7 @@ def update_threshold():
         mqtt_service.set_threshold_callback(check_temperature_threshold)
         
         # Send email notification about the threshold update
-        email_service.send_threshold_update(TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
+        email_service.send_threshold_update(admin_emails, TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
         
         print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
         return jsonify({
@@ -934,7 +958,7 @@ def turn_fan_on():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Activate the fan via MQTT
-        mqtt_service.ActivateFan(topic)
+        mqtt_service.activate_fan(topic)
         
         print(f"INFO: Fan activated for {location}")
         return jsonify({'message': f'Fan turned on for {location}'}), 200
@@ -960,7 +984,7 @@ def turn_fan_off():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Deactivate the fan via MQTT
-        mqtt_service.DeactivateFan(topic)
+        mqtt_service.deactivate_fan(topic)
         
         print(f"INFO: Fan deactivated for {location}")
         return jsonify({'message': f'Fan turned off for {location}'}), 200

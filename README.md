@@ -148,8 +148,6 @@ Tasks to do:
 
 - In the Account page, add a navigation button to go back to self-checkout
 
-- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat)
-
 - Implement inventory report
 
 - Fix the weird bug with reports because of Product database change.
@@ -160,13 +158,23 @@ Tasks to do:
 
 - (Optional): Fix I18N glitching sometimes
 
-- Check the sensor stuff
-
 - Do multiple reading of RFID possibly.
 
 - Send email when adding a customer through the admin customer page.
 
 - Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
+
+- Setup ParetoAnywhere properly so that it works and we can still send emails
+
+- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
+
+- Fix fan status not being properly updated (Danat, )
+
+- Fix fan control not working. (Danat, COMPLETED)
+
+- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, COMPLETED)
+
+- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat, COMPLETED)
 
 - Implement the database for EPC (Danat, COMPLETED)
 
