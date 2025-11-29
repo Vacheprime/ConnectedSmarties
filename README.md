@@ -160,8 +160,6 @@ Tasks to do:
 
 - Do multiple reading of RFID possibly.
 
-- Send email when adding a customer through the admin customer page.
-
 - Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
 
 - Setup ParetoAnywhere properly so that it works and we can still send emails
@@ -169,6 +167,8 @@ Tasks to do:
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
 
 - Fix fan status not being properly updated (Danat, )
+
+- Send email when adding a customer through the admin customer page. (Danat, IN PROGRESS)
 
 - Fix fan control not working. (Danat, COMPLETED)
 
