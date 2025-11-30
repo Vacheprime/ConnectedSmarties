@@ -28,7 +28,6 @@ const reportDateInputs = {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeAllDateFilters();
-    loadCategoryFilter();
 });
 
 function initializeAllDateFilters() {
@@ -335,13 +334,8 @@ function createCustomerChart(topCustomers) {
 
 async function loadProductSalesReport() {
     const filters = getDateFiltersForReport('products');
-    const category = document.getElementById('category-filter').value;
 
-    console.log(filters.start_date + " " + filters.end_date + " " + category);
     let url = `/api/reports/product-sales?start_date=${filters.start_date}&end_date=${filters.end_date}`;
-    if (category) {
-        url += `&category=${encodeURIComponent(category)}`;
-    }
 
     const response = await fetch(url);
     const data = await response.json();
@@ -582,36 +576,10 @@ function createFanChart(fanData) {
     });
 }
 
-// ============= CATEGORY FILTER =============
-
-async function loadCategoryFilter() {
-    try {
-        // Assuming this endpoint also returns categories
-        const response = await fetch('/api/reports/product-sales'); 
-        const data = await response.json();
-
-        if (data.success && data.categories) {
-            const select = document.getElementById('category-filter');
-            // Clear existing options (except the first "All")
-            select.querySelectorAll('option[value!=""]').forEach(opt => opt.remove());
-            
-            data.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading categories:', error);
-    }
-}
-
 // ============= EXPORT TO GLOBAL SCOPE =============
 // Make functions available to be called from HTML
 if (typeof window !== 'undefined') {
     window.openReportModal = openReportModal;
     window.closeReportModal = closeReportModal;
     window.savePdf = savePdf;
-    // Note: The individual load... functions are no longer needed on window
 }
