@@ -158,13 +158,13 @@ Tasks to do:
 
 - Setup ParetoAnywhere properly so that it works and we can still send emails
 
-- Add Customer report: List of receipts per day or by time period
-
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
 
 - Fix fan control for fan 2 turning on fan for fan 1.
 
 - Fix fan status not being properly updated (Danat, )
+
+- Add Customer report: List of receipts per day or by time period (Danat, COMPLETED)
 
 - Fix the exports for the reports and for the receipts (Ishi, COMPLETED)
 
