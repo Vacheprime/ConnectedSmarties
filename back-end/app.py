@@ -8,6 +8,9 @@ from flask_cors import CORS
 from models.payment_model import Payment
 from models.customer_model import Customer
 from models.product_model import Product
+from models.payment_product_model import PaymentProduct
+from models.admin_model import Admin
+from models.product_item_model import ProductItem
 from models.exceptions.database_insert_exception import DatabaseInsertException
 from models.exceptions.database_delete_exception import DatabaseDeleteException
 from models.exceptions.database_read_exception import DatabaseReadException
@@ -65,6 +68,8 @@ pareto_service = ParetoAnywhereService()
 # Temperature thresholds for alerts (in Celsius)
 TEMP_THRESHOLD_HIGH = 25.0  # Alert if temperature exceeds this
 TEMP_THRESHOLD_LOW = -5.0   # Alert if temperature drops below this
+TEMP_LAST_ALERT_TIME = {}  # To track last alert time per sensor
+TEMP_ALERT_INTERVAL = 60 * 5  # 5 minutes
 
 def check_temperature_threshold(sensor_id: int, temperature: float, location: str):
     """
@@ -76,13 +81,27 @@ def check_temperature_threshold(sensor_id: int, temperature: float, location: st
         location (str): Location of the sensor (e.g., "Frig1")
     """
     global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+
+    # Check the last alert time to avoid spamming
+    last_alert_time = TEMP_LAST_ALERT_TIME.get(sensor_id)
+
+    # Skip alerting if within the interval
+    if last_alert_time and (datetime.now() - last_alert_time).total_seconds() < TEMP_ALERT_INTERVAL:
+        return  
+
+    # Fetch all admin emails
+    admin_emails = Admin.fetch_all_admin_emails()
     
     if temperature > TEMP_THRESHOLD_HIGH:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C > {TEMP_THRESHOLD_HIGH}°C")
-        email_service.send_threshold_alert(location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
+        email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_HIGH, sensor_id)
+        
     elif temperature < TEMP_THRESHOLD_LOW:
         print(f"WARNING: Temperature threshold exceeded for {location}: {temperature}°C < {TEMP_THRESHOLD_LOW}°C")
-        email_service.send_threshold_alert(location, "temperature", temperature, TEMP_THRESHOLD_LOW, sensor_id)
+        email_service.send_threshold_alert(admin_emails, location, "temperature", temperature, TEMP_THRESHOLD_LOW, sensor_id)
+    
+    TEMP_LAST_ALERT_TIME[sensor_id] = datetime.now()
+
 
 mqtt_service.set_threshold_callback(check_temperature_threshold)
 
@@ -232,7 +251,7 @@ def register_customer():
     
     # Send an email confirmation with the member QR Code
     try:
-        email_service.send_qr_code(customer.qr_identification, customer.email, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
+        email_service.send_qr_code(customer.email, customer.qr_identification, f"{customer.first_name} {customer.last_name}", "Membership Registration Confirmation")
     except Exception as e:
         return jsonify({'success': True, "message": "Registration successful, but failed to send confirmation email."}), 200
 
@@ -278,31 +297,23 @@ def account():
             redirect("/logout")
 
         # Fetch customer payments
-        payments = Payment.fetch_payment_by_customer_id(customer.customer_id)
+        payments: list[Payment] = Payment.fetch_payment_by_customer_id(customer.customer_id)
         # Convert Payment objects into JSON-serializable dicts for templates/JS
         payments_list = []
         for p in payments:
-            try:
-                payment_date = p.date
-            except Exception:
-                payment_date = None
             # Serialize product-level details
             products = []
-            for prod_pair in getattr(p, 'products', []) or []:
-                try:
-                    prod, qty = prod_pair
-                except Exception:
-                    continue
+            for payment_product in p.products:
                 products.append({
-                    "product_id": getattr(prod, 'product_id', None),
-                    "name": getattr(prod, 'name', None),
-                    "price": getattr(prod, 'price', None),
-                    "quantity": qty,
+                    "product_id": payment_product.product_id,
+                    "name": payment_product.product_name,
+                    "price": payment_product.product_price,
+                    "quantity": payment_product.product_amount,
                 })
             payments_list.append({
-                "payment_id": getattr(p, 'payment_id', None),
-                "date": payment_date,
-                "total_paid": getattr(p, 'total_paid', None),
+                "payment_id": p.payment_id,
+                "date": p.date,
+                "total_paid": p.total_paid,
                 "products": products,
             })
     except DatabaseReadException as e:
@@ -395,22 +406,30 @@ def process_payment():
     
     # Create Payment object
     payment = Payment(customer.customer_id if customer else 0)
+    all_epcs = []
     # Loop and add products
     for item in products:
         try:
+            epcs = item.get("epcs", [])
             product = Product.fetch_product_by_id(int(item.get("product_id")))
             if not product:
                 return jsonify({"success": False, "error": f"Product ID {item.get('product_id')} not found."}), 400
+            
             quantity = int(item.get("quantity", 1))
             payment.add_product(product, quantity)
+
+            all_epcs.extend(epcs)
         except DatabaseReadException as e:
             return jsonify({"success": False, "error": str(e)}), 500
         except ValueError:
             return jsonify({"success": False, "error": "Invalid quantity value."}), 400
 
-    # Insert the payment
+    
     try:
+        # Insert the payment
         Payment.insert_payment(payment)
+        # Delete the Product items
+        ProductItem.delete_items_from_epcs(all_epcs)
     except DatabaseInsertException as e:
         print(e)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -424,6 +443,59 @@ def process_payment():
             return jsonify({"success": False, "error": f"Payment processed but failed to send email: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Payment processed successfully."}), 200
+
+@app.route('/api/payments/filtered', methods=['GET'])
+def get_filtered_payments():
+    """Get payments for the logged-in customer filtered by date range."""
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Validate dates
+    if not start_date or not end_date:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+    
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD'}), 400
+    
+    if not validate_date_format(end_date):
+        return jsonify({'error': 'end_date must be in format YYYY-MM-DD'}), 400
+    
+    try:
+        customer_id = int(session["user_id"])
+        
+        # Use the Payment model method to fetch filtered payments
+        payments = Payment.fetch_payments_of_customer_by_date(customer_id, start_date, end_date)
+        
+        # Convert to JSON-serializable format
+        payments_list = []
+        for payment in payments:
+            products = []
+            for payment_product in payment.products:
+                products.append({
+                    "product_id": payment_product.product_id,
+                    "name": payment_product.product_name,
+                    "price": payment_product.product_price,
+                    "quantity": payment_product.product_amount,
+                })
+            
+            payments_list.append({
+                "payment_id": payment.payment_id,
+                "date": payment.date,
+                "total_paid": payment.total_paid,
+                "products": products,
+            })
+        
+        return jsonify({
+            "success": True,
+            "payments": payments_list
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get filtered payments: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ============= PRODUCT API ROUTES =============
 
@@ -592,16 +664,32 @@ def register_product_api():
 @app.route('/products/add', methods=['POST'])
 def register_product():
     data = request.get_json()
-    # Validate the input
     errors = validate_product(data)
-    if errors:
-        print("Returning validation errors to client...") 
-        return jsonify({'errors': errors}), 400
-    
-    # Create the product object
-    product = Product(data.get("name"), data.get("price"), data.get("epc"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
+    # New threshold validation
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
     try:
-        # Insert the product
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
+    if errors:
+        return jsonify({'errors': errors}), 400
+    product = Product(
+        data.get("name"),
+        data.get("price"),
+        data.get("upc"),
+        data.get("category"),
+        data.get("points_worth"),
+        data.get("producer_company")
+    )
+    product.low_stock_threshold = low_thr
+    product.moderate_stock_threshold = mod_thr
+    try:
         Product.insert_product(product)
         return jsonify({'message': 'Product added successfully'}), 200
     except DatabaseInsertException as e:
@@ -616,31 +704,33 @@ def update_product_api(product_id):
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     data = request.get_json()
-
-    # Validate the input
     errors = validate_product(data)
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
+    try:
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
     if errors:
         return jsonify({'errors': errors}), 400
-    
     try:
-        # Get the product
         product = Product.fetch_product_by_id(product_id)
         if not product:
             return jsonify({'error': 'Product not found'}), 404
-        
-        # Update product fields
         product.name = data.get("name")
         product.price = float(data.get("price"))
-        product.epc = data.get("epc")
         product.upc = int(data.get("upc"))
         product.category = data.get("category")
         product.points_worth = data.get("points_worth")
         product.producer_company = data.get("producer_company")
-
-        # Save the updated product
+        product.low_stock_threshold = low_thr
+        product.moderate_stock_threshold = mod_thr
         Product.update_product(product)
-
-        # Return success response
         return jsonify({'message': 'Product updated successfully'}), 200
     except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
@@ -673,12 +763,76 @@ def delete_product(product_id):
         print(f"ERROR: Failed to delete product: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/products/<int:product_id>/epcs', methods=['GET'])
+@login_required(role="admin")
+def get_product_epcs(product_id):
+    """Get all EPCs for a specific product."""
+    try:
+        # Check if product exists
+        product = Product.fetch_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Fetch EPCs
+        epcs = ProductItem.fetch_by_product_id(product_id)
+        epcs = [item.epc for item in epcs]
+        
+        return jsonify({'epcs': epcs}), 200
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product EPCs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/epc/<string:epc>', methods=['GET'])
+def get_product_by_epc(epc):
+    """Get product details by EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Fetch the associated product
+        product = product_item.product
+        if not product:
+            return jsonify({'error': 'Product not found for this EPC'}), 404
+        
+        return jsonify(product.to_dict()), 200
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to fetch product by EPC: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/epc/<string:epc>', methods=['DELETE'])
+@login_required(role="admin")
+def delete_product_epc(epc):
+    """Delete a specific EPC (product item)."""
+    try:
+        # Fetch the product item
+        product_item = ProductItem.fetch_by_epc(epc)
+        if not product_item:
+            return jsonify({'error': 'EPC not found'}), 404
+        
+        # Delete the product item
+        ProductItem.delete_items_from_epcs([epc])
+
+        Product.decrease_inventory(product_item.product.product_id, 1)
+        
+        return jsonify({'message': 'EPC deleted successfully'}), 200
+    except DatabaseDeleteException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"ERROR: Failed to delete EPC: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= RECEIPT DETAILS =============
 @app.get("/receipt-details/<int:payment_id>")
 def receipt_details(payment_id):
-
+    # Get the logged-in customer id from the session (if available)
     customer_id = session.get("user_id")
-    all_payments = Payment.fetch_payment_by_customer_id(customer_id)
+    all_payments: list[Payment] = Payment.fetch_payment_by_customer_id(customer_id)
     
     print("---- DEBUG ----")
     print("Payment ID requested:", payment_id)
@@ -697,19 +851,30 @@ def receipt_details(payment_id):
     # Format product list
     product_list = [
         {
-            "name": product.name,
-            "quantity": int(quantity),
-            "price": float(product.price)
+            "name": payment_product.product_name,
+            "quantity": int(payment_product.product_amount),
+            "price": float(payment_product.product_price)
         }
-        for product, quantity in payment.products
+        for payment_product in payment.products
     ]
+
+    # Retrieve customer first name from Customers table (prefer session user id)
+    customer_first_name = None
+    try:
+        if customer_id:
+            cust = Customer.fetch_customer_by_id(int(customer_id))
+            if cust:
+                customer_first_name = cust.first_name
+    except Exception as e:
+        print(f"WARNING: failed to fetch customer for receipt: {e}")
 
     return jsonify({
         "success": True,
-        "date": payment.date,
+        "date": payment_date,
         "total": float(payment.total_paid),
         "points": int(payment.get_reward_points_won()),
-        "products": product_list
+        "products": product_list,
+        "customer": {"first_name": customer_first_name}
     })
 
 # ============= SENSOR API ROUTES =============
@@ -808,6 +973,10 @@ def get_threshold():
 def update_threshold():
     """Update temperature thresholds."""
     global TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW
+
+    # Get admin emails
+    admin_emails = Admin.fetch_all_admin_emails()
+
     try:
         data = request.get_json()
         
@@ -820,7 +989,7 @@ def update_threshold():
         mqtt_service.set_threshold_callback(check_temperature_threshold)
         
         # Send email notification about the threshold update
-        email_service.send_threshold_update(TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
+        email_service.send_threshold_update(admin_emails, TEMP_THRESHOLD_HIGH, TEMP_THRESHOLD_LOW)
         
         print(f"INFO: Thresholds updated - High: {TEMP_THRESHOLD_HIGH}°C, Low: {TEMP_THRESHOLD_LOW}°C")
         return jsonify({
@@ -852,7 +1021,7 @@ def turn_fan_on():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Activate the fan via MQTT
-        mqtt_service.ActivateFan(topic)
+        mqtt_service.activate_fan(topic)
         
         print(f"INFO: Fan activated for {location}")
         return jsonify({'message': f'Fan turned on for {location}'}), 200
@@ -878,7 +1047,7 @@ def turn_fan_off():
             return jsonify({'error': 'Invalid sensor_id'}), 400
         
         # Deactivate the fan via MQTT
-        mqtt_service.DeactivateFan(topic)
+        mqtt_service.deactivate_fan(topic)
         
         print(f"INFO: Fan deactivated for {location}")
         return jsonify({'message': f'Fan turned off for {location}'}), 200
@@ -928,18 +1097,29 @@ def add_inventory_batch():
     try:
         data = request.get_json()
         product_id = data.get('product_id')
-        quantity = data.get('quantity')
+        epcs = data.get('epcs')
         received_date = data.get('received_date')
         
         # Validate inputs
-        if not product_id or not quantity:
-            return jsonify({'error': 'Product ID and quantity are required'}), 400
+        if not product_id or not epcs:
+            return jsonify({'error': 'Product ID and EPCs are required'}), 400
         
-        if int(quantity) <= 0:
-            return jsonify({'error': 'Quantity must be positive'}), 400
+        if type(epcs) != list or len(epcs) == 0:
+            return jsonify({'error': 'At least one EPC must be provided'}), 400
+        
+        # Determine quantity from EPCs
+        quantity = len(epcs)
+
+        # Validate the epcs
+        duplicate_epc = ProductItem.exists_product_item_with_epc_bulk(epcs)
+        if duplicate_epc:
+            return jsonify({'error': f'One or many duplicate EPCs found. First occurrence: {duplicate_epc}'}), 400
         
         # Add inventory batch
-        Product.add_inventory_batch(int(product_id), int(quantity), received_date)
+        inv_batch_id = Product.add_inventory_batch(int(product_id), quantity, received_date)
+
+        # Add each product item
+        ProductItem.insert_bulk_items(epcs, inv_batch_id)
         
         return jsonify({'message': 'Inventory batch added successfully'}), 200
     except DatabaseInsertException as e:
@@ -954,128 +1134,83 @@ def add_inventory_batch():
 @login_required(role="admin")
 def get_environmental_report():
     """Get environmental data report (temperature and humidity trends)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sensor_id = request.args.get('sensor_id', 1, type=int)
+
+    if not start_date or not sensor_id:
+        return jsonify({'error': 'start_date and sensor_id are required parameters.'}), 400
+
     try:
-        start_date = request.args.get('start_date', '')
-        end_date = request.args.get('end_date', '')
-        sensor_id = request.args.get('sensor_id', type=int)
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Build query
-        query = """
-        SELECT sensor_id, data_type, value, created_at
-        FROM SensorDataPoints
-        WHERE 1=1
-        """
-        params = []
-        
-        if start_date:
-            query += " AND created_at >= ?"
-            params.append(start_date)
-        if end_date:
-            query += " AND created_at <= ?"
-            params.append(end_date)
-        if sensor_id:
-            query += " AND sensor_id = ?"
-            params.append(sensor_id)
-        
-        query += " ORDER BY created_at DESC LIMIT 1000"
-        
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        
-        # Group by data type
-        temp_data = []
-        humidity_data = []
-        
-        for row in rows:
-            data_point = {
-                'sensor_id': row['sensor_id'],
-                'value': float(row['value']),
-                'timestamp': row['created_at']
+        temp_data_points = SensorDataPoint.fetch_sensor_data_over_time("temperature", start_date, end_date)
+        temp_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
             }
-            
-            if row['data_type'] == 'temperature':
-                temp_data.append(data_point)
-            elif row['data_type'] == 'humidity':
-                humidity_data.append(data_point)
+            for dp in temp_data_points
+        ]
+
+        humidity_data_points = SensorDataPoint.fetch_sensor_data_over_time("humidity", start_date, end_date)
+        humidity_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
+            }
+            for dp in humidity_data_points
+        ]
+
+        print(str(len(humidity_data_list)) + " " + str(len(temp_data_list)))
         
         return jsonify({
             'success': True,
-            'temperature_data': sorted(temp_data, key=lambda x: x['timestamp']),
-            'humidity_data': sorted(humidity_data, key=lambda x: x['timestamp'])
+            'temperature_data': temp_data_list,
+            'humidity_data': humidity_data_list
         }), 200
     except Exception as e:
         print(f"ERROR: Failed to get environmental report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
 @app.route('/api/reports/customer-analytics', methods=['GET'])
 @login_required(role="admin")
 def get_customer_analytics_report():
     """Get customer analytics (registration and rewards statistics)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+
+    if end_date == start_date:
+        end_date = None
+    
     try:
-        start_date = request.args.get('start_date', '2024-01-01')
-        end_date = request.args.get('end_date', str(date.today()))
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Total customers
-        cursor.execute("SELECT COUNT(*) as count FROM Customers WHERE customer_id != 0")
-        total_customers = cursor.fetchone()['count']
-        
-        # New customers in date range
-        cursor.execute("""
-            SELECT COUNT(*) as count FROM Customers 
-            WHERE customer_id != 0 AND join_date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        new_customers = cursor.fetchone()['count']
-        
-        # Total rewards distributed
-        cursor.execute("""
-            SELECT SUM(reward_points_won) as total FROM Payments
-            WHERE date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        total_rewards = cursor.fetchone()['total'] or 0
-        
-        # Average rewards per customer
-        cursor.execute("""
-            SELECT AVG(rewards_points) as avg FROM Customers
-            WHERE customer_id != 0
-        """)
-        avg_rewards = cursor.fetchone()['avg'] or 0
-        
-        # Top customers by purchases
-        cursor.execute("""
-            SELECT c.customer_id, c.first_name, c.last_name, COUNT(p.payment_id) as purchase_count, SUM(p.total_paid) as total_spent
-            FROM Customers c
-            LEFT JOIN Payments p ON c.customer_id = p.customer_id AND p.date BETWEEN ? AND ?
-            WHERE c.customer_id != 0
-            GROUP BY c.customer_id
-            ORDER BY purchase_count DESC
-            LIMIT 10
-        """, (start_date, end_date))
-        top_customers = [dict(row) for row in cursor.fetchall()]
-        
+        returning_customer_count: int = Customer.get_returning_customer_count(start_date, end_date)
+        new_customer_count: int = Customer.get_new_customer_count(start_date, end_date)
+        guest_customer_count: int = Customer.get_guest_customers_approx(start_date, end_date)
+        total_customers: int = returning_customer_count + new_customer_count + guest_customer_count
+        top_customers: list[dict[str, Customer | float]] = Customer.get_top_customers(start_date, end_date)
+        total_rewards: int = Payment.get_total_rewards_points_in_date_range(start_date, end_date)
+
         return jsonify({
             'success': True,
             'total_customers': total_customers,
-            'new_customers': new_customers,
+            'new_customers': new_customer_count,
+            'returning_customers': returning_customer_count,  # added
             'total_rewards_distributed': total_rewards,
-            'average_rewards_per_customer': round(avg_rewards, 2),
-            'top_customers': top_customers
+            'top_customers': [{"customer": item['customer'].to_dict(), "total_spent": item['total_spent']} for item in top_customers],
         }), 200
-    except Exception as e:
-        print(f"ERROR: Failed to get customer analytics report: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reports/product-sales', methods=['GET'])
 @login_required(role="admin")
 def get_product_sales_report():
     """Get product sales report with filtering options."""
+    """
     try:
         start_date = request.args.get('start_date', '2024-01-01')
         end_date = request.args.get('end_date', str(date.today()))
@@ -1087,7 +1222,7 @@ def get_product_sales_report():
         cursor = db.cursor()
         
         # Build query
-        query = """
+        query = 
             SELECT p.product_id, p.name, p.category, SUM(pp.product_amount) as total_quantity, 
                    COUNT(DISTINCT pp.payment_id) as total_transactions, 
                    SUM(pp.product_amount * p.price) as total_revenue,
@@ -1096,7 +1231,7 @@ def get_product_sales_report():
             JOIN PaymentProducts pp ON p.product_id = pp.product_id
             JOIN Payments pa ON pp.payment_id = pa.payment_id
             WHERE pa.date BETWEEN ? AND ?
-        """
+        
         params = [start_date, end_date]
         
         if category:
@@ -1121,6 +1256,43 @@ def get_product_sales_report():
     except Exception as e:
         print(f"ERROR: Failed to get product sales report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    """
+    # Get the start date and end date
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category = request.args.get('category', '')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+    
+    if end_date == start_date:
+        end_date = None
+    
+    try:
+        total_sales: float = Payment.get_total_sales_amount(start_date, end_date)
+        products_sold: list[dict[Product, int]] = Product.fetch_products_sold(start_date, end_date)
+        
+        most_sold_products: list[Product] = Product.fetch_most_sold_products(start_date, end_date, 3)
+        least_sold_products: list[Product] = Product.fetch_least_sold_products(start_date, end_date, 3)
+
+        return jsonify({
+            'success': True,
+            'total_sales': round(total_sales, 2),
+            'total_products_sold': sum(item['number_sold'] for item in products_sold),
+            'products_sold': [
+                {
+                    'product': item['product'].to_dict(),
+                    'number_sold': item['number_sold']
+                }
+                for item in products_sold
+            ],
+            'most_sold_products': [product.to_dict() for product in most_sold_products],
+            'least_sold_products': [product.to_dict() for product in least_sold_products]
+        }), 200
+
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/reports/system-performance', methods=['GET'])
 @login_required(role="admin")
