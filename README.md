@@ -136,8 +136,8 @@ Examples:
     
      Dashboard widgets 
 
-
 ## Nov 30, 2025
+
      Make the Input Validations more robust (on Register)
 
 ## Nov 28, 2025
@@ -145,8 +145,6 @@ Examples:
 Tasks to do:
 
 - Implement proper input validation
-
-- Implement inventory report
 
 - Fix the weird bug with reports because of Product database change.
 
@@ -158,11 +156,16 @@ Tasks to do:
 
 - Setup ParetoAnywhere properly so that it works and we can still send emails
 
-- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
-
 - Fix fan control for fan 2 turning on fan for fan 1.
 
+- Implement inventory report
+
 - Fix fan status not being properly updated (Danat, )
+
+- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
+  
+- Reimplement the backend and adjust the front end for environmental report, admin customer reports, personal customer reports,
+  product reports, and real-time inventory report. (Danat, COMPLETED)
 
 - Add Customer report: List of receipts per day or by time period (Danat, COMPLETED)
 

@@ -94,23 +94,29 @@ function validateProduct(data) {
 async function saveProduct(event) {
   event.preventDefault()
   window.clearAllErrors()
-
   const form = document.getElementById("product-form")
   const formData = new FormData(form)
   const productId = formData.get("product_id")
-
-    const data = {
+  const data = {
     name: formData.get("name").trim(),
     price: formData.get("price").trim(),
     upc: formData.get("upc").trim(),
     category: formData.get("category").trim(),
     points_worth: formData.get("points_worth").trim() || "0",
+    low_stock_threshold: formData.get("low_stock_threshold").trim() || "10",
+    moderate_stock_threshold: formData.get("moderate_stock_threshold").trim() || "50",
     producer_company: formData.get("producer_company").trim()
   };
 
   // Validation
   const errors = validateProduct(data);
-  if(errors.length > 0) {
+  // New threshold validation
+  const low = parseInt(data.low_stock_threshold, 10);
+  const moderate = parseInt(data.moderate_stock_threshold, 10);
+  if (isNaN(low) || low <= 0) errors.push("Low stock threshold must be a positive integer.");
+  if (isNaN(moderate) || moderate <= 0) errors.push("Moderate stock threshold must be a positive integer.");
+  if (errors.length === 0 && low >= moderate) errors.push("Low stock threshold must be less than moderate stock threshold.");
+  if (errors.length > 0) {
     showToast("Validation Error", errors.join("<br>"), "error");
     return;
   }
@@ -160,6 +166,8 @@ async function editProduct(productId) {
       document.getElementById("category").value = product.category || ""
       document.getElementById("points_worth").value = product.points_worth || 0
       document.getElementById("producer_company").value = product.producer_company
+      document.getElementById("low_stock_threshold").value = product.low_stock_threshold ?? 10
+      document.getElementById("moderate_stock_threshold").value = product.moderate_stock_threshold ?? 50
 
       // Update form title and button
       document.getElementById("form-title").textContent = "Edit Product"
@@ -203,13 +211,15 @@ async function deleteProduct(productId) {
   }
 }
 
-// Reset form
+// Reset form: restore default thresholds
 function resetForm() {
   document.getElementById("product-form").reset()
   document.getElementById("product_id").value = ""
   document.getElementById("form-title").textContent = "Add New Product"
   document.getElementById("submit-btn").textContent = "Add Product"
   document.getElementById("add-inventory-btn").style.display = "none";
+  document.getElementById("low_stock_threshold").value = 10
+  document.getElementById("moderate_stock_threshold").value = 50
   window.clearAllErrors()
 }
 

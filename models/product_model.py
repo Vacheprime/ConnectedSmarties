@@ -22,6 +22,8 @@ class Product(BaseModel):
         self.category = category
         self.points_worth = points_worth
         self.producer_company = producer_company
+        self.low_stock_threshold = 10  # Default value; can be set later
+        self.moderate_stock_threshold = 50  # Default value; can be set later
 
     
     def to_dict(self) -> dict:
@@ -33,6 +35,8 @@ class Product(BaseModel):
             "category": self.category,
             "available_stock": self.get_inventory(self.product_id),
             "points_worth": self.points_worth,
+            "low_stock_threshold": self.low_stock_threshold,
+            "moderate_stock_threshold": self.moderate_stock_threshold,
             "producer_company": self.producer_company
         }
     
@@ -47,6 +51,8 @@ class Product(BaseModel):
             producer_company=row["producer_company"]
         )
         product.product_id = int(row["product_id"])
+        product.low_stock_threshold = int(row["low_stock_threshold"])
+        product.moderate_stock_threshold = int(row["moderate_stock_threshold"])
         return product
     
     @classmethod
@@ -94,18 +100,8 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
+            # Create product from row
+            product = cls.from_row(row)
             products.append({"product": product, "number_sold": int(row["total_sold"])})
 
         return products
@@ -157,19 +153,7 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
+            products.append(cls.from_row(row))
         
         return products
 
@@ -224,19 +208,7 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
+            products.append(cls.from_row(row))
         
         return products
     
@@ -368,9 +340,9 @@ class Product(BaseModel):
     @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, upc, category, points_worth, producer_company)
+        INSERT INTO {cls.DB_TABLE} (name, price, upc, category, points_worth, producer_company, low_stock_threshold, moderate_stock_threshold)
         VALUES
-        (:name, :price, :upc, :category, :points_worth, :producer_company);
+        (:name, :price, :upc, :category, :points_worth, :producer_company, :low_stock_threshold, :moderate_stock_threshold);
         """
 
         sql_values = {
@@ -379,7 +351,9 @@ class Product(BaseModel):
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
-            "producer_company": product.producer_company
+            "producer_company": product.producer_company,
+            "low_stock_threshold": product.low_stock_threshold,
+            "moderate_stock_threshold": product.moderate_stock_threshold
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
@@ -413,20 +387,7 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
-        
+            products.append(cls.from_row(row))
         return products
 
 
@@ -455,19 +416,7 @@ class Product(BaseModel):
         if row is None:
             return None
         
-        # Map row to Product
-        product = Product(
-            row["name"],
-            float(row["price"]),
-            int(row["upc"]),
-            row["category"],
-            row["points_worth"],
-            row["producer_company"]
-        )
-        # Set ID
-        product.product_id = int(row["product_id"])
-
-        return product
+        return cls.from_row(row)
     
 
     @classmethod
@@ -508,7 +457,9 @@ class Product(BaseModel):
             upc = :upc,
             category = :category,
             points_worth = :points_worth,
-            producer_company = :producer_company
+            producer_company = :producer_company,
+            low_stock_threshold = :low_stock_threshold,
+            moderate_stock_threshold = :moderate_stock_threshold
         WHERE product_id = :product_id;
         """
 
@@ -519,7 +470,9 @@ class Product(BaseModel):
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
-            "producer_company": product.producer_company
+            "producer_company": product.producer_company,
+            "low_stock_threshold": product.low_stock_threshold,
+            "moderate_stock_threshold": product.moderate_stock_threshold
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:

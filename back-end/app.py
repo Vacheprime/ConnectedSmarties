@@ -418,7 +418,6 @@ def process_payment():
             quantity = int(item.get("quantity", 1))
             payment.add_product(product, quantity)
 
-            Product.decrease_inventory(product.product_id, quantity)
             all_epcs.extend(epcs)
         except DatabaseReadException as e:
             return jsonify({"success": False, "error": str(e)}), 500
@@ -665,16 +664,32 @@ def register_product_api():
 @app.route('/products/add', methods=['POST'])
 def register_product():
     data = request.get_json()
-    # Validate the input
     errors = validate_product(data)
-    if errors:
-        print("Returning validation errors to client...") 
-        return jsonify({'errors': errors}), 400
-    
-    # Create the product object
-    product = Product(data.get("name"), data.get("price"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
+    # New threshold validation
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
     try:
-        # Insert the product
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
+    if errors:
+        return jsonify({'errors': errors}), 400
+    product = Product(
+        data.get("name"),
+        data.get("price"),
+        data.get("upc"),
+        data.get("category"),
+        data.get("points_worth"),
+        data.get("producer_company")
+    )
+    product.low_stock_threshold = low_thr
+    product.moderate_stock_threshold = mod_thr
+    try:
         Product.insert_product(product)
         return jsonify({'message': 'Product added successfully'}), 200
     except DatabaseInsertException as e:
@@ -689,30 +704,33 @@ def update_product_api(product_id):
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     data = request.get_json()
-
-    # Validate the input
     errors = validate_product(data)
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
+    try:
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
     if errors:
         return jsonify({'errors': errors}), 400
-    
     try:
-        # Get the product
         product = Product.fetch_product_by_id(product_id)
         if not product:
             return jsonify({'error': 'Product not found'}), 404
-        
-        # Update product fields
         product.name = data.get("name")
         product.price = float(data.get("price"))
         product.upc = int(data.get("upc"))
         product.category = data.get("category")
         product.points_worth = data.get("points_worth")
         product.producer_company = data.get("producer_company")
-
-        # Save the updated product
+        product.low_stock_threshold = low_thr
+        product.moderate_stock_threshold = mod_thr
         Product.update_product(product)
-
-        # Return success response
         return jsonify({'message': 'Product updated successfully'}), 200
     except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
@@ -800,7 +818,6 @@ def delete_product_epc(epc):
         # Delete the product item
         ProductItem.delete_items_from_epcs([epc])
 
-        # Reduce inventory count for the associated product
         Product.decrease_inventory(product_item.product.product_id, 1)
         
         return jsonify({'message': 'EPC deleted successfully'}), 200
@@ -1161,62 +1178,33 @@ def get_environmental_report():
 @login_required(role="admin")
 def get_customer_analytics_report():
     """Get customer analytics (registration and rewards statistics)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+
+    if end_date == start_date:
+        end_date = None
+    
     try:
-        start_date = request.args.get('start_date', '2024-01-01')
-        end_date = request.args.get('end_date', str(date.today()))
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Total customers
-        cursor.execute("SELECT COUNT(*) as count FROM Customers WHERE customer_id != 0")
-        total_customers = cursor.fetchone()['count']
-        
-        # New customers in date range
-        cursor.execute("""
-            SELECT COUNT(*) as count FROM Customers 
-            WHERE customer_id != 0 AND join_date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        new_customers = cursor.fetchone()['count']
-        
-        # Total rewards distributed
-        cursor.execute("""
-            SELECT SUM(reward_points_won) as total FROM Payments
-            WHERE date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        total_rewards = cursor.fetchone()['total'] or 0
-        
-        # Average rewards per customer
-        cursor.execute("""
-            SELECT AVG(rewards_points) as avg FROM Customers
-            WHERE customer_id != 0
-        """)
-        avg_rewards = cursor.fetchone()['avg'] or 0
-        
-        # Top customers by purchases
-        cursor.execute("""
-            SELECT c.customer_id, c.first_name, c.last_name, COUNT(p.payment_id) as purchase_count, SUM(p.total_paid) as total_spent
-            FROM Customers c
-            LEFT JOIN Payments p ON c.customer_id = p.customer_id AND p.date BETWEEN ? AND ?
-            WHERE c.customer_id != 0
-            GROUP BY c.customer_id
-            ORDER BY purchase_count DESC
-            LIMIT 10
-        """, (start_date, end_date))
-        top_customers = [dict(row) for row in cursor.fetchall()]
-        
+        returning_customer_count: int = Customer.get_returning_customer_count(start_date, end_date)
+        new_customer_count: int = Customer.get_new_customer_count(start_date, end_date)
+        guest_customer_count: int = Customer.get_guest_customers_approx(start_date, end_date)
+        total_customers: int = returning_customer_count + new_customer_count + guest_customer_count
+        top_customers: list[dict[str, Customer | float]] = Customer.get_top_customers(start_date, end_date)
+        total_rewards: int = Payment.get_total_rewards_points_in_date_range(start_date, end_date)
+
         return jsonify({
             'success': True,
             'total_customers': total_customers,
-            'new_customers': new_customers,
+            'new_customers': new_customer_count,
+            'returning_customers': returning_customer_count,  # added
             'total_rewards_distributed': total_rewards,
-            'average_rewards_per_customer': round(avg_rewards, 2),
-            'top_customers': top_customers
+            'top_customers': [{"customer": item['customer'].to_dict(), "total_spent": item['total_spent']} for item in top_customers],
         }), 200
-    except Exception as e:
-        print(f"ERROR: Failed to get customer analytics report: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reports/product-sales', methods=['GET'])
 @login_required(role="admin")

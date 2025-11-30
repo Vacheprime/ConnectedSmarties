@@ -25,6 +25,9 @@ const reportDateInputs = {
     fan: { start: 'fan-start-date', end: 'fan-end-date' }
 };
 
+// Polling handle for inventory updates
+let inventoryPollTimer = null;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeAllDateFilters();
@@ -100,6 +103,8 @@ function closeReportModal() {
     customerChart = null;
     productChart = null;
     fanChart = null;
+
+    stopInventoryPolling();
 }
 
 /**
@@ -147,6 +152,10 @@ async function fetchAndRenderReport(reportType) {
             case 'fan':
                 await loadFanUsageReport();
                 break;
+            case 'inventory':
+                await loadInventoryReport();
+                startInventoryPolling();
+                break;
         }
         // Translate new content if i18n is loaded
         if (window.i18n && typeof window.i18n.updateContent === 'function') {
@@ -163,7 +172,12 @@ async function fetchAndRenderReport(reportType) {
 
 async function loadEnvironmentalReport() {
     const filters = getDateFiltersForReport('environmental');
-    // NOTE: Make sure this path is correct for your app's routing
+    // Set date range labels
+    const startEl = document.querySelector('#report-modal-content #env-report-start-date');
+    const endEl = document.querySelector('#report-modal-content #env-report-end-date');
+    if (startEl) startEl.textContent = filters.start_date;
+    if (endEl) endEl.textContent = filters.end_date;
+
     const response = await fetch(`/api/reports/environmental?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
 
@@ -265,26 +279,33 @@ async function loadCustomerAnalyticsReport() {
 
     if (!data.success) throw new Error(data.error || 'Failed to load data');
 
+    // Date range label
+    document.querySelector('#report-modal-content #cust-report-start-date').textContent = filters.start_date;
+    document.querySelector('#report-modal-content #cust-report-end-date').textContent = filters.end_date;
+
+    // Stats
     document.querySelector('#report-modal-content #total-customers').textContent = data.total_customers;
     document.querySelector('#report-modal-content #new-customers').textContent = data.new_customers;
+    document.querySelector('#report-modal-content #returning-customers').textContent = data.returning_customers || 0;
     document.querySelector('#report-modal-content #total-rewards').textContent = data.total_rewards_distributed;
-    document.querySelector('#report-modal-content #avg-rewards').textContent = data.average_rewards_per_customer;
 
-    populateTopCustomersTable(data.top_customers);
-    createCustomerChart(data.top_customers);
+    // Populate table and chart
+    populateTopCustomersTable(data.top_customers || []);
+    createCustomerChart(data.top_customers || []);
 }
 
-function populateTopCustomersTable(customers) {
+function populateTopCustomersTable(topCustomers) {
     const tbody = document.querySelector('#report-modal-content #top-customers-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    customers.forEach(customer => {
+    topCustomers.forEach(item => {
+        const name = `${item.customer.first_name} ${item.customer.last_name}`;
+        const totalSpent = Number(item.total_spent || 0);
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${customer.first_name} ${customer.last_name}</td>
-            <td>${customer.purchase_count || 0}</td>
-            <td>$${(customer.total_spent || 0).toFixed(2)}</td>
+            <td>${name}</td>
+            <td>$${totalSpent.toFixed(2)}</td>
         `;
         tbody.appendChild(row);
     });
@@ -294,8 +315,8 @@ function createCustomerChart(topCustomers) {
     const ctx = document.querySelector('#report-modal-content #customer-chart')?.getContext('2d');
     if (!ctx) return;
 
-    const labels = topCustomers.map(c => `${c.first_name} ${c.last_name}`);
-    const purchases = topCustomers.map(c => c.purchase_count || 0);
+    const labels = topCustomers.map(item => `${item.customer.first_name} ${item.customer.last_name}`);
+    const totals = topCustomers.map(item => Number(item.total_spent || 0));
 
     if (customerChart) customerChart.destroy();
 
@@ -306,10 +327,10 @@ function createCustomerChart(topCustomers) {
     customerChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: 'Purchase Count',
-                data: purchases,
+                label: 'Total Spent ($)',
+                data: totals,
                 backgroundColor: '#4dabf7',
                 borderColor: '#1590f5',
                 borderWidth: 1
@@ -324,7 +345,12 @@ function createCustomerChart(topCustomers) {
                 y: { ticks: { color: textColor }, grid: { color: gridColor } }
             },
             plugins: {
-                legend: { display: true, position: 'top', labels: { color: textColor } }
+                legend: { display: true, position: 'top', labels: { color: textColor } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `$${Number(ctx.parsed.x || 0).toFixed(2)}`
+                    }
+                }
             }
         }
     });
@@ -574,6 +600,81 @@ function createFanChart(fanData) {
             }
         }
     });
+}
+
+// ============= INVENTORY REPORT =============
+
+function getInventoryLevelFromProduct(p) {
+    const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+    const low = Number(p.low_stock_threshold ?? 10);
+    const moderate = Number(p.moderate_stock_threshold ?? 50);
+
+    if (stock <= low) return { label: 'Low', color: '#dc2626' };
+    if (stock <= moderate) return { label: 'Moderate', color: '#f59f00' };
+    return { label: 'OK', color: '#20c997' };
+}
+
+// Render inventory table rows
+function renderInventoryRows(products) {
+    const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">No products found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = products.map(p => {
+        const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+        const level = getInventoryLevelFromProduct(p);
+        return `
+            <tr>
+                <td>${p.product_id}</td>
+                <td>${p.name}</td>
+                <td>${p.category || '-'}</td>
+                <td><strong>${stock}</strong></td>
+                <td>
+                    <span style="
+                        display:inline-block;
+                        padding:0.25rem 0.5rem;
+                        border-radius:999px;
+                        color:#fff;
+                        background:${level.color};
+                        font-size:0.8rem;
+                    ">${level.label}</span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Fetch inventory data
+async function loadInventoryReport() {
+    try {
+        // Use existing products API
+        const response = await fetch('/products/data');
+        const products = await response.json();
+        renderInventoryRows(products);
+    } catch (err) {
+        console.error('Error loading inventory report:', err);
+        showToast('Error', 'Failed to load inventory', 'error');
+        const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Error loading inventory</td></tr>`;
+    }
+}
+
+// Start/stop polling while modal is active
+function startInventoryPolling() {
+    stopInventoryPolling();
+    // Poll every 5 seconds
+    inventoryPollTimer = setInterval(loadInventoryReport, 5000);
+}
+
+function stopInventoryPolling() {
+    if (inventoryPollTimer) {
+        clearInterval(inventoryPollTimer);
+        inventoryPollTimer = null;
+    }
 }
 
 // ============= EXPORT TO GLOBAL SCOPE =============
