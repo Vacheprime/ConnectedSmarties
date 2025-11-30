@@ -144,7 +144,7 @@ Examples:
 
 Tasks to do:
 
-- Implement proper input validation
+- Implement proper input validation (ISHI, COMPLETED)
 
 - Fix the weird bug with reports because of Product database change.
 
