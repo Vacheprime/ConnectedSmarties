@@ -1,12 +1,13 @@
 // customer_account.js - module
 import { t } from './i18n.js'
+import { showToast } from './notifications.js'
 
-const payments = window.paymentsData || [];
+let allPayments = window.paymentsData || [];
 
 // Build an index of products -> occurrences for fast search
 function buildProductIndex() {
   const index = new Map();
-  payments.forEach(payment => {
+  allPayments.forEach(payment => {
     const date = payment.date || '';
     (payment.products || []).forEach(prod => {
       const name = (prod.name || '').trim();
@@ -114,8 +115,11 @@ function setupPurchaseSearch() {
 }
 
 function buildChart() {
-  const labels = payments.map(p => (p.date || p.date_time || '').slice(0, 10));
-  const totals = payments.map(p => Number(p.total_paid || p.total || 0));
+  // Reverse the payments array so older payments are first, newer are last
+  const sortedPayments = [...allPayments].reverse();
+  
+  const labels = sortedPayments.map(p => (p.date || p.date_time || '').slice(0, 10));
+  const totals = sortedPayments.map(p => Number(p.total_paid || p.total || 0));
 
   const ctx = document.getElementById('spendingChart');
   if (!ctx) return;
@@ -177,8 +181,84 @@ function setupSidebarScrolling() {
   });
 }
 
+function renderReceiptsList(payments) {
+  const container = document.getElementById('receipts-list-container');
+  if (!container) return;
+  
+  if (payments.length === 0) {
+    container.innerHTML = `<p data-i18n="noPurchases">${t('noPurchases')}</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <ul class="list-group">
+      ${payments.map(payment => `
+        <li class="list-group-item receipt-item" data-payment-id="${payment.payment_id}" style="cursor:pointer;">
+          ${payment.date} — <span data-i18n="receipt">${t('receipt')}</span> #${payment.payment_id} — $${payment.total_paid}
+        </li>
+      `).join('')}
+    </ul>
+  `;
+
+  // Attach click handlers to receipt items
+  container.querySelectorAll('.receipt-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const paymentId = this.getAttribute('data-payment-id');
+      window.showReceiptModal(paymentId);
+    });
+  });
+}
+
+async function applyDateFilter() {
+  const startDate = document.getElementById('filterStartDate').value;
+  const endDate = document.getElementById('filterEndDate').value;
+
+  if (!startDate || !endDate) {
+    showToast('Validation Error', 'Please select both start and end dates', 'error');
+    return;
+  }
+
+  if (startDate > endDate) {
+    showToast('Validation Error', 'Start date must be before end date', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/payments/filtered?start_date=${startDate}&end_date=${endDate}`);
+    const data = await response.json();
+
+    if (response.ok) {
+      allPayments = data.payments || [];
+      renderReceiptsList(allPayments);
+      showToast('Success', `Found ${allPayments.length} payment(s)`, 'success');
+    } else {
+      throw new Error(data.error || 'Failed to filter payments');
+    }
+  } catch (error) {
+    console.error('Error filtering payments:', error);
+    showToast('Error', error.message, 'error');
+  }
+}
+
+function clearDateFilter() {
+  document.getElementById('filterStartDate').value = '';
+  document.getElementById('filterEndDate').value = '';
+  allPayments = window.paymentsData || [];
+  renderReceiptsList(allPayments);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   try { buildChart(); } catch (err) { console.error(err); }
   setupSidebarScrolling();
   try { setupPurchaseSearch(); } catch (err) { console.error('search init', err); }
+  
+  // Render initial receipts list
+  renderReceiptsList(allPayments);
 });
+
+// ============= EXPORT TO GLOBAL SCOPE =============
+// Make functions available to be called from HTML onclick handlers
+if (typeof window !== 'undefined') {
+  window.applyDateFilter = applyDateFilter;
+  window.clearDateFilter = clearDateFilter;
+}

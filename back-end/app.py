@@ -445,6 +445,59 @@ def process_payment():
 
     return jsonify({"success": True, "message": "Payment processed successfully."}), 200
 
+@app.route('/api/payments/filtered', methods=['GET'])
+def get_filtered_payments():
+    """Get payments for the logged-in customer filtered by date range."""
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Validate dates
+    if not start_date or not end_date:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+    
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD'}), 400
+    
+    if not validate_date_format(end_date):
+        return jsonify({'error': 'end_date must be in format YYYY-MM-DD'}), 400
+    
+    try:
+        customer_id = int(session["user_id"])
+        
+        # Use the Payment model method to fetch filtered payments
+        payments = Payment.fetch_payments_of_customer_by_date(customer_id, start_date, end_date)
+        
+        # Convert to JSON-serializable format
+        payments_list = []
+        for payment in payments:
+            products = []
+            for payment_product in payment.products:
+                products.append({
+                    "product_id": payment_product.product_id,
+                    "name": payment_product.product_name,
+                    "price": payment_product.product_price,
+                    "quantity": payment_product.product_amount,
+                })
+            
+            payments_list.append({
+                "payment_id": payment.payment_id,
+                "date": payment.date,
+                "total_paid": payment.total_paid,
+                "products": products,
+            })
+        
+        return jsonify({
+            "success": True,
+            "payments": payments_list
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get filtered payments: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= PRODUCT API ROUTES =============
 
 @app.route('/api/products', methods=['GET'])

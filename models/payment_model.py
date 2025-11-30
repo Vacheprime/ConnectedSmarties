@@ -177,7 +177,8 @@ class Payment(BaseModel):
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
         WHERE customer_id = :customer_id
-        AND date BETWEEN :start_date AND :end_date;
+        AND date BETWEEN :start_date AND :end_date
+        ORDER BY date DESC;
         """
 
         payments = []
@@ -213,7 +214,8 @@ class Payment(BaseModel):
         """
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
-        WHERE customer_id = :customer_id;
+        WHERE customer_id = :customer_id
+        ORDER BY date DESC;
         """
 
         payments = []

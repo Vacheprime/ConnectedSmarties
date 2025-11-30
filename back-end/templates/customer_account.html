@@ -66,25 +66,34 @@
 
           <div id="purchaseHistory" class="section">
             <h3 class="fw-bold" data-i18n="purchaseHistoryTitle">Purchase History</h3>
+            
+            <!-- Date Filters -->
+            <div class="mb-3 p-3 border rounded" style="background-color: var(--color-background-card);">
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <label for="filterStartDate" class="form-label" data-i18n="startDate">Start Date</label>
+                  <input type="date" id="filterStartDate" class="form-control">
+                </div>
+                <div class="col-md-5">
+                  <label for="filterEndDate" class="form-label" data-i18n="endDate">End Date</label>
+                  <input type="date" id="filterEndDate" class="form-control">
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                  <button class="btn btn-primary w-100" onclick="applyDateFilter()" data-i18n="filter">Filter</button>
+                  <button class="btn btn-secondary w-100" onclick="clearDateFilter()" data-i18n="clear">Clear</button>
+                </div>
+              </div>
+            </div>
+
             <div class="mb-3">
               <input id="purchaseSearch" class="form-control" type="search" data-i18n="searchPlaceholder" placeholder=""
                 aria-label="Search purchases">
             </div>
             <div id="searchResults" class="mb-3"></div>
             <h5 id="receipt-details" class="fw-bold" data-i18n="receiptDetails">Receipt Details</h5>
-            {% if payments %}
-            <ul class="list-group">
-              {% for payment in payments %}
-              <li class="list-group-item receipt-item" data-payment-id="{{ payment.payment_id }}"
-                style="cursor:pointer;">
-                {{ payment.date }} — <span data-i18n="receipt">Receipt</span> #{{ payment.payment_id }} — ${{
-                payment.total_paid }}
-              </li>
-              {% endfor %}
-            </ul>
-            {% else %}
-            <p data-i18n="noPurchases">No purchases yet.</p>
-            {% endif %}
+            <div id="receipts-list-container">
+              <!-- Receipts will be loaded here -->
+            </div>
           </div>
 
           <div id="spendingSummary" class="section">
