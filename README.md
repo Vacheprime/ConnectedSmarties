@@ -164,8 +164,8 @@ Tasks to do:
 
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
   
-- Reimplement the backend and adjust the front end for environmental report, admin customer reports, personal customer reports, 
-  and product reports. (Danat, COMPLETED)
+- Reimplement the backend and adjust the front end for environmental report, admin customer reports, personal customer reports,
+  product reports, and real-time inventory report. (Danat, COMPLETED)
 
 - Add Customer report: List of receipts per day or by time period (Danat, COMPLETED)
 
