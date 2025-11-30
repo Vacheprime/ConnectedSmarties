@@ -188,6 +188,116 @@ function setupSidebarScrolling() {
   });
 }
 
+// Modal management refactor
+let receiptModalCleanupBound = false;
+
+function openReceiptModal(paymentId) {
+  const modalElement = document.getElementById('receiptModal');
+  if (!modalElement || typeof bootstrap === 'undefined') {
+    console.error('Bootstrap modal element not available');
+    return;
+  }
+
+  // Bind cleanup once
+  if (!receiptModalCleanupBound) {
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      // Allow Bootstrap to remove backdrop first
+      setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        const contentEl = document.getElementById('receipt-content');
+        if (contentEl) contentEl.innerHTML = '';
+      }, 50);
+    });
+    receiptModalCleanupBound = true;
+  }
+
+  // Show temporary loading
+  const contentEl = document.getElementById('receipt-content');
+  if (contentEl) contentEl.innerHTML = '<p class="text-muted">Loading...</p>';
+
+  loadAndDisplayReceipt(paymentId)
+    .catch(() => {})
+    .finally(() => {
+      const instance = bootstrap.Modal.getOrCreateInstance(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+      });
+      instance.show();
+    });
+}
+
+function closeReceiptModal() {
+  const modalElement = document.getElementById('receiptModal');
+  if (!modalElement || typeof bootstrap === 'undefined') return;
+  const instance = bootstrap.Modal.getOrCreateInstance(modalElement);
+  instance.hide();
+}
+
+async function loadAndDisplayReceipt(paymentId) {
+  try {
+    const response = await fetch(`/receipt-details/${paymentId}`);
+    const data = await response.json();
+    if (!data.success) {
+      showToast('Error', data.error || 'Failed to load receipt details', 'error');
+      return;
+    }
+    const receiptContent = document.getElementById('receipt-content');
+    if (!receiptContent) return;
+
+    const productsHtml = data.products.map(p => `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.quantity}</td>
+        <td>$${Number(p.price).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    receiptContent.innerHTML = `
+      <div class="receipt-details">
+        <h6><strong>Receipt #${paymentId}</strong></h6>
+        <p><strong>Date:</strong> ${new Date(data.date).toLocaleDateString()}</p>
+        <p><strong>Customer:</strong> ${data.customer.first_name || 'Guest'}</p>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>${productsHtml}</tbody>
+        </table>
+        <hr>
+        <p><strong>Total:</strong> $${Number(data.total).toFixed(2)}</p>
+        <p><strong>Reward Points Earned:</strong> ${data.points}</p>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading receipt:', error);
+    showToast('Error', error.message, 'error');
+  }
+}
+
+function attachReceiptItemListeners() {
+  const container = document.getElementById('receipts-list-container');
+  if (!container) return;
+  
+  // Remove all existing listeners by cloning and replacing
+  container.querySelectorAll('.receipt-item').forEach(item => {
+    item.removeEventListener('click', handleReceiptItemClick);
+    item.addEventListener('click', handleReceiptItemClick);
+  });
+}
+
+function handleReceiptItemClick(event) {
+  const paymentId = this.getAttribute('data-payment-id');
+  openReceiptModal(paymentId);
+}
+
 function renderReceiptsList(payments) {
   const container = document.getElementById('receipts-list-container');
   if (!container) return;
@@ -197,7 +307,6 @@ function renderReceiptsList(payments) {
     return;
   }
 
-  // Calculate total spending
   const totalSpending = payments.reduce((sum, payment) => sum + Number(payment.total_paid || 0), 0);
 
   container.innerHTML = `
@@ -213,119 +322,8 @@ function renderReceiptsList(payments) {
     </ul>
   `;
 
-  // Attach click handlers to receipt items
+  // Attach click handlers after rendering
   attachReceiptItemListeners();
-}
-
-function attachReceiptItemListeners() {
-  const container = document.getElementById('receipts-list-container');
-  if (!container) return;
-  
-  container.querySelectorAll('.receipt-item').forEach(item => {
-    item.addEventListener('click', function() {
-      const paymentId = this.getAttribute('data-payment-id');
-      showReceiptModal(paymentId);
-    });
-  });
-}
-
-let receiptModalInstance = null;
-
-async function showReceiptModal(paymentId) {
-  try {
-    const response = await fetch(`/receipt-details/${paymentId}`);
-    const data = await response.json();
-
-    if (data.success) {
-      const receiptContent = document.getElementById('receipt-content');
-      const productsHtml = data.products.map(p => `
-        <tr>
-          <td>${p.name}</td>
-          <td>${p.quantity}</td>
-          <td>$${Number(p.price).toFixed(2)}</td>
-        </tr>
-      `).join('');
-
-      receiptContent.innerHTML = `
-        <div class="receipt-details">
-          <h6><strong>Receipt #${paymentId}</strong></h6>
-          <p><strong>Date:</strong> ${new Date(data.date).toLocaleDateString()}</p>
-          <p><strong>Customer:</strong> ${data.customer.first_name || 'Guest'}</p>
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${productsHtml}
-            </tbody>
-          </table>
-          <hr>
-          <p><strong>Total:</strong> $${Number(data.total).toFixed(2)}</p>
-          <p><strong>Reward Points Earned:</strong> ${data.points}</p>
-        </div>
-      `;
-
-      // Get the modal element
-      const modalElement = document.getElementById('receiptModal');
-      
-      if (!modalElement) {
-        console.error('Modal element not found');
-        showToast('Error', 'Modal element not found in DOM', 'error');
-        return;
-      }
-      
-      // Check if bootstrap is loaded
-      if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded');
-        showToast('Error', 'Bootstrap library not loaded', 'error');
-        return;
-      }
-      
-      // Initialize modal only once
-      if (!receiptModalInstance) {
-        try {
-          console.log('Creating new modal instance');
-          receiptModalInstance = new bootstrap.Modal(modalElement, {
-            backdrop: true,
-            keyboard: true,
-            focus: false
-          });
-          
-          // Add event listener to clean up backdrop on hidden
-          modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
-            console.log('Modal hidden event fired');
-            // Remove any lingering backdrop elements
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => backdrop.remove());
-            
-            // Ensure body scroll is restored
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-          }, { once: false });
-        } catch (error) {
-          console.error('Failed to create modal instance:', error);
-          showToast('Error', 'Failed to create modal', 'error');
-          return;
-        }
-      }
-      
-      // Show the modal
-      console.log('Showing modal...');
-      receiptModalInstance.show();
-      console.log('Modal shown');
-
-    } else {
-      showToast('Error', data.error || 'Failed to load receipt details', 'error');
-    }
-  } catch (error) {
-    console.error('Error loading receipt:', error);
-    showToast('Error', error.message, 'error');
-  }
 }
 
 async function applyDateFilter() {
@@ -382,5 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
 if (typeof window !== 'undefined') {
   window.applyDateFilter = applyDateFilter;
   window.clearDateFilter = clearDateFilter;
-  window.showReceiptModal = showReceiptModal;
+  window.openReceiptModal = openReceiptModal;
+  window.closeReceiptModal = closeReceiptModal;
 }
