@@ -158,8 +158,6 @@ Tasks to do:
 
 - Fix fan control for fan 2 turning on fan for fan 1.
 
-- Implement inventory report
-
 - Fix fan status not being properly updated (Danat, )
 
 - Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
