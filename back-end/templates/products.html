@@ -94,6 +94,19 @@
                             <span class="error-message" id="points_worth-error"></span>
                         </div>
 
+                        <!-- New stock threshold fields -->
+                        <div class="form-group">
+                            <label for="low_stock_threshold" data-i18n="lowStockThreshold">Low Stock Threshold</label>
+                            <input type="number" id="low_stock_threshold" name="low_stock_threshold" min="1" value="10">
+                            <span class="error-message" id="low_stock_threshold-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="moderate_stock_threshold" data-i18n="moderateStockThreshold">Moderate Stock Threshold</label>
+                            <input type="number" id="moderate_stock_threshold" name="moderate_stock_threshold" min="1" value="50">
+                            <span class="error-message" id="moderate_stock_threshold-error"></span>
+                        </div>
+                        <!-- ...existing code... -->
+
                         <div class="form-group">
                             <label for="producer_company" data-i18n="producerCompany">Producer Company</label>
                             <input type="text" id="producer_company" name="producer_company" >

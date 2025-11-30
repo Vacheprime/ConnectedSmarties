@@ -418,7 +418,6 @@ def process_payment():
             quantity = int(item.get("quantity", 1))
             payment.add_product(product, quantity)
 
-            Product.decrease_inventory(product.product_id, quantity)
             all_epcs.extend(epcs)
         except DatabaseReadException as e:
             return jsonify({"success": False, "error": str(e)}), 500
@@ -665,16 +664,32 @@ def register_product_api():
 @app.route('/products/add', methods=['POST'])
 def register_product():
     data = request.get_json()
-    # Validate the input
     errors = validate_product(data)
-    if errors:
-        print("Returning validation errors to client...") 
-        return jsonify({'errors': errors}), 400
-    
-    # Create the product object
-    product = Product(data.get("name"), data.get("price"), data.get("upc"), data.get("category"), data.get("points_worth"), data.get("producer_company"))
+    # New threshold validation
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
     try:
-        # Insert the product
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
+    if errors:
+        return jsonify({'errors': errors}), 400
+    product = Product(
+        data.get("name"),
+        data.get("price"),
+        data.get("upc"),
+        data.get("category"),
+        data.get("points_worth"),
+        data.get("producer_company")
+    )
+    product.low_stock_threshold = low_thr
+    product.moderate_stock_threshold = mod_thr
+    try:
         Product.insert_product(product)
         return jsonify({'message': 'Product added successfully'}), 200
     except DatabaseInsertException as e:
@@ -689,30 +704,33 @@ def update_product_api(product_id):
 @app.route('/products/update/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     data = request.get_json()
-
-    # Validate the input
     errors = validate_product(data)
+    low_thr = data.get("low_stock_threshold", 10)
+    mod_thr = data.get("moderate_stock_threshold", 50)
+    try:
+        low_thr = int(low_thr)
+        mod_thr = int(mod_thr)
+        if low_thr <= 0 or mod_thr <= 0:
+            errors.append("Stock thresholds must be positive integers.")
+        if low_thr >= mod_thr:
+            errors.append("Low stock threshold must be less than moderate stock threshold.")
+    except (TypeError, ValueError):
+        errors.append("Stock thresholds must be integers.")
     if errors:
         return jsonify({'errors': errors}), 400
-    
     try:
-        # Get the product
         product = Product.fetch_product_by_id(product_id)
         if not product:
             return jsonify({'error': 'Product not found'}), 404
-        
-        # Update product fields
         product.name = data.get("name")
         product.price = float(data.get("price"))
         product.upc = int(data.get("upc"))
         product.category = data.get("category")
         product.points_worth = data.get("points_worth")
         product.producer_company = data.get("producer_company")
-
-        # Save the updated product
+        product.low_stock_threshold = low_thr
+        product.moderate_stock_threshold = mod_thr
         Product.update_product(product)
-
-        # Return success response
         return jsonify({'message': 'Product updated successfully'}), 200
     except DatabaseReadException as e:
         return jsonify({'error': str(e)}), 500
@@ -800,7 +818,6 @@ def delete_product_epc(epc):
         # Delete the product item
         ProductItem.delete_items_from_epcs([epc])
 
-        # Reduce inventory count for the associated product
         Product.decrease_inventory(product_item.product.product_id, 1)
         
         return jsonify({'message': 'EPC deleted successfully'}), 200

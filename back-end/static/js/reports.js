@@ -25,6 +25,9 @@ const reportDateInputs = {
     fan: { start: 'fan-start-date', end: 'fan-end-date' }
 };
 
+// Polling handle for inventory updates
+let inventoryPollTimer = null;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeAllDateFilters();
@@ -100,6 +103,8 @@ function closeReportModal() {
     customerChart = null;
     productChart = null;
     fanChart = null;
+
+    stopInventoryPolling();
 }
 
 /**
@@ -146,6 +151,10 @@ async function fetchAndRenderReport(reportType) {
                 break;
             case 'fan':
                 await loadFanUsageReport();
+                break;
+            case 'inventory':
+                await loadInventoryReport();
+                startInventoryPolling();
                 break;
         }
         // Translate new content if i18n is loaded
@@ -591,6 +600,81 @@ function createFanChart(fanData) {
             }
         }
     });
+}
+
+// ============= INVENTORY REPORT =============
+
+function getInventoryLevelFromProduct(p) {
+    const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+    const low = Number(p.low_stock_threshold ?? 10);
+    const moderate = Number(p.moderate_stock_threshold ?? 50);
+
+    if (stock <= low) return { label: 'Low', color: '#dc2626' };
+    if (stock <= moderate) return { label: 'Moderate', color: '#f59f00' };
+    return { label: 'OK', color: '#20c997' };
+}
+
+// Render inventory table rows
+function renderInventoryRows(products) {
+    const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">No products found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = products.map(p => {
+        const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+        const level = getInventoryLevelFromProduct(p);
+        return `
+            <tr>
+                <td>${p.product_id}</td>
+                <td>${p.name}</td>
+                <td>${p.category || '-'}</td>
+                <td><strong>${stock}</strong></td>
+                <td>
+                    <span style="
+                        display:inline-block;
+                        padding:0.25rem 0.5rem;
+                        border-radius:999px;
+                        color:#fff;
+                        background:${level.color};
+                        font-size:0.8rem;
+                    ">${level.label}</span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Fetch inventory data
+async function loadInventoryReport() {
+    try {
+        // Use existing products API
+        const response = await fetch('/products/data');
+        const products = await response.json();
+        renderInventoryRows(products);
+    } catch (err) {
+        console.error('Error loading inventory report:', err);
+        showToast('Error', 'Failed to load inventory', 'error');
+        const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Error loading inventory</td></tr>`;
+    }
+}
+
+// Start/stop polling while modal is active
+function startInventoryPolling() {
+    stopInventoryPolling();
+    // Poll every 5 seconds
+    inventoryPollTimer = setInterval(loadInventoryReport, 5000);
+}
+
+function stopInventoryPolling() {
+    if (inventoryPollTimer) {
+        clearInterval(inventoryPollTimer);
+        inventoryPollTimer = null;
+    }
 }
 
 // ============= EXPORT TO GLOBAL SCOPE =============

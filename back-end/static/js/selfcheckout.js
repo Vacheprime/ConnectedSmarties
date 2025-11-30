@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
   const code = input.value.trim()
+  console.log(code)
   if (code) {
     await scanItem(code)
     input.value = ""
@@ -441,4 +442,5 @@ if (typeof window !== "undefined") {
   window.isModalOpen = isModalOpen
   window.isModalInConfirmationState = isModalInConfirmationState
   window.isPaymentModalInConfirmationState = isPaymentModalInConfirmationState
+  window.manuallyScanItem = manuallyScanItem
 }

@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS Products (
     upc INTEGER NOT NULL,
     category TEXT,
     points_worth INTEGER DEFAULT 0,
-    producer_company VARCHAR(255) 
+    producer_company VARCHAR(255),
+    low_stock_threshold INTEGER DEFAULT 10,
+    moderate_stock_threshold INTEGER DEFAULT 50
 );
 
 -- Create the Payments table
