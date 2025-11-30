@@ -61,30 +61,37 @@
                 <!-- Add/Edit Product Form -->
                 <div class="form-section">
                     <h2 id="form-title" data-i18n="addNewProduct">Add New Product</h2>
-                    <form id="product-form" onsubmit="saveProduct(event)">
+                   
+                    <form id="product-form" onsubmit="saveProduct(event)" novalidate>
                         <input type="hidden" id="product_id" name="product_id">
                         
                         <div class="form-group">
                             <label for="name" data-i18n="productName">Product Name *</label>
-                            <input type="text" id="name" name="name" required>
+                            <input type="text" id="name" name="name" required minlength="2" maxlength="100">
                             <span class="error-message" id="name-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="price" data-i18n="price">Price *</label>
-                            <input type="number" id="price" name="price" min="0" step="0.01" required>
+                            <input type="number" id="price" name="price" min="0.01" step="0.01" required placeholder="0.00">
                             <span class="error-message" id="price-error"></span>
                         </div>
 
                         <div class="form-group">
+                            <label for="epc" data-i18n="epc">EPC *</label>
+                            <input type="text" id="epc" name="epc" required minlength="4" maxlength="64">
+                            <span class="error-message" id="epc-error"></span>
+                        </div>
+
+                        <div class="form-group">
                             <label for="upc" data-i18n="upc">UPC</label>
-                            <input type="text" id="upc" name="upc">
+                            <input type="text" id="upc" name="upc" pattern="[0-9]{12,13}" title="Enter a 12 or 13 digit UPC">
                             <span class="error-message" id="upc-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="category" data-i18n="category">Category</label>
-                            <input type="text" id="category" name="category">
+                            <input type="text" id="category" name="category" maxlength="50">
                             <span class="error-message" id="category-error"></span>
                         </div>
 
@@ -109,7 +116,7 @@
 
                         <div class="form-group">
                             <label for="producer_company" data-i18n="producerCompany">Producer Company</label>
-                            <input type="text" id="producer_company" name="producer_company" >
+                            <input type="text" id="producer_company" name="producer_company" maxlength="100">
                             <span class="error-message" id="producer_company-error"></span>
                         </div>
 

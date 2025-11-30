@@ -1,5 +1,28 @@
 import { showToast } from './notifications.js'
 
+/**
+ * A helper function to show or clear an error for a specific field.
+ * @param {string} fieldId - The ID of the input element.
+ * @param {string} message - The error message to show. If empty, clears the error.
+ */
+function setFieldError(fieldId, message) {
+  const errorSpan = document.getElementById(`${fieldId}-error`);
+  if (errorSpan) {
+    errorSpan.textContent = message;
+    errorSpan.style.display = message ? 'block' : 'none';
+  }
+}
+
+/**
+ * Clears all error messages from a form.
+ */
+function clearAllErrors() {
+  document.querySelectorAll('.error-message').forEach(span => {
+    span.textContent = '';
+    span.style.display = 'none';
+  });
+}
+
 // Load customers from database
 async function loadCustomers() {
   try {
@@ -46,71 +69,90 @@ function displayCustomers(customers) {
     .join("")
 }
 
+// Password toggle logic
 document.addEventListener('DOMContentLoaded', function() {
-  const passwordInput = document.getElementById('password');
   const togglePasswordButton = document.getElementById('togglePassword');
-  const eyeIcon = togglePasswordButton.querySelector('i');
+  if (togglePasswordButton) {
+    const passwordInput = document.getElementById(togglePasswordButton.dataset.target);
+    const eyeIcon = document.getElementById('password-toggle-icon');
 
-  togglePasswordButton.addEventListener('click', function() {
-    // Toggle the type attribute
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-
-    // Toggle the eye icon
-    eyeIcon.classList.toggle('bi-eye');
-    eyeIcon.classList.toggle('bi-eye-slash');
-  });
+    togglePasswordButton.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      eyeIcon.classList.toggle('fa-eye');
+      eyeIcon.classList.toggle('fa-eye-slash');
+    });
+  }
 });
 
 
 // Function to validate inputs for adding a Customer
 function validateCustomer(data) {
-  const errors = [];
-  const namePattern = /^[A-Za-z]+(?:[-' ][A-Za-z]+)*$/;
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const phonePattern = /(\+\d{1,3})?\s?\(?\d{1,4}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
-  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|:;"'<>,.?/~`]).{8,16}$/;
+  let isValid = true;
+  const namePattern = /^[A-Za-z\s'-]{2,50}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phonePattern = /^[0-9]{10,15}$/;
+  const passwordPattern = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/;
 
-  // Required fields
-  if (!data.first_name || !data.last_name || !data.email || !data.phone_number || !data.password) {
-    errors.push("Field is missing, must require the following fields: first name, last name, email, password, and phone number.");
+  // First Name
+  if (!data.first_name) {
+    setFieldError('first_name', 'First name is required.');
+    isValid = false;
+  } else if (!namePattern.test(data.first_name)) {
+    setFieldError('first_name', 'Please enter a valid name.');
+    isValid = false;
   }
 
-  // Name validation
-  if (
-    (data.first_name && !namePattern.test(data.first_name)) ||
-    (data.last_name && !namePattern.test(data.last_name))
-  ) {
-    errors.push("Invalid name format: only letters, spaces, hyphens, and apostrophes are allowed.");
+  // Last Name
+  if (!data.last_name) {
+    setFieldError('last_name', 'Last name is required.');
+    isValid = false;
+  } else if (!namePattern.test(data.last_name)) {
+    setFieldError('last_name', 'Please enter a valid name.');
+    isValid = false;
+  }
+  
+  // Email
+  if (!data.email) {
+    setFieldError('email', 'Email is required.');
+    isValid = false;
+  } else if (!emailPattern.test(data.email)) {
+    setFieldError('email', 'Please enter a valid email address.');
+    isValid = false;
   }
 
-  // Email validation
-  if (data.email && !emailPattern.test(data.email)) {
-    errors.push("Invalid Email Format");
-  }
-
-  if (data.password && !passwordPattern.test(data.password)) {
-    errors.push("Invalid password format: must include uppercase, lowercase, number, special character, and be 8-16 characters long.");
+  // Password
+  if (!data.password) {
+    setFieldError('password', 'Password is required.');
+    isValid = false;
+  } else if (!passwordPattern.test(data.password)) {
+    setFieldError('password', 'Password must be 8+ chars, with 1 uppercase, 1 number, and 1 special char.');
+    isValid = false;
   }
 
   // Phone validation
-  if (data.phone_number && !phonePattern.test(data.phone_number)) {
-    errors.push("Invalid phone number format");
+  if (!data.phone_number) {
+    setFieldError('phone_number', 'Phone number is required.');
+    isValid = false;
+  } else if (!phonePattern.test(data.phone_number)) {
+    setFieldError('phone_number', 'Please enter 10-15 digits only.');
+    isValid = false;
   }
 
   // Reward points validation
-  if (data.rewards_points !== undefined && data.rewards_points !== "") {
-    if (isNaN(parseInt(data.rewards_points))) {
-      errors.push("Reward points must be a positive, non-decimal number.");
-    }
+  const points = parseInt(data.rewards_points);
+  if (isNaN(points) || points < 0) {
+    setFieldError('rewards_points', 'Points must be a positive number.');
+    isValid = false;
   }
 
-  return errors;
+  return isValid;
 }
+
 // Add customer
 async function addCustomer(event) {
   event.preventDefault();
-  clearAllErrors()
+  clearAllErrors();
 
   const form = document.getElementById("customer-form");
   const formData = new FormData(form);
@@ -121,12 +163,11 @@ async function addCustomer(event) {
     email: formData.get("email")?.trim(),
     password: formData.get("password")?.trim(),
     phone_number: formData.get("phone_number")?.trim(),
-    rewards_points: formData.get("rewards_points" || "0")?.trim(),
+    rewards_points: formData.get("rewards_points")?.trim() || "0",
   };
 
-  const errors = validateCustomer(data);
-  if (errors.length > 0) {
-    showToast("Validation Error", errors.join("<br>"), "error");
+  if (!validateCustomer(data)) {
+    showToast("Validation Error", "Please fix the errors in the form.", "error");
     return;
   }
 
@@ -147,7 +188,13 @@ async function addCustomer(event) {
       loadCustomers();
     } else {
       const error = await response.json();
-      throw new Error(error.error || "Failed to add customer");
+      if (error.error && error.error.includes("email")) {
+        setFieldError('email', 'This email is already registered.');
+      } else if (error.error && error.error.includes("phone")) {
+        setFieldError('phone_number', 'This phone number is already registered.');
+      } else {
+        throw new Error(error.error || "Failed to add customer");
+      }
     }
   } catch (error) {
     console.error("Error adding customer:", error);
@@ -187,65 +234,16 @@ function resetForm() {
 
 // Add real-time validation
 document.addEventListener("DOMContentLoaded", () => {
-  loadCustomers()
+  loadCustomers();
 
-  // Real-time validation
-  const emailInput = document.getElementById("email")
-  if (emailInput) {
-    emailInput.addEventListener("blur", () => {
-      const value = emailInput.value
-      if (value && !validateEmail(value)) {
-        showFieldError("email", "Please enter a valid email address")
-      } else {
-        clearFieldError("email")
-      }
-    })
-  }
-
-  const phoneInput = document.getElementById("phone_number")
-  if (phoneInput) {
-    phoneInput.addEventListener("blur", () => {
-      const value = phoneInput.value
-      if (value && !validatePhone(value)) {
-        showFieldError("phone_number", "Please enter a valid phone number")
-      } else {
-        clearFieldError("phone_number")
-      }
-    })
-  }
-})
-
-function clearAllErrors() {
-  // Clear all errors logic here
-}
-
-function validateRequired(value) {
-  return value.trim() !== ""
-}
-
-function showFieldError(fieldId, errorMessage) {
-  const field = document.getElementById(fieldId)
-  if (field) {
-    field.nextElementSibling.textContent = errorMessage
-  }
-}
-
-function validateEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-function validatePhone(phone) {
-  const phoneRegex = /^\d{10,}$/
-  return phoneRegex.test(phone)
-}
-
-function clearFieldError(fieldId) {
-  const field = document.getElementById(fieldId)
-  if (field) {
-    field.nextElementSibling.textContent = ""
-  }
-}
+  // Add real-time validation to clear errors on input
+  document.getElementById("customer-form").querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', () => {
+      // Clear the error for this specific field
+      setFieldError(input.id, '');
+    });
+  });
+});
 
 // Expose functions to global scope
 if (typeof window !== "undefined") {

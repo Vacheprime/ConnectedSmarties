@@ -1,5 +1,28 @@
 import { showToast } from "./notifications.js"
 
+/**
+ * A helper function to show or clear an error for a specific field.
+ * @param {string} fieldId - The ID of the input element.
+ * @param {string} message - The error message to show. If empty, clears the error.
+ */
+function setFieldError(fieldId, message) {
+  const errorSpan = document.getElementById(`${fieldId}-error`);
+  if (errorSpan) {
+    errorSpan.textContent = message;
+    errorSpan.style.display = message ? 'block' : 'none';
+  }
+}
+
+/**
+ * Clears all error messages from a form.
+ */
+function clearAllErrors() {
+  document.querySelectorAll('.error-message').forEach(span => {
+    span.textContent = '';
+    span.style.display = 'none';
+  });
+}
+
 // Load products from database
 async function loadProducts() {
   try {
@@ -38,7 +61,7 @@ function displayProducts(products) {
             <td>${product.available_stock || 0}</td>
             <td>${product.category || "-"}</td>
             <td>${product.points_worth || 0}</td>
-            <td>${product.producer_company}</td>
+            <td>${product.producer_company || "-"}</td>
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct(${product.product_id})">Edit</button>
                 <button class="action-btn delete-btn" onclick="deleteProduct(${product.product_id})">Delete</button>
@@ -63,40 +86,65 @@ function validateProduct(data) {
   }
 
   // Name
-  if (data.name && !namePattern.test(data.name)) {
-    errors.push("Product name must contain only letters, numbers, and spaces.");
-  }
-
-  // Category
-  if (data.category && !categoryPattern.test(data.category)) {
-    errors.push("Category must contain only letters and spaces.");
+  if (!data.name) {
+    setFieldError('name', 'Product name is required.');
+    isValid = false;
+  } else if (!namePattern.test(data.name)) {
+    setFieldError('name', 'Name can only contain letters, numbers, spaces, \', -.');
+    isValid = false;
   }
 
   // Price
   const price = parseFloat(data.price);
-  if (isNaN(price)) {
-    errors.push("Price must be a valid number.");
-  } else if (price < 0 || price >= 1000) {
-    errors.push("Price cannot be negative and cannot exceed 999.99");
+  if (!data.price) {
+     setFieldError('price', 'Price is required.');
+     isValid = false;
+  } else if (isNaN(price) || price <= 0) {
+    setFieldError('price', 'Price must be a positive number.');
+    isValid = false;
   }
 
-  // UPC
-  const upc = String(data.upc || "").trim();
-  if (!upcPattern.test(upc)) {
-    errors.push("UPC must be exactly 12 digits.");
+  // EPC
+  if (!data.epc) {
+    setFieldError('epc', 'EPC is required.');
+    isValid = false;
+  } else if (!epcPattern.test(data.epc)) {
+    setFieldError('epc', 'EPC must be 4-64 alphanumeric characters.');
+    isValid = false;
+  }
+  
+  // UPC (Optional, but validated if present)
+  if (data.upc && !upcPattern.test(data.upc)) {
+    setFieldError('upc', 'UPC must be 12 or 13 digits.');
+    isValid = false;
   }
 
-  return errors;
+  // Category (Optional, but validated if present)
+  if (data.category && !categoryPattern.test(data.category)) {
+    setFieldError('category', 'Category must contain only letters, spaces, \', -.');
+    isValid = false;
+  }
+  
+  // Points
+  const points = parseInt(data.points_worth);
+  if (isNaN(points) || points < 0) {
+    setFieldError('points_worth', 'Points must be a positive number.');
+    isValid = false;
+  }
+
+  return isValid;
 }
 
 
 // Save product (add or update)
 async function saveProduct(event) {
   event.preventDefault()
-  window.clearAllErrors()
+  clearAllErrors()
+
   const form = document.getElementById("product-form")
   const formData = new FormData(form)
   const productId = formData.get("product_id")
+
   const data = {
     name: formData.get("name").trim(),
     price: formData.get("price").trim(),
@@ -143,7 +191,13 @@ async function saveProduct(event) {
       loadProducts()
     } else {
       const error = await response.json()
-      throw new Error(error.error || `Failed to ${isEdit ? "update" : "add"} product`)
+       if (error.error && error.error.includes("epc")) {
+        setFieldError('epc', 'This EPC is already in use.');
+      } else if (error.error && error.error.includes("upc")) {
+        setFieldError('upc', 'This UPC is already in use.');
+      } else {
+        throw new Error(error.error || `Failed to ${isEdit ? "update" : "add"} product`);
+      }
     }
   } catch (error) {
     console.error("Error saving product:", error)
@@ -236,6 +290,7 @@ function openInventoryModal() {
     
     // Reset the form and EPC list
     document.getElementById('inventory-batch-form').reset();
+    setFieldError('batch_quantity', '');
     generatedEPCs = [];
     updateEPCDisplay();
     clearEPCErrors();
@@ -387,12 +442,21 @@ function clearEPCErrors() {
 }
 
 async function submitInventoryBatch() {
+    const quantityInput = document.getElementById('batch_quantity');
+    const quantity = parseInt(quantityInput.value);
+    const receivedDateInput = document.getElementById('batch_received_date').value;
+    
+    // Validate quantity
+    if (!quantity || quantity <= 0) {
+        setFieldError('batch_quantity', 'Quantity must be a positive integer');
     clearEPCErrors();
     
     // Validate that EPCs have been added
     if (generatedEPCs.length === 0) {
         showToast('Error', 'Please add at least one EPC', 'error');
         return;
+    } else {
+         setFieldError('batch_quantity', '');
     }
     
     const receivedDateInput = document.getElementById('batch_received_date').value;
@@ -403,7 +467,6 @@ async function submitInventoryBatch() {
         const dateObj = new Date(receivedDateInput);
         const now = new Date();
         
-        // Check if date is in the future
         if (dateObj > now) {
             showFieldError('batch_quantity', 'Received date cannot be in the future');
             return;
@@ -560,6 +623,7 @@ async function deleteProductEPC(epc) {
                 loadProducts();
             }
         } else {
+            showToast('Error', data.error || 'Failed to add inventory batch', 'error');
             const error = await response.json();
             throw new Error(error.error || 'Failed to delete EPC');
         }
@@ -573,46 +637,14 @@ async function deleteProductEPC(epc) {
 document.addEventListener("DOMContentLoaded", () => {
   loadProducts()
 
-  // Real-time validation for price
-  const priceInput = document.getElementById("price")
-  if (priceInput) {
-    priceInput.addEventListener("blur", () => {
-      const value = priceInput.value
-      if (value && Number.parseFloat(value) < 0) {
-        showToast("Validation Error", "Price must be a positive number", "error")
-      } else {
-        window.clearFieldError("price")
-      }
-    })
-  }
-})
-
-// Helper functions
-function validateRequired(value) {
-  return value !== null && value !== ""
-}
-
-function clearAllErrors() {
-  const errorElements = document.querySelectorAll(".error")
-  errorElements.forEach((element) => {
-    element.style.display = "none"
-  })
-}
-
-function showFieldError(fieldId, errorMessage) {
-  const errorElement = document.getElementById(`${fieldId}-error`)
-  if (errorElement) {
-    errorElement.textContent = errorMessage
-    errorElement.style.display = "block"
-  }
-}
-
-function clearFieldError(fieldId) {
-  const errorElement = document.getElementById(`${fieldId}-error`)
-  if (errorElement) {
-    errorElement.style.display = "none"
-  }
-}
+  // Add real-time validation to clear errors on input
+  document.getElementById("product-form").querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', () => {
+      // Clear the error for this specific field
+      setFieldError(input.id, '');
+    });
+  });
+});
 
 // Expose functions to global scope
 if (typeof window !== "undefined") {
