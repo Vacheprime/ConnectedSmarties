@@ -646,22 +646,23 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Expose functions to global scope
-if (typeof window !== "undefined") {
-  window.saveProduct = saveProduct
-  window.editProduct = editProduct
-  window.deleteProduct = deleteProduct
-  window.resetForm = resetForm
-  window.clearFieldError = clearFieldError
-  window.showFieldError = showFieldError
-  window.clearAllErrors = clearAllErrors
-  window.loadProducts = loadProducts
-  window.openInventoryModal = openInventoryModal
-  window.submitInventoryBatch = submitInventoryBatch
-  window.generateEPCsFromRange = generateEPCsFromRange
-  window.addManualEPC = addManualEPC
-  window.removeEPC = removeEPC
-  window.openViewEPCsModal = openViewEPCsModal
-  window.deleteProductEPC = deleteProductEPC
-  window.displayEPCsList = displayEPCsList
+  // Expose functions to global scope
+  if (typeof window !== "undefined") {
+    window.saveProduct = saveProduct
+    window.editProduct = editProduct
+    window.deleteProduct = deleteProduct
+    window.resetForm = resetForm
+    window.clearFieldError = clearFieldError
+    window.showFieldError = showFieldError
+    window.clearAllErrors = clearAllErrors
+    window.loadProducts = loadProducts
+    window.openInventoryModal = openInventoryModal
+    window.submitInventoryBatch = submitInventoryBatch
+    window.generateEPCsFromRange = generateEPCsFromRange
+    window.addManualEPC = addManualEPC
+    window.removeEPC = removeEPC
+    window.openViewEPCsModal = openViewEPCsModal
+    window.deleteProductEPC = deleteProductEPC
+    window.displayEPCsList = displayEPCsList
+  };
 }
