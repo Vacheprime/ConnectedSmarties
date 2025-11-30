@@ -445,6 +445,59 @@ def process_payment():
 
     return jsonify({"success": True, "message": "Payment processed successfully."}), 200
 
+@app.route('/api/payments/filtered', methods=['GET'])
+def get_filtered_payments():
+    """Get payments for the logged-in customer filtered by date range."""
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Validate dates
+    if not start_date or not end_date:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+    
+    if not validate_date_format(start_date):
+        return jsonify({'error': 'start_date must be in format YYYY-MM-DD'}), 400
+    
+    if not validate_date_format(end_date):
+        return jsonify({'error': 'end_date must be in format YYYY-MM-DD'}), 400
+    
+    try:
+        customer_id = int(session["user_id"])
+        
+        # Use the Payment model method to fetch filtered payments
+        payments = Payment.fetch_payments_of_customer_by_date(customer_id, start_date, end_date)
+        
+        # Convert to JSON-serializable format
+        payments_list = []
+        for payment in payments:
+            products = []
+            for payment_product in payment.products:
+                products.append({
+                    "product_id": payment_product.product_id,
+                    "name": payment_product.product_name,
+                    "price": payment_product.product_price,
+                    "quantity": payment_product.product_amount,
+                })
+            
+            payments_list.append({
+                "payment_id": payment.payment_id,
+                "date": payment.date,
+                "total_paid": payment.total_paid,
+                "products": products,
+            })
+        
+        return jsonify({
+            "success": True,
+            "payments": payments_list
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get filtered payments: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ============= PRODUCT API ROUTES =============
 
 @app.route('/api/products', methods=['GET'])
@@ -1064,62 +1117,45 @@ def add_inventory_batch():
 @login_required(role="admin")
 def get_environmental_report():
     """Get environmental data report (temperature and humidity trends)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sensor_id = request.args.get('sensor_id', 1, type=int)
+
+    if not start_date or not sensor_id:
+        return jsonify({'error': 'start_date and sensor_id are required parameters.'}), 400
+
     try:
-        start_date = request.args.get('start_date', '')
-        end_date = request.args.get('end_date', '')
-        sensor_id = request.args.get('sensor_id', type=int)
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Build query
-        query = """
-        SELECT sensor_id, data_type, value, created_at
-        FROM SensorDataPoints
-        WHERE 1=1
-        """
-        params = []
-        
-        if start_date:
-            query += " AND created_at >= ?"
-            params.append(start_date)
-        if end_date:
-            query += " AND created_at <= ?"
-            params.append(end_date)
-        if sensor_id:
-            query += " AND sensor_id = ?"
-            params.append(sensor_id)
-        
-        query += " ORDER BY created_at DESC LIMIT 1000"
-        
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        
-        # Group by data type
-        temp_data = []
-        humidity_data = []
-        
-        for row in rows:
-            data_point = {
-                'sensor_id': row['sensor_id'],
-                'value': float(row['value']),
-                'timestamp': row['created_at']
+        temp_data_points = SensorDataPoint.fetch_sensor_data_over_time("temperature", start_date, end_date)
+        temp_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
             }
-            
-            if row['data_type'] == 'temperature':
-                temp_data.append(data_point)
-            elif row['data_type'] == 'humidity':
-                humidity_data.append(data_point)
+            for dp in temp_data_points
+        ]
+
+        humidity_data_points = SensorDataPoint.fetch_sensor_data_over_time("humidity", start_date, end_date)
+        humidity_data_list = [
+            {
+                'sensor_id': dp.sensor_id,
+                'value': float(dp.value),
+                'timestamp': dp.created_at
+            }
+            for dp in humidity_data_points
+        ]
+
+        print(str(len(humidity_data_list)) + " " + str(len(temp_data_list)))
         
         return jsonify({
             'success': True,
-            'temperature_data': sorted(temp_data, key=lambda x: x['timestamp']),
-            'humidity_data': sorted(humidity_data, key=lambda x: x['timestamp'])
+            'temperature_data': temp_data_list,
+            'humidity_data': humidity_data_list
         }), 200
     except Exception as e:
         print(f"ERROR: Failed to get environmental report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/api/reports/customer-analytics', methods=['GET'])
 @login_required(role="admin")
@@ -1186,6 +1222,7 @@ def get_customer_analytics_report():
 @login_required(role="admin")
 def get_product_sales_report():
     """Get product sales report with filtering options."""
+    """
     try:
         start_date = request.args.get('start_date', '2024-01-01')
         end_date = request.args.get('end_date', str(date.today()))
@@ -1197,7 +1234,7 @@ def get_product_sales_report():
         cursor = db.cursor()
         
         # Build query
-        query = """
+        query = 
             SELECT p.product_id, p.name, p.category, SUM(pp.product_amount) as total_quantity, 
                    COUNT(DISTINCT pp.payment_id) as total_transactions, 
                    SUM(pp.product_amount * p.price) as total_revenue,
@@ -1206,7 +1243,7 @@ def get_product_sales_report():
             JOIN PaymentProducts pp ON p.product_id = pp.product_id
             JOIN Payments pa ON pp.payment_id = pa.payment_id
             WHERE pa.date BETWEEN ? AND ?
-        """
+        
         params = [start_date, end_date]
         
         if category:
@@ -1231,6 +1268,43 @@ def get_product_sales_report():
     except Exception as e:
         print(f"ERROR: Failed to get product sales report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    """
+    # Get the start date and end date
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category = request.args.get('category', '')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+    
+    if end_date == start_date:
+        end_date = None
+    
+    try:
+        total_sales: float = Payment.get_total_sales_amount(start_date, end_date)
+        products_sold: list[dict[Product, int]] = Product.fetch_products_sold(start_date, end_date)
+        
+        most_sold_products: list[Product] = Product.fetch_most_sold_products(start_date, end_date, 3)
+        least_sold_products: list[Product] = Product.fetch_least_sold_products(start_date, end_date, 3)
+
+        return jsonify({
+            'success': True,
+            'total_sales': round(total_sales, 2),
+            'total_products_sold': sum(item['number_sold'] for item in products_sold),
+            'products_sold': [
+                {
+                    'product': item['product'].to_dict(),
+                    'number_sold': item['number_sold']
+                }
+                for item in products_sold
+            ],
+            'most_sold_products': [product.to_dict() for product in most_sold_products],
+            'least_sold_products': [product.to_dict() for product in least_sold_products]
+        }), 200
+
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/reports/system-performance', methods=['GET'])
 @login_required(role="admin")

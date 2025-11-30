@@ -39,27 +39,22 @@
                 <p class="subtitle" data-i18n="reportsSubtitle">System performance and data insights</p>
             </div>
 
-            <!-- Date Range Filter -->
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label for="start-date" data-i18n="startDate">Start Date</label>
-                    <input type="date" id="start-date" class="form-control">
-                </div>
-                <div class="filter-group">
-                    <label for="end-date" data-i18n="endDate">End Date</label>
-                    <input type="date" id="end-date" class="form-control">
-                </div>
-                <button id="apply-filters" class="btn btn-primary" data-i18n="applyFilters">Apply Filters</button>
-                <button id="reset-filters" class="btn btn-secondary" data-i18n="resetFilters">Reset</button>
-            </div>
-
             <!-- Reports Grid -->
             <div class="reports-grid">
+                <!-- Environmental Data Report -->
                 <div class="report-card">
                     <div class="report-header">
                         <h3 data-i18n="environmentalData">Environmental Data</h3>
                     </div>
                     <p data-i18n="environmentalDataDesc">Temperature and humidity trends over time</p>
+                    <div class="filter-group">
+                        <label for="env-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="env-start-date" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="env-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="env-end-date" class="form-control">
+                    </div>
                     <button class="btn btn-primary" onclick="openReportModal('environmental', 'Environmental Data')" data-i18n="viewReport">View Report</button>
                 </div>
 
@@ -69,6 +64,14 @@
                         <h3 data-i18n="customerAnalytics">Customer Analytics</h3>
                     </div>
                     <p data-i18n="customerAnalyticsDesc">Customer registration and rewards statistics</p>
+                    <div class="filter-group">
+                        <label for="cust-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="cust-start-date" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="cust-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="cust-end-date" class="form-control">
+                    </div>
                     <button class="btn btn-primary" onclick="openReportModal('customer', 'Customer Analytics')" data-i18n="viewReport">View Report</button>
                 </div>
 
@@ -78,11 +81,13 @@
                         <h3 data-i18n="productSales">Product Sales</h3>
                     </div>
                     <p data-i18n="productSalesDesc">Best-selling products and revenue analysis</p>
-                    <div class="filter-group mb-3">
-                        <label for="category-filter" data-i18n="category">Category</label>
-                        <select id="category-filter" class="form-control">
-                            <option value="" data-i18n="allCategories">All Categories</option>
-                        </select>
+                    <div class="filter-group">
+                        <label for="prod-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="prod-start-date" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="prod-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="prod-end-date" class="form-control">
                     </div>
                     <button class="btn btn-primary" onclick="openReportModal('products', 'Product Sales')" data-i18n="viewReport">View Report</button>
                 </div>
@@ -93,6 +98,14 @@
                         <h3 data-i18n="systemPerformance">System Performance</h3>
                     </div>
                     <p data-i18n="systemPerformanceDesc">Device uptime and operational metrics</p>
+                    <div class="filter-group">
+                        <label for="perf-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="perf-start-date" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="perf-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="perf-end-date" class="form-control">
+                    </div>
                     <button class="btn btn-primary" onclick="openReportModal('performance', 'System Performance')" data-i18n="viewReport">View Report</button>
                 </div>
 
@@ -102,6 +115,14 @@
                         <h3 data-i18n="fanUsage">Fan Usage</h3>
                     </div>
                     <p data-i18n="fanUsageDesc">Climate control activation history</p>
+                    <div class="filter-group">
+                        <label for="fan-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="fan-start-date" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="fan-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="fan-end-date" class="form-control">
+                    </div>
                     <button class="btn btn-primary" onclick="openReportModal('fan', 'Fan Usage')" data-i18n="viewReport">View Report</button>
                 </div>
             </div>
@@ -190,18 +211,66 @@
     </template>
 
     <template id="template-products">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong>Report Period:</strong> <span id="report-start-date">--</span> to <span id="report-end-date">--</span>
+            </p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalSales">Total Sales</span>
+                <span class="stat-value" id="total-sales">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="productsSold">Products Sold</span>
+                <span class="stat-value" id="products-sold-count">--</span>
+            </div>
+        </div>
+
         <div class="chart-container">
+            <h5 data-i18n="salesByCategory">Sales by Category</h5>
             <canvas id="product-chart"></canvas>
         </div>
+
         <div class="table-responsive-container">
+            <h5 data-i18n="allProductsSold">All Products Sold</h5>
             <table class="table table-sm" id="product-sales-table">
                 <thead>
                     <tr>
                         <th data-i18n="productName">Product Name</th>
                         <th data-i18n="category">Category</th>
                         <th data-i18n="quantitySold">Qty Sold</th>
-                        <th data-i18n="transactions">Transactions</th>
-                        <th data-i18n="revenue">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="table-responsive-container" style="margin-top: 30px;">
+            <h5 data-i18n="mostSoldProducts">Most Sold Products</h5>
+            <table class="table table-sm" id="most-sold-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="productName">Product Name</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="price">Price</th>
+                        <th data-i18n="pointsWorth">Points Worth</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="table-responsive-container" style="margin-top: 30px;">
+            <h5 data-i18n="leastSoldProducts">Least Sold Products</h5>
+            <table class="table table-sm" id="least-sold-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="productName">Product Name</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="price">Price</th>
+                        <th data-i18n="pointsWorth">Points Worth</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
