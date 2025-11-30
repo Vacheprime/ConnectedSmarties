@@ -175,7 +175,7 @@ class Product(BaseModel):
 
 
     @classmethod
-    def fetch_least_sold_product(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
+    def fetch_least_sold_products(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
         if start_date is None:
             raise ValueError("Start date must be provided.")
 
@@ -195,15 +195,18 @@ class Product(BaseModel):
         if end_date is None:
             end_date = "9999-12-31 23:59:59"
 
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+
         sql_values = {
             "start_date": start_date,
             "end_date": end_date,
             "top_n": top_n
         }
 
-        # Convert to UTC for comparison
-        start_date = DateTimeUtils.local_to_utc(start_date)
-        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+        print(start_date + " " + end_date)
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:

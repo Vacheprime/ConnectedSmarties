@@ -16,41 +16,43 @@ const modalContent = document.getElementById('report-modal-content');
 const modalTitle = document.getElementById('report-modal-title');
 const modalLoader = '<div class="modal-loader"></div>';
 
+// Map of report types to their date input IDs
+const reportDateInputs = {
+    environmental: { start: 'env-start-date', end: 'env-end-date' },
+    customer: { start: 'cust-start-date', end: 'cust-end-date' },
+    products: { start: 'prod-start-date', end: 'prod-end-date' },
+    performance: { start: 'perf-start-date', end: 'perf-end-date' },
+    fan: { start: 'fan-start-date', end: 'fan-end-date' }
+};
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    initializeDateFilters();
-    setupFilterListeners();
+    initializeAllDateFilters();
     loadCategoryFilter();
 });
 
-function initializeDateFilters() {
+function initializeAllDateFilters() {
     const today = new Date();
     // Set default to 30 days ago
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     
-    document.getElementById('end-date').valueAsDate = today;
-    document.getElementById('start-date').valueAsDate = thirtyDaysAgo;
-}
-
-function setupFilterListeners() {
-    document.getElementById('apply-filters').addEventListener('click', () => {
-        // If a report is open, reload it with new filters
-        if (modalOverlay.classList.contains('modal-active')) {
-            fetchAndRenderReport(currentReportType);
-        }
-        showToast('Filters Applied', 'New date range set', 'info');
-    });
-
-    document.getElementById('reset-filters').addEventListener('click', () => {
-        initializeDateFilters();
-        document.getElementById('category-filter').value = '';
+    // Initialize date filters for each report
+    Object.values(reportDateInputs).forEach(({ start, end }) => {
+        const startInput = document.getElementById(start);
+        const endInput = document.getElementById(end);
+        
+        if (startInput) startInput.valueAsDate = thirtyDaysAgo;
+        if (endInput) endInput.valueAsDate = today;
     });
 }
 
-function getDateFilters() {
+function getDateFiltersForReport(reportType) {
+    const inputs = reportDateInputs[reportType];
+    if (!inputs) return { start_date: '', end_date: '' };
+    
     return {
-        start_date: document.getElementById('start-date').value,
-        end_date: document.getElementById('end-date').value
+        start_date: document.getElementById(inputs.start).value,
+        end_date: document.getElementById(inputs.end).value
     };
 }
 
@@ -161,7 +163,7 @@ async function fetchAndRenderReport(reportType) {
 // ============= ENVIRONMENTAL REPORT =============
 
 async function loadEnvironmentalReport() {
-    const filters = getDateFilters();
+    const filters = getDateFiltersForReport('environmental');
     // NOTE: Make sure this path is correct for your app's routing
     const response = await fetch(`/api/reports/environmental?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
@@ -258,7 +260,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
 // ============= CUSTOMER ANALYTICS REPORT =============
 
 async function loadCustomerAnalyticsReport() {
-    const filters = getDateFilters();
+    const filters = getDateFiltersForReport('customer');
     const response = await fetch(`/api/reports/customer-analytics?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
 
@@ -332,10 +334,11 @@ function createCustomerChart(topCustomers) {
 // ============= PRODUCT SALES REPORT =============
 
 async function loadProductSalesReport() {
-    const filters = getDateFilters();
+    const filters = getDateFiltersForReport('products');
     const category = document.getElementById('category-filter').value;
-    
-    let url = `/api/reports/product-sales?start_date=${filters.start_date}&end_date=${filters.end_date}&limit=10`;
+
+    console.log(filters.start_date + " " + filters.end_date + " " + category);
+    let url = `/api/reports/product-sales?start_date=${filters.start_date}&end_date=${filters.end_date}`;
     if (category) {
         url += `&category=${encodeURIComponent(category)}`;
     }
@@ -345,34 +348,87 @@ async function loadProductSalesReport() {
 
     if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-    populateProductSalesTable(data.sales_data);
-    createProductChart(data.sales_data);
+    // Display date range
+    document.querySelector('#report-modal-content #report-start-date').textContent = filters.start_date;
+    document.querySelector('#report-modal-content #report-end-date').textContent = filters.end_date;
+
+    // Display stats
+    document.querySelector('#report-modal-content #total-sales').textContent = `$${data.total_sales.toFixed(2)}`;
+    document.querySelector('#report-modal-content #products-sold-count').textContent = data.total_products_sold || 0;
+
+    // Populate tables
+    populateProductsSoldTable(data.products_sold || []);
+    populateMostSoldTable(data.most_sold_products || []);
+    populateLeastSoldTable(data.least_sold_products || []);
+
+    // Create circular chart by category
+    createProductCategoryChart(data.products_sold || []);
 }
 
-function populateProductSalesTable(products) {
+function populateProductsSoldTable(productsSold) {
     const tbody = document.querySelector('#report-modal-content #product-sales-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    products.forEach(product => {
+    productsSold.forEach(item => {
+        const product = item.product;
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${product.name}</td>
-            <td>${product.category}</td>
-            <td>${product.total_quantity || 0}</td>
-            <td>${product.total_transactions || 0}</td>
-            <td>$${(product.total_revenue || 0).toFixed(2)}</td>
+            <td>${product.category || '-'}</td>
+            <td>${item.number_sold}</td>
         `;
         tbody.appendChild(row);
     });
 }
 
-function createProductChart(products) {
+function populateMostSoldTable(mostSold) {
+    const tbody = document.querySelector('#report-modal-content #most-sold-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    mostSold.forEach(product => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${product.category || '-'}</td>
+            <td>$${(product.price || 0).toFixed(2)}</td>
+            <td>${product.points_worth || 0}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function populateLeastSoldTable(leastSold) {
+    const tbody = document.querySelector('#report-modal-content #least-sold-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    leastSold.forEach(product => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${product.category || '-'}</td>
+            <td>$${(product.price || 0).toFixed(2)}</td>
+            <td>${product.points_worth || 0}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function createProductCategoryChart(productsSold) {
     const ctx = document.querySelector('#report-modal-content #product-chart')?.getContext('2d');
     if (!ctx) return;
 
-    const labels = products.map(p => p.name);
-    const quantities = products.map(p => p.total_quantity || 0);
+    // Aggregate quantities by category
+    const categoryData = {};
+    productsSold.forEach(item => {
+        const category = item.product.category || 'Uncategorized';
+        categoryData[category] = (categoryData[category] || 0) + item.number_sold;
+    });
+
+    const labels = Object.keys(categoryData);
+    const quantities = Object.values(categoryData);
 
     if (productChart) productChart.destroy();
 
@@ -388,7 +444,8 @@ function createProductChart(products) {
                 data: quantities,
                 backgroundColor: [
                     '#4dabf7', '#ff6b6b', '#51cf66', '#ffa94d', '#b197fc',
-                    '#ff8c8c', '#4ecdc4', '#ff922b', '#82c91e', '#748ffc'
+                    '#ff8c8c', '#4ecdc4', '#ff922b', '#82c91e', '#748ffc',
+                    '#20c997', '#ff6b9d', '#ffd43b', '#748ffc', '#da77f2'
                 ],
                 borderColor: borderColor,
                 borderWidth: 2
@@ -398,7 +455,18 @@ function createProductChart(products) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'right', labels: { color: textColor } }
+                legend: { 
+                    display: true, 
+                    position: 'right', 
+                    labels: { color: textColor, padding: 15 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' units';
+                        }
+                    }
+                }
             }
         }
     });
@@ -407,7 +475,7 @@ function createProductChart(products) {
 // ============= SYSTEM PERFORMANCE REPORT =============
 
 async function loadSystemPerformanceReport() {
-    const filters = getDateFilters();
+    const filters = getDateFiltersForReport('performance');
     const response = await fetch(`/api/reports/system-performance?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
 
@@ -422,7 +490,7 @@ async function loadSystemPerformanceReport() {
 // ============= FAN USAGE REPORT =============
 
 async function loadFanUsageReport() {
-    const filters = getDateFilters();
+    const filters = getDateFiltersForReport('fan');
     const response = await fetch(`/api/reports/fan-usage?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
 

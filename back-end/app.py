@@ -1169,6 +1169,7 @@ def get_customer_analytics_report():
 @login_required(role="admin")
 def get_product_sales_report():
     """Get product sales report with filtering options."""
+    """
     try:
         start_date = request.args.get('start_date', '2024-01-01')
         end_date = request.args.get('end_date', str(date.today()))
@@ -1180,7 +1181,7 @@ def get_product_sales_report():
         cursor = db.cursor()
         
         # Build query
-        query = """
+        query = 
             SELECT p.product_id, p.name, p.category, SUM(pp.product_amount) as total_quantity, 
                    COUNT(DISTINCT pp.payment_id) as total_transactions, 
                    SUM(pp.product_amount * p.price) as total_revenue,
@@ -1189,7 +1190,7 @@ def get_product_sales_report():
             JOIN PaymentProducts pp ON p.product_id = pp.product_id
             JOIN Payments pa ON pp.payment_id = pa.payment_id
             WHERE pa.date BETWEEN ? AND ?
-        """
+        
         params = [start_date, end_date]
         
         if category:
@@ -1214,6 +1215,43 @@ def get_product_sales_report():
     except Exception as e:
         print(f"ERROR: Failed to get product sales report: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    """
+    # Get the start date and end date
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category = request.args.get('category', '')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+    
+    if end_date == start_date:
+        end_date = None
+    
+    try:
+        total_sales: float = Payment.get_total_sales_amount(start_date, end_date)
+        products_sold: list[dict[Product, int]] = Product.fetch_products_sold(start_date, end_date)
+        
+        most_sold_products: list[Product] = Product.fetch_most_sold_products(start_date, end_date, 3)
+        least_sold_products: list[Product] = Product.fetch_least_sold_products(start_date, end_date, 3)
+
+        return jsonify({
+            'success': True,
+            'total_sales': round(total_sales, 2),
+            'total_products_sold': sum(item['number_sold'] for item in products_sold),
+            'products_sold': [
+                {
+                    'product': item['product'].to_dict(),
+                    'number_sold': item['number_sold']
+                }
+                for item in products_sold
+            ],
+            'most_sold_products': [product.to_dict() for product in most_sold_products],
+            'least_sold_products': [product.to_dict() for product in least_sold_products]
+        }), 200
+
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/reports/system-performance', methods=['GET'])
 @login_required(role="admin")
