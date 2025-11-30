@@ -148,11 +148,11 @@ Tasks to do:
 
 - Fix the weird bug with reports because of Product database change.
 
-- (Optional): Fix I18N glitching sometimes
+- (Optional): Fix I18N glitching sometimes (ISHI, COMPLETED)
 
 - Do multiple reading of RFID possibly.
 
-- Fix ParetoAnywhere bug where the data flickers when the backend cannot connect.
+- Fix ParetoAnywhere bug where the data flickers when the backend cannot connect. (ISHI, COMPLETED, JUST NEED ISHI"S PI)
 
 - Setup ParetoAnywhere properly so that it works and we can still send emails
 
