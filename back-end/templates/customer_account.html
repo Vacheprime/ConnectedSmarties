@@ -99,8 +99,13 @@
           <div id="spendingSummary" class="section">
             <h3 class="fw-bold" data-i18n="spendingSummary">Spending Summary</h3>
             <div class="card shadow-sm mb-3">
-              <div class="card-body canvas-wrap" style="height:320px;">
-                <canvas id="spendingChart" width="400" height="200"></canvas>
+              <div class="card-body">
+                <div class="mb-3 p-3 border rounded" style="background-color: var(--color-background-card);">
+                  <p class="mb-0"><strong data-i18n="totalSpent">Total Spent:</strong> <span id="chart-total-spending" style="font-size: 1.2rem; color: var(--color-primary);">$0.00</span></p>
+                </div>
+                <div class="canvas-wrap" style="height:320px;">
+                  <canvas id="spendingChart" width="400" height="200"></canvas>
+                </div>
               </div>
             </div>
           </div>

@@ -121,6 +121,13 @@ function buildChart() {
   const labels = sortedPayments.map(p => (p.date || p.date_time || '').slice(0, 10));
   const totals = sortedPayments.map(p => Number(p.total_paid || p.total || 0));
 
+  // Calculate and display total spending
+  const totalSpending = totals.reduce((sum, val) => sum + val, 0);
+  const totalSpendingElement = document.getElementById('chart-total-spending');
+  if (totalSpendingElement) {
+    totalSpendingElement.textContent = `$${totalSpending.toFixed(2)}`;
+  }
+
   const ctx = document.getElementById('spendingChart');
   if (!ctx) return;
 
@@ -190,7 +197,13 @@ function renderReceiptsList(payments) {
     return;
   }
 
+  // Calculate total spending
+  const totalSpending = payments.reduce((sum, payment) => sum + Number(payment.total_paid || 0), 0);
+
   container.innerHTML = `
+    <div class="mb-3 p-3 border rounded" style="background-color: var(--color-background-card);">
+      <p class="mb-0"><strong data-i18n="totalSpent">Total Spent:</strong> $${totalSpending.toFixed(2)}</p>
+    </div>
     <ul class="list-group">
       ${payments.map(payment => `
         <li class="list-group-item receipt-item" data-payment-id="${payment.payment_id}" style="cursor:pointer;">
@@ -230,6 +243,7 @@ async function applyDateFilter() {
     if (response.ok) {
       allPayments = data.payments || [];
       renderReceiptsList(allPayments);
+      buildChart(); // Rebuild chart with filtered data
       showToast('Success', `Found ${allPayments.length} payment(s)`, 'success');
     } else {
       throw new Error(data.error || 'Failed to filter payments');
@@ -245,6 +259,7 @@ function clearDateFilter() {
   document.getElementById('filterEndDate').value = '';
   allPayments = window.paymentsData || [];
   renderReceiptsList(allPayments);
+  buildChart(); // Rebuild chart with all data
 }
 
 document.addEventListener('DOMContentLoaded', () => {
