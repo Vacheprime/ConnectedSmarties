@@ -136,8 +136,8 @@ Examples:
     
      Dashboard widgets 
 
-
 ## Nov 30, 2025
+
      Make the Input Validations more robust (on Register)
 
 ## Nov 28, 2025

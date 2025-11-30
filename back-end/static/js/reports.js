@@ -265,26 +265,33 @@ async function loadCustomerAnalyticsReport() {
 
     if (!data.success) throw new Error(data.error || 'Failed to load data');
 
+    // Date range label
+    document.querySelector('#report-modal-content #cust-report-start-date').textContent = filters.start_date;
+    document.querySelector('#report-modal-content #cust-report-end-date').textContent = filters.end_date;
+
+    // Stats
     document.querySelector('#report-modal-content #total-customers').textContent = data.total_customers;
     document.querySelector('#report-modal-content #new-customers').textContent = data.new_customers;
+    document.querySelector('#report-modal-content #returning-customers').textContent = data.returning_customers || 0;
     document.querySelector('#report-modal-content #total-rewards').textContent = data.total_rewards_distributed;
-    document.querySelector('#report-modal-content #avg-rewards').textContent = data.average_rewards_per_customer;
 
-    populateTopCustomersTable(data.top_customers);
-    createCustomerChart(data.top_customers);
+    // Populate table and chart
+    populateTopCustomersTable(data.top_customers || []);
+    createCustomerChart(data.top_customers || []);
 }
 
-function populateTopCustomersTable(customers) {
+function populateTopCustomersTable(topCustomers) {
     const tbody = document.querySelector('#report-modal-content #top-customers-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    customers.forEach(customer => {
+    topCustomers.forEach(item => {
+        const name = `${item.customer.first_name} ${item.customer.last_name}`;
+        const totalSpent = Number(item.total_spent || 0);
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${customer.first_name} ${customer.last_name}</td>
-            <td>${customer.purchase_count || 0}</td>
-            <td>$${(customer.total_spent || 0).toFixed(2)}</td>
+            <td>${name}</td>
+            <td>$${totalSpent.toFixed(2)}</td>
         `;
         tbody.appendChild(row);
     });
@@ -294,8 +301,8 @@ function createCustomerChart(topCustomers) {
     const ctx = document.querySelector('#report-modal-content #customer-chart')?.getContext('2d');
     if (!ctx) return;
 
-    const labels = topCustomers.map(c => `${c.first_name} ${c.last_name}`);
-    const purchases = topCustomers.map(c => c.purchase_count || 0);
+    const labels = topCustomers.map(item => `${item.customer.first_name} ${item.customer.last_name}`);
+    const totals = topCustomers.map(item => Number(item.total_spent || 0));
 
     if (customerChart) customerChart.destroy();
 
@@ -306,10 +313,10 @@ function createCustomerChart(topCustomers) {
     customerChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: 'Purchase Count',
-                data: purchases,
+                label: 'Total Spent ($)',
+                data: totals,
                 backgroundColor: '#4dabf7',
                 borderColor: '#1590f5',
                 borderWidth: 1
@@ -324,7 +331,12 @@ function createCustomerChart(topCustomers) {
                 y: { ticks: { color: textColor }, grid: { color: gridColor } }
             },
             plugins: {
-                legend: { display: true, position: 'top', labels: { color: textColor } }
+                legend: { display: true, position: 'top', labels: { color: textColor } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `$${Number(ctx.parsed.x || 0).toFixed(2)}`
+                    }
+                }
             }
         }
     });

@@ -202,6 +202,48 @@ class Payment(BaseModel):
 
 
     @classmethod
+    def get_total_rewards_points_in_date_range(cls, start_date: str, end_date: str = None) -> int:
+        """
+        Calculates the total reward points won in a specified date range.
+
+        Args:
+            start_date (str): The start date in 'YYYY-MM-DD' format.
+            end_date (str, optional): The end date in 'YYYY-MM-DD' format. Defaults to start_date.
+        Returns:
+            int: The total reward points won within the date range.
+        """
+        if start_date is None:
+            raise ValueError("start_date must be provided")
+        if end_date is None:
+            end_date = start_date
+        
+        # Normalize dates
+        start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+        end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
+
+        sql = f"""
+        SELECT SUM(reward_points_won) as total_rewards FROM {cls.DB_TABLE}
+        WHERE date BETWEEN :start_date AND :end_date
+        AND customer_id != 0;
+        """
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(sql, {"start_date": start_date, "end_date": end_date})
+                row = cursor.fetchone()
+                total_rewards = row["total_rewards"] if row["total_rewards"] is not None else 0
+                return int(total_rewards)
+
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while calculating total reward points: {e}")
+
+
+    @classmethod
     def fetch_payment_by_customer_id(cls, customer_id: int) -> list[Payment]:
         """
         Fetches all payments made by a specific customer.

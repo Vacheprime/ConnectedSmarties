@@ -174,9 +174,17 @@
     </template>
 
     <template id="template-customer">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong data-i18n="reportPeriod">Report Period:</strong>
+                <span id="cust-report-start-date">--</span> to <span id="cust-report-end-date">--</span>
+            </p>
+        </div>
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-label" data-i18n="totalCustomers">Total Customers</span>
+                <span class="stat-label" data-i18n="totalCustomers">
+                    Total Customers <small class="text-muted">(includes guest customers)</small>
+                </span>
                 <span class="stat-value" id="total-customers">--</span>
             </div>
             <div class="stat-card">
@@ -184,16 +192,17 @@
                 <span class="stat-value" id="new-customers">--</span>
             </div>
             <div class="stat-card">
+                <span class="stat-label" data-i18n="returningCustomers">Returning Customers</span>
+                <span class="stat-value" id="returning-customers">--</span>
+            </div>
+            <div class="stat-card">
                 <span class="stat-label" data-i18n="totalRewardsDistributed">Total Rewards</span>
                 <span class="stat-value" id="total-rewards">--</span>
             </div>
-            <div class="stat-card">
-                <span class="stat-label" data-i18n="avgRewards">Avg Rewards</span>
-                <span class="stat-value" id="avg-rewards">--</span>
-            </div>
+            <!-- Removed Avg Rewards card -->
         </div>
         <div class="chart-container">
-            <h5 data-i18n="topCustomers">Top Customers</h5>
+            <h5 data-i18n="topCustomers">Top Customers (by Total Spent)</h5>
             <canvas id="customer-chart"></canvas>
         </div>
         <div class="table-responsive-container">
@@ -201,7 +210,6 @@
                 <thead>
                     <tr>
                         <th data-i18n="name">Name</th>
-                        <th data-i18n="purchases">Purchases</th>
                         <th data-i18n="totalSpent">Total Spent</th>
                     </tr>
                 </thead>

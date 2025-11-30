@@ -1161,62 +1161,33 @@ def get_environmental_report():
 @login_required(role="admin")
 def get_customer_analytics_report():
     """Get customer analytics (registration and rewards statistics)."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not start_date:
+        return jsonify({'error': 'start_date is required parameter.'}), 400
+
+    if end_date == start_date:
+        end_date = None
+    
     try:
-        start_date = request.args.get('start_date', '2024-01-01')
-        end_date = request.args.get('end_date', str(date.today()))
-        
-        db = get_db()
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        
-        # Total customers
-        cursor.execute("SELECT COUNT(*) as count FROM Customers WHERE customer_id != 0")
-        total_customers = cursor.fetchone()['count']
-        
-        # New customers in date range
-        cursor.execute("""
-            SELECT COUNT(*) as count FROM Customers 
-            WHERE customer_id != 0 AND join_date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        new_customers = cursor.fetchone()['count']
-        
-        # Total rewards distributed
-        cursor.execute("""
-            SELECT SUM(reward_points_won) as total FROM Payments
-            WHERE date BETWEEN ? AND ?
-        """, (start_date, end_date))
-        total_rewards = cursor.fetchone()['total'] or 0
-        
-        # Average rewards per customer
-        cursor.execute("""
-            SELECT AVG(rewards_points) as avg FROM Customers
-            WHERE customer_id != 0
-        """)
-        avg_rewards = cursor.fetchone()['avg'] or 0
-        
-        # Top customers by purchases
-        cursor.execute("""
-            SELECT c.customer_id, c.first_name, c.last_name, COUNT(p.payment_id) as purchase_count, SUM(p.total_paid) as total_spent
-            FROM Customers c
-            LEFT JOIN Payments p ON c.customer_id = p.customer_id AND p.date BETWEEN ? AND ?
-            WHERE c.customer_id != 0
-            GROUP BY c.customer_id
-            ORDER BY purchase_count DESC
-            LIMIT 10
-        """, (start_date, end_date))
-        top_customers = [dict(row) for row in cursor.fetchall()]
-        
+        returning_customer_count: int = Customer.get_returning_customer_count(start_date, end_date)
+        new_customer_count: int = Customer.get_new_customer_count(start_date, end_date)
+        guest_customer_count: int = Customer.get_guest_customers_approx(start_date, end_date)
+        total_customers: int = returning_customer_count + new_customer_count + guest_customer_count
+        top_customers: list[dict[str, Customer | float]] = Customer.get_top_customers(start_date, end_date)
+        total_rewards: int = Payment.get_total_rewards_points_in_date_range(start_date, end_date)
+
         return jsonify({
             'success': True,
             'total_customers': total_customers,
-            'new_customers': new_customers,
+            'new_customers': new_customer_count,
+            'returning_customers': returning_customer_count,  # added
             'total_rewards_distributed': total_rewards,
-            'average_rewards_per_customer': round(avg_rewards, 2),
-            'top_customers': top_customers
+            'top_customers': [{"customer": item['customer'].to_dict(), "total_spent": item['total_spent']} for item in top_customers],
         }), 200
-    except Exception as e:
-        print(f"ERROR: Failed to get customer analytics report: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    except DatabaseReadException as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reports/product-sales', methods=['GET'])
 @login_required(role="admin")

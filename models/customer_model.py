@@ -63,7 +63,128 @@ class Customer(BaseModel):
 			"qr_identification": self.qr_identification,
 			"rewards_points": self.rewards_points
 		}
+
+
+	@classmethod
+	def from_row(cls, row: sqlite3.Row) -> Customer:
+		customer = Customer(
+			row["first_name"],
+			row["last_name"],
+			row["email"],
+			row["password"],
+			row["phone_number"],
+			row["qr_identification"],
+			int(row["rewards_points"])
+		)
+		customer.customer_id = int(row["customer_id"])
+		customer.join_date = DateTimeUtils.utc_to_local(row["join_date"])
+		return customer
+
+
+	@classmethod
+	def get_top_customers(cls, start_date: str, end_date: str, top_n: int = 5) -> list[dict[str, Customer | float]]:
+		"""
+		Retrieves the top N customers based on total spending within a specified date range.
+
+		Args:
+			start_date (str): The start date in 'YYYY-MM-DD' format.
+			end_date (str): The end date in 'YYYY-MM-DD' format.
+			top_n (int): The number of top customers to retrieve. Defaults to 5.
+
+		Returns:
+			list[dict]: A list of dictionaries representing the top N customers.
+		"""
+		# Convert to UTC for comparison
+		start_date = DateTimeUtils.local_to_utc(f"{start_date} 00:00:00")
+		end_date = DateTimeUtils.local_to_utc(f"{end_date} 23:59:59")
+
+		sql = f"""
+		SELECT c.*, SUM(p.total_paid) AS total_spent
+		FROM {cls.DB_TABLE} c
+		JOIN Payments p ON c.customer_id = p.customer_id
+		WHERE p.date BETWEEN :start_date AND :end_date
+		AND c.customer_id != 0
+		GROUP BY c.customer_id
+		ORDER BY total_spent DESC
+		LIMIT :top_n;
+		"""
+
+		sql_values = {
+			"start_date": start_date,
+			"end_date": end_date,
+			"top_n": top_n
+		}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				cursor.row_factory = sqlite3.Row
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				rows = cursor.fetchall()
+
+				# Map rows to list of dicts
+				top_customers = [{"customer": cls.from_row(row), "total_spent": float(row["total_spent"])} for row in rows]
+
+				return top_customers
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occurred while fetching top customers: {e}")
 	
+
+	@classmethod
+	def get_guest_customers_approx(cls, start_date: str, end_date: str = None) -> int:
+		"""
+		Estimates the number of guest customers (non-registered) within a specified date range.
+
+		Args:
+			start_date (str): The start date in 'YYYY-MM-DD' format.
+			end_date (str, optional): The end date in 'YYYY-MM-DD' format. Defaults to start_date.
+
+		Returns:
+			int: The estimated number of guest customers within the date range.
+		"""
+		if start_date is None:
+			raise ValueError("start_date must be provided")
+		
+		if end_date is None:
+			end_date = start_date
+
+		# Normalize the start and end dates
+		start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+		end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+		# Convert to UTC for comparison
+		start_date = DateTimeUtils.local_to_utc(start_date)
+		end_date = DateTimeUtils.local_to_utc(end_date)
+
+		sql = f"""
+		SELECT COUNT(*) AS guest_customer_count
+		FROM Payments
+		WHERE customer_id = 0
+		AND date BETWEEN :start_date AND :end_date;
+		"""
+
+		sql_values = {
+			"start_date": start_date,
+			"end_date": end_date
+		}
+
+		with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+			try:
+				cursor.row_factory = sqlite3.Row
+				# Execute the query
+				cursor.execute(sql, sql_values)
+
+				# Fetch data
+				rows = cursor.fetchone()
+
+				return int(rows["guest_customer_count"]) if rows["guest_customer_count"] is not None else 0
+
+			except Exception as e:
+				raise DatabaseReadException(f"An unexpected error occurred while calculating guest customers: {e}")
+
 
 	@classmethod
 	def get_new_customer_count(cls, start_date: str, end_date: str = None) -> int:
@@ -96,6 +217,7 @@ class Customer(BaseModel):
 		FROM Payments pa
 		JOIN {cls.DB_TABLE} cu ON pa.customer_id = cu.customer_id
 		WHERE pa.date BETWEEN :start_date AND :end_date
+		AND pa.customer_id != 0
 		AND cu.join_date > :start_date;
 		"""
 
@@ -151,7 +273,8 @@ class Customer(BaseModel):
 		FROM Payments pa
 		JOIN {cls.DB_TABLE} cu ON pa.customer_id = cu.customer_id
 		WHERE pa.date BETWEEN :start_date AND :end_date
-		AND cu.join_date < :start_date;
+		AND cu.join_date < :start_date
+		AND pa.customer_id != 0;
 		"""
 
 		sql_values = {
