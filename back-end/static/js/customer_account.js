@@ -214,10 +214,17 @@ function renderReceiptsList(payments) {
   `;
 
   // Attach click handlers to receipt items
+  attachReceiptItemListeners();
+}
+
+function attachReceiptItemListeners() {
+  const container = document.getElementById('receipts-list-container');
+  if (!container) return;
+  
   container.querySelectorAll('.receipt-item').forEach(item => {
     item.addEventListener('click', function() {
       const paymentId = this.getAttribute('data-payment-id');
-      window.showReceiptModal(paymentId);
+      showReceiptModal(paymentId);
     });
   });
 }
@@ -265,25 +272,52 @@ async function showReceiptModal(paymentId) {
       // Get the modal element
       const modalElement = document.getElementById('receiptModal');
       
+      if (!modalElement) {
+        console.error('Modal element not found');
+        showToast('Error', 'Modal element not found in DOM', 'error');
+        return;
+      }
+      
+      // Check if bootstrap is loaded
+      if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded');
+        showToast('Error', 'Bootstrap library not loaded', 'error');
+        return;
+      }
+      
       // Initialize modal only once
       if (!receiptModalInstance) {
-        receiptModalInstance = new bootstrap.Modal(modalElement);
-        
-        // Add event listener to clean up backdrop on hidden
-        modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
-          // Remove any lingering backdrop elements
-          const backdrops = document.querySelectorAll('.modal-backdrop');
-          backdrops.forEach(backdrop => backdrop.remove());
+        try {
+          console.log('Creating new modal instance');
+          receiptModalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: false
+          });
           
-          // Ensure body scroll is restored
-          document.body.classList.remove('modal-open');
-          document.body.style.overflow = '';
-          document.body.style.paddingRight = '';
-        }, { once: false });
+          // Add event listener to clean up backdrop on hidden
+          modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
+            console.log('Modal hidden event fired');
+            // Remove any lingering backdrop elements
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Ensure body scroll is restored
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+          }, { once: false });
+        } catch (error) {
+          console.error('Failed to create modal instance:', error);
+          showToast('Error', 'Failed to create modal', 'error');
+          return;
+        }
       }
       
       // Show the modal
+      console.log('Showing modal...');
       receiptModalInstance.show();
+      console.log('Modal shown');
 
     } else {
       showToast('Error', data.error || 'Failed to load receipt details', 'error');
