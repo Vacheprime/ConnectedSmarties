@@ -222,6 +222,78 @@ function renderReceiptsList(payments) {
   });
 }
 
+let receiptModalInstance = null;
+
+async function showReceiptModal(paymentId) {
+  try {
+    const response = await fetch(`/receipt-details/${paymentId}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const receiptContent = document.getElementById('receipt-content');
+      const productsHtml = data.products.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${p.quantity}</td>
+          <td>$${Number(p.price).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      receiptContent.innerHTML = `
+        <div class="receipt-details">
+          <h6><strong>Receipt #${paymentId}</strong></h6>
+          <p><strong>Date:</strong> ${new Date(data.date).toLocaleDateString()}</p>
+          <p><strong>Customer:</strong> ${data.customer.first_name || 'Guest'}</p>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productsHtml}
+            </tbody>
+          </table>
+          <hr>
+          <p><strong>Total:</strong> $${Number(data.total).toFixed(2)}</p>
+          <p><strong>Reward Points Earned:</strong> ${data.points}</p>
+        </div>
+      `;
+
+      // Get the modal element
+      const modalElement = document.getElementById('receiptModal');
+      
+      // Initialize modal only once
+      if (!receiptModalInstance) {
+        receiptModalInstance = new bootstrap.Modal(modalElement);
+        
+        // Add event listener to clean up backdrop on hidden
+        modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
+          // Remove any lingering backdrop elements
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          backdrops.forEach(backdrop => backdrop.remove());
+          
+          // Ensure body scroll is restored
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }, { once: false });
+      }
+      
+      // Show the modal
+      receiptModalInstance.show();
+
+    } else {
+      showToast('Error', data.error || 'Failed to load receipt details', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading receipt:', error);
+    showToast('Error', error.message, 'error');
+  }
+}
+
 async function applyDateFilter() {
   const startDate = document.getElementById('filterStartDate').value;
   const endDate = document.getElementById('filterEndDate').value;
@@ -276,4 +348,5 @@ document.addEventListener('DOMContentLoaded', () => {
 if (typeof window !== 'undefined') {
   window.applyDateFilter = applyDateFilter;
   window.clearDateFilter = clearDateFilter;
+  window.showReceiptModal = showReceiptModal;
 }
