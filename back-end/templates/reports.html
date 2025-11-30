@@ -158,6 +158,12 @@
     </div>
 
     <template id="template-environmental">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong data-i18n="reportPeriod">Report Period:</strong>
+                <span id="env-report-start-date">--</span> to <span id="env-report-end-date">--</span>
+            </p>
+        </div>
         <div class="chart-container">
             <canvas id="environmental-chart"></canvas>
         </div>

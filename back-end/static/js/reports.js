@@ -163,7 +163,12 @@ async function fetchAndRenderReport(reportType) {
 
 async function loadEnvironmentalReport() {
     const filters = getDateFiltersForReport('environmental');
-    // NOTE: Make sure this path is correct for your app's routing
+    // Set date range labels
+    const startEl = document.querySelector('#report-modal-content #env-report-start-date');
+    const endEl = document.querySelector('#report-modal-content #env-report-end-date');
+    if (startEl) startEl.textContent = filters.start_date;
+    if (endEl) endEl.textContent = filters.end_date;
+
     const response = await fetch(`/api/reports/environmental?start_date=${filters.start_date}&end_date=${filters.end_date}`);
     const data = await response.json();
 
