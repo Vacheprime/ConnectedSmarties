@@ -75,11 +75,11 @@ function displayProducts(products) {
 
 // Function to validate inputs for adding a Product
 function validateProduct(data) {
+  let isValid = true; // <-- FIX: Added this line
   const errors = [];
   const namePattern = /^[A-Za-z0-9\s]+$/;
   const categoryPattern = /^[A-Za-z\s]+$/;
-  const upcPattern = /^\d{12}$/;
-
+  
   // Required fields
   if (!data.name || !data.price) {
     errors.push("Field is missing, must require the following fields: name, price");
@@ -103,18 +103,12 @@ function validateProduct(data) {
     setFieldError('price', 'Price must be a positive number.');
     isValid = false;
   }
-
-  // EPC
-  if (!data.epc) {
-    setFieldError('epc', 'EPC is required.');
-    isValid = false;
-  } else if (!epcPattern.test(data.epc)) {
-    setFieldError('epc', 'EPC must be 4-64 alphanumeric characters.');
-    isValid = false;
-  }
+  
+  // *** Removed the old EPC validation block ***
   
   // UPC (Optional, but validated if present)
-  if (data.upc && !upcPattern.test(data.upc)) {
+  const upcRegex = /^\d{12,13}$/;
+  if (data.upc && !upcRegex.test(data.upc)) {
     setFieldError('upc', 'UPC must be 12 or 13 digits.');
     isValid = false;
   }
@@ -157,15 +151,31 @@ async function saveProduct(event) {
   };
 
   // Validation
-  const errors = validateProduct(data);
+  const isValid = validateProduct(data); // This now returns a boolean
+  const errors = []; // Create a new array for threshold errors
+
   // New threshold validation
   const low = parseInt(data.low_stock_threshold, 10);
   const moderate = parseInt(data.moderate_stock_threshold, 10);
-  if (isNaN(low) || low <= 0) errors.push("Low stock threshold must be a positive integer.");
-  if (isNaN(moderate) || moderate <= 0) errors.push("Moderate stock threshold must be a positive integer.");
-  if (errors.length === 0 && low >= moderate) errors.push("Low stock threshold must be less than moderate stock threshold.");
-  if (errors.length > 0) {
-    showToast("Validation Error", errors.join("<br>"), "error");
+  
+  if (isNaN(low) || low <= 0) {
+    errors.push("Low stock threshold must be a positive integer.");
+    setFieldError('low_stock_threshold', 'Must be a positive integer.');
+  }
+  if (isNaN(moderate) || moderate <= 0) {
+    errors.push("Moderate stock threshold must be a positive integer.");
+    setFieldError('moderate_stock_threshold', 'Must be a positive integer.');
+  }
+  // Check if low/moderate are valid numbers before comparing
+  if (errors.length === 0 && !isNaN(low) && !isNaN(moderate) && low >= moderate) {
+    errors.push("Low stock threshold must be less than moderate stock threshold.");
+    setFieldError('low_stock_threshold', 'Must be less than moderate threshold.');
+    setFieldError('moderate_stock_threshold', 'Must be greater than low threshold.');
+  }
+
+  // Check both validation results
+  if (!isValid || errors.length > 0) {
+    showToast("Validation Error", "Please correct the errors on the form.", "error");
     return;
   }
 
@@ -191,9 +201,7 @@ async function saveProduct(event) {
       loadProducts()
     } else {
       const error = await response.json()
-       if (error.error && error.error.includes("epc")) {
-        setFieldError('epc', 'This EPC is already in use.');
-      } else if (error.error && error.error.includes("upc")) {
+       if (error.error && error.error.includes("upc")) {
         setFieldError('upc', 'This UPC is already in use.');
       } else {
         throw new Error(error.error || `Failed to ${isEdit ? "update" : "add"} product`);
@@ -290,7 +298,6 @@ function openInventoryModal() {
     
     // Reset the form and EPC list
     document.getElementById('inventory-batch-form').reset();
-    setFieldError('batch_quantity', '');
     generatedEPCs = [];
     updateEPCDisplay();
     clearEPCErrors();
@@ -309,30 +316,30 @@ function generateEPCsFromRange() {
     
     // Validate inputs
     if (!prefix) {
-        showFieldError('epc_range', 'Prefix is required');
+        setFieldError('epc_range', 'Prefix is required'); 
         return;
     }
     
     if (isNaN(start) || isNaN(end)) {
-        showFieldError('epc_range', 'Start and end numbers must be valid integers');
+        setFieldError('epc_range', 'Start and end numbers must be valid integers'); 
         return;
     }
     
     if (start < 0 || end < 0) {
-        showFieldError('epc_range', 'Start and end numbers must be non-negative');
+        setFieldError('epc_range', 'Start and end numbers must be non-negative'); 
         return;
     }
     
     if (start > end) {
-        showFieldError('epc_range', 'Start number must be less than or equal to end number');
+        setFieldError('epc_range', 'Start number must be less than or equal to end number'); 
         return;
     }
     
     const epcLength = 24;
-    const maxNumberLength = String(end).length;
+    const startStrLength = String(start).length;
     
-    if (prefix.length + maxNumberLength > epcLength) {
-        showFieldError('epc_range', `Prefix and number range exceed maximum EPC length of ${epcLength} characters`);
+    if (prefix.length + startStrLength > epcLength) {
+        setFieldError('epc_range', `Prefix and start number are too long (max ${epcLength} chars)`); // <-- FIX: Renamed function
         return;
     }
     
@@ -341,7 +348,15 @@ function generateEPCsFromRange() {
     const duplicates = [];
     for (let i = start; i <= end; i++) {
         const numberStr = String(i);
+        // Pad with zeros between prefix and number
         const paddingLength = epcLength - prefix.length - numberStr.length;
+        if (paddingLength < 0) {
+            // This happens if the end number is longer than the start number (e.g., 9 -> 10)
+            // and exceeds the 24 char limit.
+            showToast('Warning', `Skipped EPC for number ${i} as it exceeds ${epcLength} characters.`, 'warning');
+            continue; 
+        }
+        
         const padding = '0'.repeat(paddingLength);
         const epc = `${prefix}${padding}${numberStr}`;
         
@@ -359,9 +374,11 @@ function generateEPCsFromRange() {
     }
     
     // Only add non-duplicate EPCs
-    if (newEPCs.length === 0) {
-        showFieldError('epc_range', 'All EPCs in this range already exist in the list');
-        return;
+    if (newEPCs.length === 0 && duplicates.length > 0) {
+        setFieldError('epc_range', 'All EPCs in this range already exist in the list'); 
+    } else if (newEPCs.length === 0) {
+         setFieldError('epc_range', 'No valid EPCs generated from this range.'); 
+         return;
     }
     
     generatedEPCs = [...generatedEPCs, ...newEPCs];
@@ -382,22 +399,22 @@ function addManualEPC() {
     
     // Validate EPC
     if (!epcInput) {
-        showFieldError('manual_epc', 'Please enter an EPC');
+        setFieldError('manual_epc', 'Please enter an EPC');
         return;
     }
     
     if (epcInput.length !== 24) {
-        showFieldError('manual_epc', 'EPC must be exactly 24 characters');
+        setFieldError('manual_epc', 'EPC must be exactly 24 characters'); 
         return;
     }
     
     if (!/^[0-9A-Fa-f]{24}$/.test(epcInput)) {
-        showFieldError('manual_epc', 'EPC must contain only hexadecimal characters (0-9, A-F)');
+        setFieldError('manual_epc', 'EPC must contain only hexadecimal characters (0-9, A-F)'); 
         return;
     }
     
     if (generatedEPCs.includes(epcInput)) {
-        showFieldError('manual_epc', 'This EPC has already been added');
+        setFieldError('manual_epc', 'This EPC has already been added'); 
         return;
     }
     
@@ -437,26 +454,18 @@ function updateEPCDisplay() {
 }
 
 function clearEPCErrors() {
-    document.getElementById('epc_range-error').textContent = '';
-    document.getElementById('manual_epc-error').textContent = '';
+    setFieldError('epc_range', ''); 
+    setFieldError('manual_epc', ''); 
 }
 
 async function submitInventoryBatch() {
-    const quantityInput = document.getElementById('batch_quantity');
-    const quantity = parseInt(quantityInput.value);
-    const receivedDateInput = document.getElementById('batch_received_date').value;
-    
-    // Validate quantity
-    if (!quantity || quantity <= 0) {
-        setFieldError('batch_quantity', 'Quantity must be a positive integer');
+    // Your HTML does not have a 'batch_quantity' input, so validation for it is removed.
     clearEPCErrors();
     
     // Validate that EPCs have been added
     if (generatedEPCs.length === 0) {
         showToast('Error', 'Please add at least one EPC', 'error');
         return;
-    } else {
-         setFieldError('batch_quantity', '');
     }
     
     const receivedDateInput = document.getElementById('batch_received_date').value;
@@ -468,7 +477,8 @@ async function submitInventoryBatch() {
         const now = new Date();
         
         if (dateObj > now) {
-            showFieldError('batch_quantity', 'Received date cannot be in the future');
+            // There is no error span for this field, just a toast
+            showToast('Error', 'Received date cannot be in the future', 'error');
             return;
         }
         
@@ -596,9 +606,9 @@ async function deleteProductEPC(epc) {
             
             // Refresh the EPCs list if we found the product ID
             if (productId) {
-                loadProducts();
+                loadProducts(); // Refresh the main table (updates stock)
                 
-                // Refresh the EPCs list
+                // Refresh the modal's list
                 document.getElementById('epcs_loading').style.display = 'block';
                 document.getElementById('epcs_list_container').style.display = 'none';
                 document.getElementById('epcs_empty_message').style.display = 'none';
@@ -623,9 +633,8 @@ async function deleteProductEPC(epc) {
                 loadProducts();
             }
         } else {
-            showToast('Error', data.error || 'Failed to add inventory batch', 'error');
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to delete EPC');
+            const data = await response.json(); 
+            showToast('Error', data.error || 'Failed to delete EPC', 'error');
         }
     } catch (error) {
         console.error('Error deleting EPC:', error);
@@ -652,9 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.editProduct = editProduct
     window.deleteProduct = deleteProduct
     window.resetForm = resetForm
-    window.clearFieldError = clearFieldError
-    window.showFieldError = showFieldError
-    window.clearAllErrors = clearAllErrors
+    window.clearAllErrors = clearAllErrors // <-- FIX: Removed undefined functions
     window.loadProducts = loadProducts
     window.openInventoryModal = openInventoryModal
     window.submitInventoryBatch = submitInventoryBatch
@@ -664,5 +671,4 @@ document.addEventListener("DOMContentLoaded", () => {
     window.openViewEPCsModal = openViewEPCsModal
     window.deleteProductEPC = deleteProductEPC
     window.displayEPCsList = displayEPCsList
-  };
-}
+  }
