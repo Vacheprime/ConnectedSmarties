@@ -189,4 +189,4 @@ Tasks to do:
 
 - Adding products by EPC or by range. (Danat, COMPLETED)
 
-- Fix the PDF: the downloaded .pdf file does not show the items the customer bought and the total price (Florence)   
+- Fix the PDF: the downloaded .pdf file does not show the items the customer bought and the total price (Florence, should work on main branch)   
