@@ -38,7 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
 async function manuallyScanItem() {
   const input = document.getElementById("scan-input")
   const code = input.value.trim()
-  console.log(code)
+  
+  // --- THIS IS THE FIX ---
+  // If the code is empty, show an error and stop.
+  if (!code) {
+    showToast("Error", "Please enter a UPC or EPC code.", "error");
+    return;
+  }
+  // --- END OF FIX ---
+
+  // This part was already correct
   if (code) {
     await scanItem(code)
     input.value = ""
@@ -208,9 +217,15 @@ function renderCart() {
                 <p data-i18n="scanToBegin">Scan an item to begin</p>
             </div>
         `
-    updatePageLanguage() // Update translations for dynamically added content
+    // We check if updatePageLanguage exists before calling it, to be safe
+    if (typeof updatePageLanguage === 'function') {
+      updatePageLanguage() // Update translations for dynamically added content
+    }
     return
   }
+
+  // We check if getCurrentLanguage exists
+  const lang = typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : 'en';
 
   itemsList.innerHTML = cart
     .map(
@@ -219,14 +234,14 @@ function renderCart() {
             <div class="item-info">
                 <h4>${item.name}</h4>
                 <div class="item-upc">UPC: ${item.upc || "N/A"}</div>
-                <div class="item-points">+${item.points_worth} ${getCurrentLanguage() === "fr" ? "points" : "points"}</div>
+                <div class="item-points">+${item.points_worth} ${lang === "fr" ? "points" : "points"}</div>
             </div>
             <div class="item-price">$${Number.parseFloat(item.price).toFixed(2)}</div>
             <div class="item-quantity">${item.quantity}x</div>
             <div class="item-remove">
                 <button class="btn-remove" onclick="removeItem(${index})">
                     <i class="fas fa-trash"></i>
-                    ${getCurrentLanguage() === "fr" ? "Retirer" : "Remove"}
+                    ${lang === "fr" ? "Retirer" : "Remove"}
                 </button>
             </div>
         </div>
@@ -250,12 +265,13 @@ function updateTotals() {
 }
 
 function removeItem(index) {
+  const lang = typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : 'en';
   if (index >= 0 && index < cart.length) {
     const item = cart[index]
     cart.splice(index, 1)
     showToast(
       "Success",
-      getCurrentLanguage() === "fr" ? `${item.name} retiré du panier` : `${item.name} removed from cart`,
+      lang === "fr" ? `${item.name} retiré du panier` : `${item.name} removed from cart`,
       "success",
     )
     renderCart()
@@ -266,10 +282,12 @@ function removeItem(index) {
 // Clear the cart
 function clearCart() {
   if (cart.length === 0) return
+  
+  const lang = typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : 'en';
 
   if (
     confirm(
-      getCurrentLanguage() === "fr"
+      lang === "fr"
         ? "Êtes-vous sûr de vouloir vider le panier?"
         : "Are you sure you want to clear the cart?",
     )
@@ -277,7 +295,7 @@ function clearCart() {
     cart = []
     renderCart()
     updateTotals()
-    showToast("Success", getCurrentLanguage() === "fr" ? "Panier vidé" : "Cart cleared", "success")
+    showToast("Success", lang === "fr" ? "Panier vidé" : "Cart cleared", "success")
   }
 }
 
@@ -288,9 +306,9 @@ async function processPayment(membershipNumber = null) {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const pointsEarned = cart.reduce((sum, item) => sum + item.points_worth * item.quantity, 0)
 
-  // In a real implementation, this would process payment and update customer points
+  const lang = typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : 'en';
   const message =
-    getCurrentLanguage() === "fr"
+    lang === "fr"
       ? `Paiement de $${total.toFixed(2)} traité avec succès! Vous avez gagné ${pointsEarned} points.`
       : `Payment of $${total.toFixed(2)} processed successfully! You earned ${pointsEarned} points.`
 
