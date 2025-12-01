@@ -153,6 +153,7 @@ const translations = {
     // Customer Account page
     account: "Account",
     accountDetails: "Account Details",
+    myAccount: "My Account",
     purchaseHistoryTitle: "Purchase History",
     spendingSummary: "Spending Summary",
     profileTitle: "Profile",
@@ -332,6 +333,7 @@ const translations = {
     // Customer Account page
     account: "Compte",
     accountDetails: "Détails du Compte",
+    myAccount: "Mon Compte",
     purchaseHistoryTitle: "Historique des Achats",
     spendingSummary: "Résumé des Dépenses",
     profileTitle: "Profil",

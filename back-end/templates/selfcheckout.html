@@ -15,36 +15,38 @@
 <body>
     <div class="app-container">
         <header>
-            <nav class="navbar">
-                <div class="nav-left">
+            <nav class="navbar d-flex align-items-center px-3">
+                <div class="nav-left d-flex align-items-center">
                     <button id="logout-btn" class="btn btn-outline-danger me-3" onclick="logoutUser()"
                         data-i18n="logout">
                         Logout
                     </button>
-                    <div class="nav-brand">ConnectedSmarties</div>
+                    <div class="nav-brand fs-4">ConnectedSmarties</div>
                 </div>
+                <div class="ms-auto d-flex gap-2">
                 {% if user_role == "admin" %}
-                <ul class="nav-menu">
-                    <li><a href="/" data-i18n="navHome">Home</a></li>
-                    <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
-                    <li><a href="/products" data-i18n="navProducts">Products</a></li>
-                    <li><a href="/reports" data-i18n="navReports">Reports</a></li>
-                    <li><a href="/selfcheckout" class="active" data-i18n="navSelfCheckout">Self-Checkout</a></li>
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
-                </ul>
-                {% elif user_role == "customer" %}
-                <ul class="nav-menu">
-                    <li><a href="/account">My Account</a></li>
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
-                </ul>
-                {% else %}
-                <ul class="nav-menu">
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
-                </ul>
-                {% endif %}
+                    <ul class="nav-menu">
+                        <a href="/" data-i18n="navHome">Home</a>
+                        <a href="/customers" data-i18n="navCustomers">Customers</a>
+                        <a href="/products" data-i18n="navProducts">Products</a>
+                        <a href="/reports" data-i18n="navReports">Reports</a>
+                        <a href="/selfcheckout" class="active" data-i18n="navSelfCheckout">Self-Checkout</a>
+                        <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                        <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
+                    </ul>
+                    {% elif user_role == "customer" %}
+                    <ul class="nav-menu">
+                        <a href="/account" data-i18n="myAccount">My Account</a>
+                        <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                        <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
+                    </ul>
+                    {% else %}
+                    <ul class="nav-menu">
+                        <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                        <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
+                    </ul>
+                    {% endif %}
+                </div>
             </nav>
         </header>
 
