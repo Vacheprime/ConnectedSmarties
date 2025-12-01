@@ -188,3 +188,5 @@ Tasks to do:
 - In the self-checkout, after you pay, the rewards points won field is not being reset. (Danat, COMPLETED: Field was removed.)
 
 - Adding products by EPC or by range. (Danat, COMPLETED)
+
+- Fix the PDF: the downloaded .pdf file does not show the items the customer bought and the total price (Florence)   
