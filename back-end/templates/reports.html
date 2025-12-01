@@ -129,10 +129,10 @@
                 <!-- Inventory Reports -->
                 <div class="report-card">
                     <div class="report-header">
-                        <h3>Inventory Reports</h3>
+                        <h3 data-i18n="inventoryReports">Inventory Reports</h3>
                     </div>
-                    <p>Current available items per product with real-time updates</p>
-                    <button class="btn btn-primary" onclick="openReportModal('inventory', 'Inventory Reports')">View Report</button>
+                    <p data-i18n="inventoryReportsDesc">Current available items per product with real-time updates</p>
+                    <button class="btn btn-primary" onclick="openReportModal('inventory', 'Inventory Reports')" data-i18n="viewReport">View Report</button>
                 </div>
             </div>
         </main>
@@ -152,7 +152,7 @@
     <div id="report-modal-overlay" class="report-modal-overlay">
         <div class="report-modal">
             <div class="report-modal-header">
-                <h5 id="report-modal-title">Report</h5>
+                <h5 id="report-modal-title" data-i18n="report">Report</h5>
                 <button class="report-modal-close-btn" onclick="closeReportModal()" title="Close">&times;</button>
             </div>
             <div class="report-modal-content" id="report-modal-content">
@@ -161,7 +161,7 @@
             </div>
             <div class="report-modal-footer">
                 <button class="btn btn-secondary" onclick="closeReportModal()" data-i18n="close">Close</button>
-                <button id="save-pdf-btn" class="btn btn-primary" onclick="savePdf()" data-i18n="save as PDF">Save as PDF</button>
+                <button id="save-pdf-btn" class="btn btn-primary" onclick="savePdf()" data-i18n="saveAsPDF">Save as PDF</button>
             </div>
         </div>
     </div>
@@ -236,7 +236,7 @@
     <template id="template-products">
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
             <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
-                <strong>Report Period:</strong> <span id="report-start-date">--</span> to <span id="report-end-date">--</span>
+                <strong data-i18n="reportPeriod">Report Period:</strong> <span id="report-start-date">--</span> to <span id="report-end-date">--</span>
             </p>
         </div>
 
@@ -345,11 +345,11 @@
             <table class="table table-sm" id="inventory-table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Available Stock</th>
-                        <th>Status</th>
+                        <th data-i18n="id">ID</th>
+                        <th data-i18n="product">Product</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="availableStock">Available Stock</th>
+                        <th data-i18n="status">Status</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

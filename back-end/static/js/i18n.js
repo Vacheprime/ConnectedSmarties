@@ -118,6 +118,38 @@ const translations = {
     avgTemp: "Avg Temperature",
     date: "Date",
 
+    // Report Modal and Content
+    report: "Report",
+    environmental: "Environmental Data",
+    customer: "Customer Analytics",
+    performance: "System Performance",
+    fan: "Fan Usage",
+    inventory: "Inventory Reports",
+    inventoryReports: "Inventory Reports",
+    inventoryReportsDesc: "Current available items per product with real-time updates",
+    reportPeriod: "Report Period",
+    generatingPDF: "Generating PDF",
+    reportPreparing: "Your report is being prepared...",
+    failedToLoad: "Failed to load",
+    failedToLoadInventory: "Failed to load inventory",
+    errorLoadingInventory: "Error loading inventory",
+    noProductsFound: "No products found",
+    low: "Low",
+    moderate: "Moderate",
+    ok: "OK",
+    units: "units",
+    saveAsPDF: "Save as PDF",
+    error: "Error",
+    product: "Product",
+    status: "Status",
+    salesByCategory: "Sales by Category",
+    allProductsSold: "All Products Sold",
+    mostSoldProducts: "Most Sold Products",
+    leastSoldProducts: "Least Sold Products",
+    totalSales: "Total Sales",
+    productsSold: "Products Sold",
+    returningCustomers: "Returning Customers",
+
     // Self-Checkout page
     selfCheckoutTitle: "Self-Checkout",
     selfCheckoutSubtitle: "Scan your items to complete your purchase",
@@ -298,6 +330,38 @@ const translations = {
     avgTemp: "Temp. Moy.",
     date: "Date",
 
+    // Report Modal and Content
+    report: "Rapport",
+    environmental: "Données Environnementales",
+    customer: "Analytiques Clients",
+    performance: "Performance du Système",
+    fan: "Utilisation du Ventilateur",
+    inventory: "Rapports d'Inventaire",
+    inventoryReports: "Rapports d'Inventaire",
+    inventoryReportsDesc: "Articles disponibles actuels par produit avec mises à jour en temps réel",
+    reportPeriod: "Période du Rapport",
+    generatingPDF: "Génération du PDF",
+    reportPreparing: "Votre rapport est en cours de préparation...",
+    failedToLoad: "Impossible de charger",
+    failedToLoadInventory: "Impossible de charger l'inventaire",
+    errorLoadingInventory: "Erreur lors du chargement de l'inventaire",
+    noProductsFound: "Aucun produit trouvé",
+    low: "Faible",
+    moderate: "Modéré",
+    ok: "OK",
+    units: "unités",
+    saveAsPDF: "Enregistrer en PDF",
+    error: "Erreur",
+    product: "Produit",
+    status: "Statut",
+    salesByCategory: "Ventes par Catégorie",
+    allProductsSold: "Tous les Produits Vendus",
+    mostSoldProducts: "Produits les Plus Vendus",
+    leastSoldProducts: "Produits les Moins Vendus",
+    totalSales: "Ventes Totales",
+    productsSold: "Produits Vendus",
+    returningCustomers: "Clients Récurrents",
+
     // Self-Checkout page
     selfCheckoutTitle: "Caisse Libre-Service",
     selfCheckoutSubtitle: "Scannez vos articles pour finaliser votre achat",
@@ -371,6 +435,8 @@ function getCurrentLanguage() {
 function setLanguage(lang) {
   localStorage.setItem("language", lang)
   updatePageLanguage()
+  // Dispatch event so other modules know language has changed
+  document.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }))
 }
 
 // Get translation
@@ -392,7 +458,19 @@ function updatePageLanguage() {
         element.placeholder = translation
       }
     } else {
-      element.textContent = translation
+      // For other elements, update only the first text node to preserve child elements
+      let hasUpdatedFirstNode = false
+      for (let node of element.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+          node.textContent = translation
+          hasUpdatedFirstNode = true
+          break
+        }
+      }
+      // If no text node found, set textContent (for elements without child text nodes)
+      if (!hasUpdatedFirstNode) {
+        element.textContent = translation
+      }
     }
   })
 
@@ -417,19 +495,25 @@ function toggleLanguage() {
   setLanguage(newLang)
 }
 
+// Alias for updatePageLanguage to update dynamically injected content
+function updateContent() {
+  updatePageLanguage()
+}
+
 // Initialize language on page load
 document.addEventListener("DOMContentLoaded", () => {
   updatePageLanguage()
 })
 
 // Export translation function for other modules
-export { setLanguage, getCurrentLanguage, updatePageLanguage, toggleLanguage, t }
+export { setLanguage, getCurrentLanguage, updatePageLanguage, updateContent, toggleLanguage, t }
 
 // Expose module API to window so non-module scripts / inline handlers can use it
 if (typeof window !== "undefined") {
   window.setLanguage = setLanguage
   window.getCurrentLanguage = getCurrentLanguage
   window.updatePageLanguage = updatePageLanguage
+  window.updateContent = updateContent
   window.toggleLanguage = toggleLanguage
   window.t = t
 }
