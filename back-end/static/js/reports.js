@@ -67,8 +67,9 @@ async function openReportModal(reportType, title) {
     currentReportType = reportType;
     currentReportTitle = title;
 
-    // Show modal and set title/loader
-    modalTitle.textContent = title;
+    // Show modal and set title/loader - localize the title
+    const localizedTitle = window.i18n?.t(reportType) || title;
+    modalTitle.textContent = localizedTitle;
     modalContent.innerHTML = modalLoader;
     modalOverlay.classList.add('modal-active');
     
@@ -76,6 +77,10 @@ async function openReportModal(reportType, title) {
     const template = document.getElementById(`template-${reportType}`);
     if (template) {
         modalContent.innerHTML = template.innerHTML;
+        // Translate new content if i18n is loaded
+        if (window.i18n && typeof window.i18n.updateContent === 'function') {
+            window.i18n.updateContent();
+        }
         // Now that the canvas elements are in the DOM, fetch the data
         await fetchAndRenderReport(reportType);
     } else {
@@ -124,7 +129,7 @@ function savePdf() {
     };
 
     // Show toast notification
-    showToast('Generating PDF', 'Your report is being prepared...', 'info');
+    showToast(window.i18n?.t('generatingPDF') || 'Generating PDF', window.i18n?.t('reportPreparing') || 'Your report is being prepared...', 'info');
 
     // Run html2pdf
     html2pdf().from(reportContent).set(options).save();
@@ -163,7 +168,7 @@ async function fetchAndRenderReport(reportType) {
         }
     } catch (error) {
         console.error(`Error loading report for ${reportType}:`, error);
-        showToast('Error', `Failed to load ${reportType} report`, 'error');
+        showToast(window.i18n?.t('error') || 'Error', `${window.i18n?.t('failedToLoad') || 'Failed to load'} ${reportType} ${window.i18n?.t('report') || 'report'}`, 'error');
         modalContent.innerHTML = `<p>Error loading report. Please try again.</p>`;
     }
 }
@@ -222,7 +227,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
             labels: labels,
             datasets: [
                 {
-                    label: 'Temperature (°C)',
+                    label: window.i18n?.t('temperature') || 'Temperature (°C)',
                     data: tempData,
                     borderColor: '#ff6b6b',
                     backgroundColor: isDarkMode ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
@@ -231,7 +236,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
                     yAxisID: 'y'
                 },
                 {
-                    label: 'Humidity (%)',
+                    label: window.i18n?.t('humidity') || 'Humidity (%)',
                     data: humidityData,
                     borderColor: '#4dabf7',
                     backgroundColor: isDarkMode ? 'rgba(77, 171, 247, 0.15)' : 'rgba(59, 130, 246, 0.1)',
@@ -254,7 +259,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
                 },
                 y1: {
                     type: 'linear', display: true, position: 'right',
-                    title: { display: true, text: 'Humidity (%)', color: textColor },
+                    title: { display: true, text: window.i18n?.t('humidity') || 'Humidity (%)', color: textColor },
                     ticks: { color: textColor },
                     grid: { drawOnChartArea: false },
                 },
@@ -329,7 +334,7 @@ function createCustomerChart(topCustomers) {
         data: {
             labels,
             datasets: [{
-                label: 'Total Spent ($)',
+                label: window.i18n?.t('totalSpent') || 'Total Spent ($)',
                 data: totals,
                 backgroundColor: '#4dabf7',
                 borderColor: '#1590f5',
@@ -483,7 +488,8 @@ function createProductCategoryChart(productsSold) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return context.label + ': ' + context.parsed + ' units';
+                            const units = window.i18n?.t('units') || 'units';
+                            return context.label + ': ' + context.parsed + ' ' + units;
                         }
                     }
                 }
@@ -555,7 +561,7 @@ function createFanChart(fanData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Avg Temperature (°C)',
+                label: window.i18n?.t('avgTemperature') || 'Avg Temperature (°C)',
                 data: temps,
                 borderColor: '#ff6b6b',
                 backgroundColor: isDarkMode ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
@@ -564,7 +570,7 @@ function createFanChart(fanData) {
                 yAxisID: 'y'
             },
             {
-                label: 'Sensor Readings',
+                label: window.i18n?.t('sensorReadings') || 'Sensor Readings',
                 data: readings,
                 borderColor: '#4dabf7',
                 backgroundColor: isDarkMode ? 'rgba(77, 171, 247, 0.15)' : 'rgba(59, 130, 246, 0.1)',
@@ -580,13 +586,13 @@ function createFanChart(fanData) {
             scales: {
                 y: {
                     type: 'linear', display: true, position: 'left',
-                    title: { display: true, text: 'Temperature (°C)', color: textColor },
+                    title: { display: true, text: window.i18n?.t('temperature') || 'Temperature (°C)', color: textColor },
                     ticks: { color: textColor },
                     grid: { color: gridColor }
                 },
                 y1: {
                     type: 'linear', display: true, position: 'right',
-                    title: { display: true, text: 'Sensor Readings', color: textColor },
+                    title: { display: true, text: window.i18n?.t('sensorReadings') || 'Sensor Readings', color: textColor },
                     ticks: { color: textColor },
                     grid: { drawOnChartArea: false },
                 },
@@ -609,9 +615,9 @@ function getInventoryLevelFromProduct(p) {
     const low = Number(p.low_stock_threshold ?? 10);
     const moderate = Number(p.moderate_stock_threshold ?? 50);
 
-    if (stock <= low) return { label: 'Low', color: '#dc2626' };
-    if (stock <= moderate) return { label: 'Moderate', color: '#f59f00' };
-    return { label: 'OK', color: '#20c997' };
+    if (stock <= low) return { label: window.i18n?.t('low') || 'Low', color: '#dc2626' };
+    if (stock <= moderate) return { label: window.i18n?.t('moderate') || 'Moderate', color: '#f59f00' };
+    return { label: window.i18n?.t('ok') || 'OK', color: '#20c997' };
 }
 
 // Render inventory table rows
@@ -620,7 +626,8 @@ function renderInventoryRows(products) {
     if (!tbody) return;
 
     if (!products || products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">No products found</td></tr>`;
+        const noProductsText = window.i18n?.t('noProductsFound') || 'No products found';
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">${noProductsText}</td></tr>`;
         return;
     }
 
@@ -657,9 +664,12 @@ async function loadInventoryReport() {
         renderInventoryRows(products);
     } catch (err) {
         console.error('Error loading inventory report:', err);
-        showToast('Error', 'Failed to load inventory', 'error');
+        showToast(window.i18n?.t('error') || 'Error', window.i18n?.t('failedToLoadInventory') || 'Failed to load inventory', 'error');
         const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Error loading inventory</td></tr>`;
+        if (tbody) {
+            const errorMsg = window.i18n?.t('errorLoadingInventory') || 'Error loading inventory';
+            tbody.innerHTML = `<tr><td colspan="4" class="text-danger">${errorMsg}</td></tr>`;
+        }
     }
 }
 
@@ -684,3 +694,10 @@ if (typeof window !== 'undefined') {
     window.closeReportModal = closeReportModal;
     window.savePdf = savePdf;
 }
+
+// Listen for language changes to re-localize modal content
+document.addEventListener('languageChanged', () => {
+    if (window.i18n && typeof window.i18n.updateContent === 'function') {
+        window.i18n.updateContent();
+    }
+});

@@ -26,26 +26,26 @@
                 {% if user_role == "admin" %}
                 <ul class="nav-menu">
                     <!-- Updated navigation links to use Flask routes -->
-                    <li><a href="/" data-i18n="navHome">Home</a></li>
-                    <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
-                    <li><a href="/products" class="active" data-i18n="navProducts">Products</a></li>
-                    <li><a href="/reports" data-i18n="navReports">Reports</a></li>
+                    <a href="/" data-i18n="navHome">Home</a>
+                    <a href="/customers" data-i18n="navCustomers">Customers</a>
+                    <a href="/products" class="active" data-i18n="navProducts">Products</a>
+                    <a href="/reports" data-i18n="navReports">Reports</a>
                     <!-- Added self-checkout link -->
-                    <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
+                    <a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a>
                     <!-- Added theme and language toggle buttons -->
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% elif user_role == "customer" %}
                 <ul class="nav-menu">
-                    <li><a href="/account" data-i18n="myAccount">My Account</a></li>
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <a href="/account" data-i18n="myAccount">My Account</a>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% else %}
                 <ul class="nav-menu">
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% endif %}
             </nav>
@@ -75,12 +75,6 @@
                             <label for="price" data-i18n="price">Price *</label>
                             <input type="number" id="price" name="price" min="0.01" step="0.01" required placeholder="0.00">
                             <span class="error-message" id="price-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="epc" data-i18n="epc">EPC *</label>
-                            <input type="text" id="epc" name="epc" required minlength="4" maxlength="64">
-                            <span class="error-message" id="epc-error"></span>
                         </div>
 
                         <div class="form-group">

@@ -1007,8 +1007,8 @@ def update_threshold():
 def turn_fan_on():
     """Turn on the fan for a specific fridge."""
     try:
-        # Get sensor_id from query params or JSON body
-        sensor_id = request.args.get('sensor_id', type=int) or request.get_json().get('sensor_id', 1) if request.is_json else 1
+        # Get sensor_id from query params, default to 1
+        sensor_id = request.args.get('sensor_id', default=1, type=int)
         
         # Determine which fridge based on sensor_id
         if sensor_id == 1:
@@ -1033,8 +1033,8 @@ def turn_fan_on():
 def turn_fan_off():
     """Turn off the fan for a specific fridge."""
     try:
-        # Get sensor_id from query params or JSON body
-        sensor_id = request.args.get('sensor_id', type=int) or request.get_json().get('sensor_id', 1) if request.is_json else 1
+        # Get sensor_id from query params, default to 1
+        sensor_id = request.args.get('sensor_id', default=1, type=int)
         
         # Determine which fridge based on sensor_id
         if sensor_id == 1:

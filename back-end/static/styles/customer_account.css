@@ -36,9 +36,64 @@ body {
 }
 .card-profile {
   margin-bottom: 1rem;
+  background-color: var(--color-background-card);
+  color: var(--color-text-normal);
+  border: 1px solid var(--color-background-card);
+}
+.card-profile .card-title {
+  color: var(--color-text-normal);
+}
+.card-profile .card-text {
+  color: var(--color-text-muted);
+}
+.card {
+  background-color: var(--color-background-card);
+  color: var(--color-text-normal);
+  border: 1px solid var(--color-background-card);
+}
+.card .card-title {
+  color: var(--color-text-normal);
+}
+.card .card-body {
+  background-color: var(--color-background-card);
+  color: var(--color-text-normal);
+}
+.form-control {
+  background-color: var(--color-background-light);
+  color: var(--color-text-normal);
+  border-color: var(--color-button-normal);
+}
+.form-control:focus {
+  background-color: var(--color-background-light);
+  color: var(--color-text-normal);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+}
+.form-control::placeholder {
+  color: var(--color-text-light);
+}
+.form-label {
+  color: var(--color-text-muted);
 }
 .canvas-wrap {
   max-width: 100%;
+}
+.list-group {
+  background-color: transparent;
+}
+.list-group-item {
+  background-color: var(--color-background-card);
+  color: var(--color-text-normal);
+  border: 1px solid var(--color-button-normal);
+}
+.list-group-item:hover {
+  background-color: var(--color-button-normal);
+  color: var(--color-text-normal);
+}
+.list-group-item.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-background-light);
 }
 @media (max-width: 767.98px) {
   .sidebar { position: static; height: auto; margin-bottom: 1rem; }
