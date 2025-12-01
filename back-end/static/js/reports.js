@@ -6,141 +6,217 @@ let customerChart = null;
 let productChart = null;
 let fanChart = null;
 
+// Store current report type for PDF saving
+let currentReportType = '';
+let currentReportTitle = '';
+
+// DOM elements for modal
+const modalOverlay = document.getElementById('report-modal-overlay');
+const modalContent = document.getElementById('report-modal-content');
+const modalTitle = document.getElementById('report-modal-title');
+const modalLoader = '<div class="modal-loader"></div>';
+
+// Map of report types to their date input IDs
+const reportDateInputs = {
+    environmental: { start: 'env-start-date', end: 'env-end-date' },
+    customer: { start: 'cust-start-date', end: 'cust-end-date' },
+    products: { start: 'prod-start-date', end: 'prod-end-date' },
+    performance: { start: 'perf-start-date', end: 'perf-end-date' },
+    fan: { start: 'fan-start-date', end: 'fan-end-date' }
+};
+
+// Polling handle for inventory updates
+let inventoryPollTimer = null;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    initializeDateFilters();
-    setupFilterListeners();
-    loadCategoryFilter();
+    initializeAllDateFilters();
 });
 
-function initializeDateFilters() {
+function initializeAllDateFilters() {
     const today = new Date();
+    // Set default to 30 days ago
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     
-    document.getElementById('end-date').valueAsDate = today;
-    document.getElementById('start-date').valueAsDate = thirtyDaysAgo;
-}
-
-function setupFilterListeners() {
-    document.getElementById('apply-filters').addEventListener('click', () => {
-        // Reload all open reports with new filters
-        document.querySelectorAll('.report-detail[style*="display: block"]').forEach(detail => {
-            const reportType = detail.id.replace('-detail', '');
-            loadReportData(reportType);
-        });
-        showToast('Filters Applied', 'Reports updated with new date range', 'info');
-    });
-
-    document.getElementById('reset-filters').addEventListener('click', () => {
-        initializeDateFilters();
-        document.getElementById('category-filter').value = '';
+    // Initialize date filters for each report
+    Object.values(reportDateInputs).forEach(({ start, end }) => {
+        const startInput = document.getElementById(start);
+        const endInput = document.getElementById(end);
+        
+        if (startInput) startInput.valueAsDate = thirtyDaysAgo;
+        if (endInput) endInput.valueAsDate = today;
     });
 }
 
-function getDateFilters() {
+function getDateFiltersForReport(reportType) {
+    const inputs = reportDateInputs[reportType];
+    if (!inputs) return { start_date: '', end_date: '' };
+    
     return {
-        start_date: document.getElementById('start-date').value,
-        end_date: document.getElementById('end-date').value
+        start_date: document.getElementById(inputs.start).value,
+        end_date: document.getElementById(inputs.end).value
     };
 }
 
-function toggleReportDetail(event, reportType) {
-    const button = event.target.closest('.btn-expand');
-    const detailElement = document.getElementById(`${reportType}-detail`);
+/**
+ * Opens the report modal, injects the correct template, and fetches the data.
+ * @param {string} reportType - e.g., 'environmental', 'customer'
+ * @param {string} title - The display title for the modal
+ */
+async function openReportModal(reportType, title) {
+    currentReportType = reportType;
+    currentReportTitle = title;
+
+    // Show modal and set title/loader - localize the title
+    const localizedTitle = window.i18n?.t(reportType) || title;
+    modalTitle.textContent = localizedTitle;
+    modalContent.innerHTML = modalLoader;
+    modalOverlay.classList.add('modal-active');
     
-    button.classList.toggle('active');
-    
-    if (detailElement.style.display === 'none') {
-        detailElement.style.display = 'block';
+    // Get the HTML content from the corresponding <template> tag
+    const template = document.getElementById(`template-${reportType}`);
+    if (template) {
+        modalContent.innerHTML = template.innerHTML;
+        // Translate new content if i18n is loaded
+        if (window.i18n && typeof window.i18n.updateContent === 'function') {
+            window.i18n.updateContent();
+        }
+        // Now that the canvas elements are in the DOM, fetch the data
+        await fetchAndRenderReport(reportType);
     } else {
-        detailElement.style.display = 'none';
+        modalContent.innerHTML = `<p>Error: Report template not found.</p>`;
+        console.error(`Template not found for: template-${reportType}`);
     }
 }
 
-async function closeReportDetail(reportType) {
-    const detailElement = document.getElementById(`${reportType}-detail`);
-    detailElement.style.display = 'none';
+/**
+ * Closes the report modal and clears its content.
+ */
+function closeReportModal() {
+    modalOverlay.classList.remove('modal-active');
+    modalContent.innerHTML = '';
+    currentReportType = '';
+    currentReportTitle = '';
+
+    // Destroy charts to free up memory
+    if (environmentalChart) environmentalChart.destroy();
+    if (customerChart) customerChart.destroy();
+    if (productChart) productChart.destroy();
+    if (fanChart) fanChart.destroy();
+    
+    environmentalChart = null;
+    customerChart = null;
+    productChart = null;
+    fanChart = null;
+
+    stopInventoryPolling();
 }
 
-function showReportDetail(reportType) {
-    const detailElement = document.getElementById(`${reportType}-detail`);
-    detailElement.style.display = 'block';
+/**
+ * Saves the current modal content as a PDF.
+ */
+function savePdf() {
+    const reportContent = document.getElementById('report-modal-content');
+    const filename = `${currentReportTitle.toLowerCase().replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    // Options for html2pdf
+    const options = {
+        margin: 0.5,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    // Show toast notification
+    showToast(window.i18n?.t('generatingPDF') || 'Generating PDF', window.i18n?.t('reportPreparing') || 'Your report is being prepared...', 'info');
+
+    // Run html2pdf
+    html2pdf().from(reportContent).set(options).save();
 }
 
-async function loadReportData(reportType) {
-    switch(reportType) {
-        case 'environmental':
-            await loadEnvironmentalReport();
-            break;
-        case 'customer':
-            await loadCustomerAnalyticsReport();
-            break;
-        case 'products':
-            await loadProductSalesReport();
-            break;
-        case 'performance':
-            await loadSystemPerformanceReport();
-            break;
-        case 'fan':
-            await loadFanUsageReport();
-            break;
+/**
+ * Central function to call the correct data-fetching function.
+ * @param {string} reportType - e.g., 'environmental', 'customer'
+ */
+async function fetchAndRenderReport(reportType) {
+    try {
+        switch(reportType) {
+            case 'environmental':
+                await loadEnvironmentalReport();
+                break;
+            case 'customer':
+                await loadCustomerAnalyticsReport();
+                break;
+            case 'products':
+                await loadProductSalesReport();
+                break;
+            case 'performance':
+                await loadSystemPerformanceReport();
+                break;
+            case 'fan':
+                await loadFanUsageReport();
+                break;
+            case 'inventory':
+                await loadInventoryReport();
+                startInventoryPolling();
+                break;
+        }
+        // Translate new content if i18n is loaded
+        if (window.i18n && typeof window.i18n.updateContent === 'function') {
+            window.i18n.updateContent();
+        }
+    } catch (error) {
+        console.error(`Error loading report for ${reportType}:`, error);
+        showToast(window.i18n?.t('error') || 'Error', `${window.i18n?.t('failedToLoad') || 'Failed to load'} ${reportType} ${window.i18n?.t('report') || 'report'}`, 'error');
+        modalContent.innerHTML = `<p>Error loading report. Please try again.</p>`;
     }
 }
 
 // ============= ENVIRONMENTAL REPORT =============
 
 async function loadEnvironmentalReport() {
-    try {
-        const filters = getDateFilters();
-        const response = await fetch(`/api/reports/environmental?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-        const data = await response.json();
+    const filters = getDateFiltersForReport('environmental');
+    // Set date range labels
+    const startEl = document.querySelector('#report-modal-content #env-report-start-date');
+    const endEl = document.querySelector('#report-modal-content #env-report-end-date');
+    if (startEl) startEl.textContent = filters.start_date;
+    if (endEl) endEl.textContent = filters.end_date;
 
-        if (!data.success) {
-            showToast('Error', data.error || 'Failed to load environmental report', 'error');
-            return;
-        }
+    const response = await fetch(`/api/reports/environmental?start_date=${filters.start_date}&end_date=${filters.end_date}`);
+    const data = await response.json();
 
-        // Calculate averages
-        const tempData = data.temperature_data || [];
-        const humidityData = data.humidity_data || [];
+    if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-        const avgTemp = tempData.length > 0 
-            ? (tempData.reduce((sum, d) => sum + d.value, 0) / tempData.length).toFixed(2)
-            : 'N/A';
-        
-        const avgHumidity = humidityData.length > 0
-            ? (humidityData.reduce((sum, d) => sum + d.value, 0) / humidityData.length).toFixed(2)
-            : 'N/A';
+    const tempData = data.temperature_data || [];
+    const humidityData = data.humidity_data || [];
 
-        document.getElementById('avg-temp').textContent = `${avgTemp}°C`;
-        document.getElementById('avg-humidity').textContent = `${avgHumidity}%`;
+    const avgTemp = tempData.length > 0 
+        ? (tempData.reduce((sum, d) => sum + d.value, 0) / tempData.length).toFixed(2)
+        : 'N/A';
+    
+    const avgHumidity = humidityData.length > 0
+        ? (humidityData.reduce((sum, d) => sum + d.value, 0) / humidityData.length).toFixed(2)
+        : 'N/A';
 
-        // Prepare chart data
-        const labels = tempData.map(d => new Date(d.timestamp).toLocaleDateString());
-        const tempValues = tempData.map(d => d.value);
-        const humidityValues = humidityData.map(d => d.value);
+    // Target elements inside the modal
+    document.querySelector('#report-modal-content #avg-temp').textContent = `${avgTemp}°C`;
+    document.querySelector('#report-modal-content #avg-humidity').textContent = `${avgHumidity}%`;
 
-        // Create or update chart
-        createEnvironmentalChart(labels, tempValues, humidityValues);
+    const labels = tempData.map(d => new Date(d.timestamp).toLocaleDateString());
+    const tempValues = tempData.map(d => d.value);
+    const humidityValues = humidityData.map(d => d.value);
 
-        // Show the detail section
-        showReportDetail('environmental');
-
-        showToast('Success', 'Environmental report loaded', 'success');
-    } catch (error) {
-        console.error('Error loading environmental report:', error);
-        showToast('Error', 'Failed to load environmental report', 'error');
-    }
+    createEnvironmentalChart(labels, tempValues, humidityValues);
 }
 
 function createEnvironmentalChart(labels, tempData, humidityData) {
-    const ctx = document.getElementById('environmental-chart').getContext('2d');
-    
-    if (environmentalChart) {
-        environmentalChart.destroy();
-    }
+    // Target canvas inside the modal
+    const ctx = document.querySelector('#report-modal-content #environmental-chart')?.getContext('2d');
+    if (!ctx) return; // Exit if canvas not found
 
-    // Detect dark mode for better chart visibility
+    if (environmentalChart) environmentalChart.destroy();
+
     const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDarkMode ? '#e0e7ff' : '#333';
     const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
@@ -151,7 +227,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
             labels: labels,
             datasets: [
                 {
-                    label: 'Temperature (°C)',
+                    label: window.i18n?.t('temperature') || 'Temperature (°C)',
                     data: tempData,
                     borderColor: '#ff6b6b',
                     backgroundColor: isDarkMode ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
@@ -160,7 +236,7 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
                     yAxisID: 'y'
                 },
                 {
-                    label: 'Humidity (%)',
+                    label: window.i18n?.t('humidity') || 'Humidity (%)',
                     data: humidityData,
                     borderColor: '#4dabf7',
                     backgroundColor: isDarkMode ? 'rgba(77, 171, 247, 0.15)' : 'rgba(59, 130, 246, 0.1)',
@@ -173,60 +249,27 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
+            interaction: { mode: 'index', intersect: false },
             scales: {
                 y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Temperature (°C)',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
+                    type: 'linear', display: true, position: 'left',
+                    title: { display: true, text: 'Temperature (°C)', color: textColor },
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
                 },
                 y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Humidity (%)',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
+                    type: 'linear', display: true, position: 'right',
+                    title: { display: true, text: window.i18n?.t('humidity') || 'Humidity (%)', color: textColor },
+                    ticks: { color: textColor },
+                    grid: { drawOnChartArea: false },
                 },
                 x: {
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
                 }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: textColor
-                    }
-                }
+                legend: { display: true, position: 'top', labels: { color: textColor } }
             }
         }
     });
@@ -235,63 +278,53 @@ function createEnvironmentalChart(labels, tempData, humidityData) {
 // ============= CUSTOMER ANALYTICS REPORT =============
 
 async function loadCustomerAnalyticsReport() {
-    try {
-        const filters = getDateFilters();
-        const response = await fetch(`/api/reports/customer-analytics?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-        const data = await response.json();
+    const filters = getDateFiltersForReport('customer');
+    const response = await fetch(`/api/reports/customer-analytics?start_date=${filters.start_date}&end_date=${filters.end_date}`);
+    const data = await response.json();
 
-        if (!data.success) {
-            showToast('Error', data.error || 'Failed to load customer analytics', 'error');
-            return;
-        }
+    if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-        // Update stats
-        document.getElementById('total-customers').textContent = data.total_customers;
-        document.getElementById('new-customers').textContent = data.new_customers;
-        document.getElementById('total-rewards').textContent = data.total_rewards_distributed;
-        document.getElementById('avg-rewards').textContent = data.average_rewards_per_customer;
+    // Date range label
+    document.querySelector('#report-modal-content #cust-report-start-date').textContent = filters.start_date;
+    document.querySelector('#report-modal-content #cust-report-end-date').textContent = filters.end_date;
 
-        // Populate top customers table
-        populateTopCustomersTable(data.top_customers);
+    // Stats
+    document.querySelector('#report-modal-content #total-customers').textContent = data.total_customers;
+    document.querySelector('#report-modal-content #new-customers').textContent = data.new_customers;
+    document.querySelector('#report-modal-content #returning-customers').textContent = data.returning_customers || 0;
+    document.querySelector('#report-modal-content #total-rewards').textContent = data.total_rewards_distributed;
 
-        // Create chart
-        createCustomerChart(data.top_customers);
-
-        // Show the detail section
-        showReportDetail('customer');
-
-        showToast('Success', 'Customer analytics loaded', 'success');
-    } catch (error) {
-        console.error('Error loading customer analytics:', error);
-        showToast('Error', 'Failed to load customer analytics', 'error');
-    }
+    // Populate table and chart
+    populateTopCustomersTable(data.top_customers || []);
+    createCustomerChart(data.top_customers || []);
 }
 
-function populateTopCustomersTable(customers) {
-    const tbody = document.querySelector('#top-customers-table tbody');
+function populateTopCustomersTable(topCustomers) {
+    const tbody = document.querySelector('#report-modal-content #top-customers-table tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    customers.forEach(customer => {
+    topCustomers.forEach(item => {
+        const name = `${item.customer.first_name} ${item.customer.last_name}`;
+        const totalSpent = Number(item.total_spent || 0);
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${customer.first_name} ${customer.last_name}</td>
-            <td>${customer.purchase_count || 0}</td>
-            <td>$${(customer.total_spent || 0).toFixed(2)}</td>
+            <td>${name}</td>
+            <td>$${totalSpent.toFixed(2)}</td>
         `;
         tbody.appendChild(row);
     });
 }
 
 function createCustomerChart(topCustomers) {
-    const ctx = document.getElementById('customer-chart').getContext('2d');
-    const labels = topCustomers.map(c => `${c.first_name} ${c.last_name}`);
-    const purchases = topCustomers.map(c => c.purchase_count || 0);
+    const ctx = document.querySelector('#report-modal-content #customer-chart')?.getContext('2d');
+    if (!ctx) return;
 
-    if (customerChart) {
-        customerChart.destroy();
-    }
+    const labels = topCustomers.map(item => `${item.customer.first_name} ${item.customer.last_name}`);
+    const totals = topCustomers.map(item => Number(item.total_spent || 0));
 
-    // Detect dark mode
+    if (customerChart) customerChart.destroy();
+
     const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDarkMode ? '#e0e7ff' : '#333';
     const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
@@ -299,10 +332,10 @@ function createCustomerChart(topCustomers) {
     customerChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: 'Purchase Count',
-                data: purchases,
+                label: window.i18n?.t('totalSpent') || 'Total Spent ($)',
+                data: totals,
                 backgroundColor: '#4dabf7',
                 borderColor: '#1590f5',
                 borderWidth: 1
@@ -313,29 +346,14 @@ function createCustomerChart(topCustomers) {
             maintainAspectRatio: false,
             indexAxis: 'y',
             scales: {
-                x: {
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
-                },
-                y: {
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
-                }
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: textColor
+                legend: { display: true, position: 'top', labels: { color: textColor } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `$${Number(ctx.parsed.x || 0).toFixed(2)}`
                     }
                 }
             }
@@ -346,66 +364,99 @@ function createCustomerChart(topCustomers) {
 // ============= PRODUCT SALES REPORT =============
 
 async function loadProductSalesReport() {
-    try {
-        const filters = getDateFilters();
-        const category = document.getElementById('category-filter').value;
-        
-        let url = `/api/reports/product-sales?start_date=${filters.start_date}&end_date=${filters.end_date}&limit=10`;
-        if (category) {
-            url += `&category=${encodeURIComponent(category)}`;
-        }
+    const filters = getDateFiltersForReport('products');
 
-        const response = await fetch(url);
-        const data = await response.json();
+    let url = `/api/reports/product-sales?start_date=${filters.start_date}&end_date=${filters.end_date}`;
 
-        if (!data.success) {
-            showToast('Error', data.error || 'Failed to load product sales report', 'error');
-            return;
-        }
+    const response = await fetch(url);
+    const data = await response.json();
 
-        // Populate table
-        populateProductSalesTable(data.sales_data);
+    if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-        // Create chart
-        createProductChart(data.sales_data);
+    // Display date range
+    document.querySelector('#report-modal-content #report-start-date').textContent = filters.start_date;
+    document.querySelector('#report-modal-content #report-end-date').textContent = filters.end_date;
 
-        // Show the detail section
-        showReportDetail('products');
+    // Display stats
+    document.querySelector('#report-modal-content #total-sales').textContent = `$${data.total_sales.toFixed(2)}`;
+    document.querySelector('#report-modal-content #products-sold-count').textContent = data.total_products_sold || 0;
 
-        showToast('Success', 'Product sales report loaded', 'success');
-    } catch (error) {
-        console.error('Error loading product sales report:', error);
-        showToast('Error', 'Failed to load product sales report', 'error');
-    }
+    // Populate tables
+    populateProductsSoldTable(data.products_sold || []);
+    populateMostSoldTable(data.most_sold_products || []);
+    populateLeastSoldTable(data.least_sold_products || []);
+
+    // Create circular chart by category
+    createProductCategoryChart(data.products_sold || []);
 }
 
-function populateProductSalesTable(products) {
-    const tbody = document.querySelector('#product-sales-table tbody');
+function populateProductsSoldTable(productsSold) {
+    const tbody = document.querySelector('#report-modal-content #product-sales-table tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    products.forEach(product => {
+    productsSold.forEach(item => {
+        const product = item.product;
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${product.name}</td>
-            <td>${product.category}</td>
-            <td>${product.total_quantity || 0}</td>
-            <td>${product.total_transactions || 0}</td>
-            <td>$${(product.total_revenue || 0).toFixed(2)}</td>
+            <td>${product.category || '-'}</td>
+            <td>${item.number_sold}</td>
         `;
         tbody.appendChild(row);
     });
 }
 
-function createProductChart(products) {
-    const ctx = document.getElementById('product-chart').getContext('2d');
-    const labels = products.map(p => p.name);
-    const quantities = products.map(p => p.total_quantity || 0);
+function populateMostSoldTable(mostSold) {
+    const tbody = document.querySelector('#report-modal-content #most-sold-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-    if (productChart) {
-        productChart.destroy();
-    }
+    mostSold.forEach(product => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${product.category || '-'}</td>
+            <td>$${(product.price || 0).toFixed(2)}</td>
+            <td>${product.points_worth || 0}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
 
-    // Detect dark mode
+function populateLeastSoldTable(leastSold) {
+    const tbody = document.querySelector('#report-modal-content #least-sold-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    leastSold.forEach(product => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${product.category || '-'}</td>
+            <td>$${(product.price || 0).toFixed(2)}</td>
+            <td>${product.points_worth || 0}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function createProductCategoryChart(productsSold) {
+    const ctx = document.querySelector('#report-modal-content #product-chart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Aggregate quantities by category
+    const categoryData = {};
+    productsSold.forEach(item => {
+        const category = item.product.category || 'Uncategorized';
+        categoryData[category] = (categoryData[category] || 0) + item.number_sold;
+    });
+
+    const labels = Object.keys(categoryData);
+    const quantities = Object.values(categoryData);
+
+    if (productChart) productChart.destroy();
+
     const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDarkMode ? '#e0e7ff' : '#333';
     const borderColor = isDarkMode ? '#3d4557' : '#ffffff';
@@ -417,16 +468,9 @@ function createProductChart(products) {
             datasets: [{
                 data: quantities,
                 backgroundColor: [
-                    '#4dabf7',
-                    '#ff6b6b',
-                    '#51cf66',
-                    '#ffa94d',
-                    '#b197fc',
-                    '#ff8c8c',
-                    '#4ecdc4',
-                    '#ff922b',
-                    '#82c91e',
-                    '#748ffc'
+                    '#4dabf7', '#ff6b6b', '#51cf66', '#ffa94d', '#b197fc',
+                    '#ff8c8c', '#4ecdc4', '#ff922b', '#82c91e', '#748ffc',
+                    '#20c997', '#ff6b9d', '#ffd43b', '#748ffc', '#da77f2'
                 ],
                 borderColor: borderColor,
                 borderWidth: 2
@@ -436,11 +480,17 @@ function createProductChart(products) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        color: textColor
+                legend: { 
+                    display: true, 
+                    position: 'right', 
+                    labels: { color: textColor, padding: 15 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const units = window.i18n?.t('units') || 'units';
+                            return context.label + ': ' + context.parsed + ' ' + units;
+                        }
                     }
                 }
             }
@@ -451,63 +501,34 @@ function createProductChart(products) {
 // ============= SYSTEM PERFORMANCE REPORT =============
 
 async function loadSystemPerformanceReport() {
-    try {
-        const filters = getDateFilters();
-        const response = await fetch(`/api/reports/system-performance?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-        const data = await response.json();
+    const filters = getDateFiltersForReport('performance');
+    const response = await fetch(`/api/reports/system-performance?start_date=${filters.start_date}&end_date=${filters.end_date}`);
+    const data = await response.json();
 
-        if (!data.success) {
-            showToast('Error', data.error || 'Failed to load system performance report', 'error');
-            return;
-        }
+    if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-        // Update stats
-        document.getElementById('total-transactions').textContent = data.total_transactions;
-        document.getElementById('total-revenue').textContent = `$${data.total_revenue.toFixed(2)}`;
-        document.getElementById('avg-transaction').textContent = `$${data.average_transaction_value.toFixed(2)}`;
-        document.getElementById('device-uptime').textContent = data.device_uptime_days;
-
-        // Show the detail section
-        showReportDetail('performance');
-
-        showToast('Success', 'System performance report loaded', 'success');
-    } catch (error) {
-        console.error('Error loading system performance report:', error);
-        showToast('Error', 'Failed to load system performance report', 'error');
-    }
+    document.querySelector('#report-modal-content #total-transactions').textContent = data.total_transactions;
+    document.querySelector('#report-modal-content #total-revenue').textContent = `$${data.total_revenue.toFixed(2)}`;
+    document.querySelector('#report-modal-content #avg-transaction').textContent = `$${data.average_transaction_value.toFixed(2)}`;
+    document.querySelector('#report-modal-content #device-uptime').textContent = data.device_uptime_days;
 }
 
 // ============= FAN USAGE REPORT =============
 
 async function loadFanUsageReport() {
-    try {
-        const filters = getDateFilters();
-        const response = await fetch(`/api/reports/fan-usage?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-        const data = await response.json();
+    const filters = getDateFiltersForReport('fan');
+    const response = await fetch(`/api/reports/fan-usage?start_date=${filters.start_date}&end_date=${filters.end_date}`);
+    const data = await response.json();
 
-        if (!data.success) {
-            showToast('Error', data.error || 'Failed to load fan usage report', 'error');
-            return;
-        }
+    if (!data.success) throw new Error(data.error || 'Failed to load data');
 
-        // Populate table
-        populateFanUsageTable(data.fan_usage_data);
-
-        // Create chart
-        createFanChart(data.fan_usage_data);
-
-        // Show the detail section
-        showReportDetail('fan');
-
-        showToast('Success', 'Fan usage report loaded', 'success');
-    } catch (error) {
-        console.error('Error loading fan usage report:', error);
-        showToast('Error', 'Failed to load fan usage report', 'error');
-    }
+    populateFanUsageTable(data.fan_usage_data);
+    createFanChart(data.fan_usage_data);
 }
 
 function populateFanUsageTable(fanData) {
-    const tbody = document.querySelector('#fan-usage-table tbody');
+    const tbody = document.querySelector('#report-modal-content #fan-usage-table tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     fanData.forEach(data => {
@@ -522,16 +543,15 @@ function populateFanUsageTable(fanData) {
 }
 
 function createFanChart(fanData) {
-    const ctx = document.getElementById('fan-chart').getContext('2d');
+    const ctx = document.querySelector('#report-modal-content #fan-chart')?.getContext('2d');
+    if (!ctx) return;
+
     const labels = fanData.map(d => d.date);
     const temps = fanData.map(d => (d.avg_temperature || 0).toFixed(2));
     const readings = fanData.map(d => d.sensor_readings);
 
-    if (fanChart) {
-        fanChart.destroy();
-    }
+    if (fanChart) fanChart.destroy();
 
-    // Detect dark mode for better chart visibility
     const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDarkMode ? '#e0e7ff' : '#333';
     const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
@@ -541,7 +561,7 @@ function createFanChart(fanData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Avg Temperature (°C)',
+                label: window.i18n?.t('avgTemperature') || 'Avg Temperature (°C)',
                 data: temps,
                 borderColor: '#ff6b6b',
                 backgroundColor: isDarkMode ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
@@ -550,7 +570,7 @@ function createFanChart(fanData) {
                 yAxisID: 'y'
             },
             {
-                label: 'Sensor Readings',
+                label: window.i18n?.t('sensorReadings') || 'Sensor Readings',
                 data: readings,
                 borderColor: '#4dabf7',
                 backgroundColor: isDarkMode ? 'rgba(77, 171, 247, 0.15)' : 'rgba(59, 130, 246, 0.1)',
@@ -562,93 +582,122 @@ function createFanChart(fanData) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
+            interaction: { mode: 'index', intersect: false },
             scales: {
                 y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Temperature (°C)',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
+                    type: 'linear', display: true, position: 'left',
+                    title: { display: true, text: window.i18n?.t('temperature') || 'Temperature (°C)', color: textColor },
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
                 },
                 y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Sensor Readings',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
+                    type: 'linear', display: true, position: 'right',
+                    title: { display: true, text: window.i18n?.t('sensorReadings') || 'Sensor Readings', color: textColor },
+                    ticks: { color: textColor },
+                    grid: { drawOnChartArea: false },
                 },
                 x: {
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
                 }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: textColor
-                    }
-                }
+                legend: { display: true, position: 'top', labels: { color: textColor } }
             }
         }
     });
 }
 
-// ============= CATEGORY FILTER =============
+// ============= INVENTORY REPORT =============
 
-async function loadCategoryFilter() {
+function getInventoryLevelFromProduct(p) {
+    const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+    const low = Number(p.low_stock_threshold ?? 10);
+    const moderate = Number(p.moderate_stock_threshold ?? 50);
+
+    if (stock <= low) return { label: window.i18n?.t('low') || 'Low', color: '#dc2626' };
+    if (stock <= moderate) return { label: window.i18n?.t('moderate') || 'Moderate', color: '#f59f00' };
+    return { label: window.i18n?.t('ok') || 'OK', color: '#20c997' };
+}
+
+// Render inventory table rows
+function renderInventoryRows(products) {
+    const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+        const noProductsText = window.i18n?.t('noProductsFound') || 'No products found';
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">${noProductsText}</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = products.map(p => {
+        const stock = Number(p.available_stock ?? p.total_stock ?? 0);
+        const level = getInventoryLevelFromProduct(p);
+        return `
+            <tr>
+                <td>${p.product_id}</td>
+                <td>${p.name}</td>
+                <td>${p.category || '-'}</td>
+                <td><strong>${stock}</strong></td>
+                <td>
+                    <span style="
+                        display:inline-block;
+                        padding:0.25rem 0.5rem;
+                        border-radius:999px;
+                        color:#fff;
+                        background:${level.color};
+                        font-size:0.8rem;
+                    ">${level.label}</span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Fetch inventory data
+async function loadInventoryReport() {
     try {
-        const response = await fetch('/api/reports/product-sales');
-        const data = await response.json();
-
-        if (data.success && data.categories) {
-            const select = document.getElementById('category-filter');
-            data.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                select.appendChild(option);
-            });
+        // Use existing products API
+        const response = await fetch('/products/data');
+        const products = await response.json();
+        renderInventoryRows(products);
+    } catch (err) {
+        console.error('Error loading inventory report:', err);
+        showToast(window.i18n?.t('error') || 'Error', window.i18n?.t('failedToLoadInventory') || 'Failed to load inventory', 'error');
+        const tbody = document.querySelector('#report-modal-content #inventory-table tbody');
+        if (tbody) {
+            const errorMsg = window.i18n?.t('errorLoadingInventory') || 'Error loading inventory';
+            tbody.innerHTML = `<tr><td colspan="4" class="text-danger">${errorMsg}</td></tr>`;
         }
-    } catch (error) {
-        console.error('Error loading categories:', error);
+    }
+}
+
+// Start/stop polling while modal is active
+function startInventoryPolling() {
+    stopInventoryPolling();
+    // Poll every 5 seconds
+    inventoryPollTimer = setInterval(loadInventoryReport, 5000);
+}
+
+function stopInventoryPolling() {
+    if (inventoryPollTimer) {
+        clearInterval(inventoryPollTimer);
+        inventoryPollTimer = null;
     }
 }
 
 // ============= EXPORT TO GLOBAL SCOPE =============
-
+// Make functions available to be called from HTML
 if (typeof window !== 'undefined') {
-    window.loadEnvironmentalReport = loadEnvironmentalReport;
-    window.loadCustomerAnalyticsReport = loadCustomerAnalyticsReport;
-    window.loadProductSalesReport = loadProductSalesReport;
-    window.loadSystemPerformanceReport = loadSystemPerformanceReport;
-    window.loadFanUsageReport = loadFanUsageReport;
-    window.toggleReportDetail = toggleReportDetail;
+    window.openReportModal = openReportModal;
+    window.closeReportModal = closeReportModal;
+    window.savePdf = savePdf;
 }
+
+// Listen for language changes to re-localize modal content
+document.addEventListener('languageChanged', () => {
+    if (window.i18n && typeof window.i18n.updateContent === 'function') {
+        window.i18n.updateContent();
+    }
+});

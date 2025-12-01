@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from models.utils.datetime_utils import DateTimeUtils
 from .base_model import BaseModel
 from .exceptions.database_insert_exception import DatabaseInsertException
 from .exceptions.database_read_exception import DatabaseReadException
@@ -11,16 +13,17 @@ class Product(BaseModel):
     INVENTORY_TABLE = "ProductInventory"
     INVENTORY_BATCH_TABLE = "InventoryBatches"
 
-    def __init__(self, name: str, price: float, epc: str, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
+    def __init__(self, name: str, price: float, upc: int, category: str, points_worth: int = 0, producer_company: str = ""):
         super().__init__(Product.DB_TABLE)
         self.product_id = None
         self.name = name
         self.price = price
-        self.epc = epc
         self.upc = upc
         self.category = category
         self.points_worth = points_worth
         self.producer_company = producer_company
+        self.low_stock_threshold = 10  # Default value; can be set later
+        self.moderate_stock_threshold = 50  # Default value; can be set later
 
     
     def to_dict(self) -> dict:
@@ -28,13 +31,29 @@ class Product(BaseModel):
             "product_id": self.product_id,
             "name": self.name,
             "price": self.price,
-            "epc": self.epc,
             "upc": self.upc,
             "category": self.category,
             "available_stock": self.get_inventory(self.product_id),
             "points_worth": self.points_worth,
+            "low_stock_threshold": self.low_stock_threshold,
+            "moderate_stock_threshold": self.moderate_stock_threshold,
             "producer_company": self.producer_company
         }
+    
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> Product:
+        product = cls(
+            name=row["name"],
+            price=float(row["price"]),
+            upc=int(row["upc"]),
+            category=row["category"],
+            points_worth=int(row["points_worth"]),
+            producer_company=row["producer_company"]
+        )
+        product.product_id = int(row["product_id"])
+        product.low_stock_threshold = int(row["low_stock_threshold"])
+        product.moderate_stock_threshold = int(row["moderate_stock_threshold"])
+        return product
     
     @classmethod
     def fetch_products_sold(cls, start_date: str, end_date: str = None, include_not_sold: bool = False) -> list[dict[Product, int]]:
@@ -60,6 +79,11 @@ class Product(BaseModel):
         
         end_date = end_date + " 23:59:59" if len(end_date) == 10 else end_date
 
+        
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
                 # Set fetch mode
@@ -76,19 +100,8 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                row["epc"],
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
+            # Create product from row
+            product = cls.from_row(row)
             products.append({"product": product, "number_sold": int(row["total_sold"])})
 
         return products
@@ -114,6 +127,10 @@ class Product(BaseModel):
         if end_date is None:
             end_date = "9999-12-31 23:59:59"
 
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+
         sql_values = {
             "start_date": start_date,
             "end_date": end_date,
@@ -136,26 +153,13 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                row["epc"],
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
+            products.append(cls.from_row(row))
         
         return products
 
 
     @classmethod
-    def fetch_least_sold_product(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
+    def fetch_least_sold_products(cls, start_date: str, end_date: str = None, top_n: int = 1) -> list[Product]:
         if start_date is None:
             raise ValueError("Start date must be provided.")
 
@@ -175,11 +179,18 @@ class Product(BaseModel):
         if end_date is None:
             end_date = "9999-12-31 23:59:59"
 
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date) if end_date != "9999-12-31 23:59:59" else end_date
+
         sql_values = {
             "start_date": start_date,
             "end_date": end_date,
             "top_n": top_n
         }
+
+        print(start_date + " " + end_date)
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
             try:
@@ -197,27 +208,14 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                row["epc"],
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
+            products.append(cls.from_row(row))
         
         return products
     
 
     # specify the date that the inventory batch was added
     @classmethod
-    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> None:
+    def add_inventory_batch(cls, product_id: int, quantity: int, received_date: str = None) -> int:
         # Check if product exists
         product = cls.fetch_product_by_id(product_id)
         if product is None:
@@ -257,11 +255,26 @@ class Product(BaseModel):
             try:
                 # Insert batch record
                 cursor.execute(sql_insert_batch, sql_values)
+                # Get the inserted inventory batch ID
+                inventory_batch_id = cursor.lastrowid
                 # Upsert inventory total_stock
                 cursor.execute(sql_upsert_inventory, {"product_id": product_id, "quantity": quantity})
             except Exception as e:
                 # Any failure should be reported as an insert error (transaction will roll back)
                 raise DatabaseInsertException(f"An unexpected error occurred while adding inventory batch: {e}")
+
+        # Return the inventory batch ID
+        return inventory_batch_id
+    
+
+    @classmethod
+    def decrease_inventory(cls, product_id: int, quantity: int) -> None:
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cls._decrease_inventory(product_id, quantity, cursor)
+            except Exception as e:
+                raise DatabaseInsertException(f"An unexpected error occurred while decreasing product inventory: {e}")
+
     
     @classmethod
     def _decrease_inventory(cls, product_id: int, quantity: int, cursor: sqlite3.Cursor) -> None:
@@ -327,19 +340,20 @@ class Product(BaseModel):
     @classmethod
     def insert_product(cls, product: Product) -> None:
         sql = f"""
-        INSERT INTO {cls.DB_TABLE} (name, price, epc, upc, category, points_worth, producer_company)
+        INSERT INTO {cls.DB_TABLE} (name, price, upc, category, points_worth, producer_company, low_stock_threshold, moderate_stock_threshold)
         VALUES
-        (:name, :price, :epc, :upc, :category, :points_worth, :producer_company);
+        (:name, :price, :upc, :category, :points_worth, :producer_company, :low_stock_threshold, :moderate_stock_threshold);
         """
 
         sql_values = {
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
-            "producer_company": product.producer_company
+            "producer_company": product.producer_company,
+            "low_stock_threshold": product.low_stock_threshold,
+            "moderate_stock_threshold": product.moderate_stock_threshold
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
@@ -373,21 +387,7 @@ class Product(BaseModel):
         # Convert data to products
         products = []
         for row in rows:
-            # Create product
-            product = Product(
-                row["name"],
-                float(row["price"]),
-                row["epc"],
-                int(row["upc"]),
-                row["category"],
-                row["points_worth"],
-                row["producer_company"]
-            )
-            # Set ID
-            product.product_id = int(row["product_id"])
-            # Add the product
-            products.append(product)
-        
+            products.append(cls.from_row(row))
         return products
 
 
@@ -416,20 +416,36 @@ class Product(BaseModel):
         if row is None:
             return None
         
-        # Map row to Product
-        product = Product(
-            row["name"],
-            float(row["price"]),
-            row["epc"],
-            int(row["upc"]),
-            row["category"],
-            row["points_worth"],
-            row["producer_company"]
-        )
-        # Set ID
-        product.product_id = int(row["product_id"])
+        return cls.from_row(row)
+    
 
-        return product
+    @classmethod
+    def fetch_product_by_inventory_batch_id(cls, inventory_batch_id: int) -> Product | None:
+        sql = f"""
+        SELECT p.* FROM {cls.DB_TABLE} p
+        JOIN {cls.INVENTORY_BATCH_TABLE} ib ON p.product_id = ib.product_id
+        WHERE ib.inventory_batch_id = :inventory_batch_id;
+        """
+
+        sql_values = {"inventory_batch_id": inventory_batch_id}
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                # Set fetch mode
+                cursor.row_factory = sqlite3.Row
+                # Execute
+                cursor.execute(sql, sql_values)
+                # Fetch one
+                row = cursor.fetchone()
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while fetching the product for inventory batch ID {inventory_batch_id}: {e}")
+        
+        # Return if no results
+        if row is None:
+            return None
+        
+        # Map row to Product
+        return cls.from_row(row)
     
 
     @classmethod
@@ -438,11 +454,12 @@ class Product(BaseModel):
         UPDATE {cls.DB_TABLE}
         SET name = :name,
             price = :price,
-            epc = :epc,
             upc = :upc,
             category = :category,
             points_worth = :points_worth,
-            producer_company = :producer_company
+            producer_company = :producer_company,
+            low_stock_threshold = :low_stock_threshold,
+            moderate_stock_threshold = :moderate_stock_threshold
         WHERE product_id = :product_id;
         """
 
@@ -450,11 +467,12 @@ class Product(BaseModel):
             "product_id": product.product_id,
             "name": product.name,
             "price": product.price,
-            "epc": product.epc,
             "upc": product.upc,
             "category": product.category,
             "points_worth": product.points_worth,
-            "producer_company": product.producer_company
+            "producer_company": product.producer_company,
+            "low_stock_threshold": product.low_stock_threshold,
+            "moderate_stock_threshold": product.moderate_stock_threshold
         }
 
         with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:

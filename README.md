@@ -136,19 +136,57 @@ Examples:
     
      Dashboard widgets 
 
-## Nov 28, 2025 
+## Nov 30, 2025
+
+     Make the Input Validations more robust (on Register)
+
+## Nov 28, 2025
 
 Tasks to do:
-    - Implement the database for EPC
-    - Implement proper input validation
-    - In the Account page, add a navigation button to go back to self-checkout
-    - In the self-checkout, after you pay, the rewards points won field is not being reset.
-    - Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat)
-    - Adding products by EPC or by range.
-    - Implement inventory report
-    - Fix the weird bug with reports because of Product database change.
-    - Fix the search in purchase history method.
-    - Fix the exports for the reports and for the receipts
-    - (Optional): Fix I18N glitching sometimes
-    - Check the sensor stuff
-    - Do multiple reading of RFID possibly.
+
+- Implement proper input validation (ISHI, COMPLETED)
+
+- Fix the weird bug with reports because of Product database change.
+
+- (Optional): Fix I18N glitching sometimes (ISHI, COMPLETED)
+
+- Do multiple reading of RFID possibly.
+
+- Fix ParetoAnywhere bug where the data flickers when the backend cannot connect. (ISHI, COMPLETED, JUST NEED ISHI"S PI)
+
+- Setup ParetoAnywhere properly so that it works and we can still send emails
+
+- Fix fan control for fan 2 turning on fan for fan 1.
+
+- Fix fan status not being properly updated (Danat, )
+
+- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
+  
+- Reimplement the backend and adjust the front end for environmental report, admin customer reports, personal customer reports,
+  product reports, and real-time inventory report. (Danat, COMPLETED)
+
+- Add Customer report: List of receipts per day or by time period (Danat, COMPLETED)
+
+- Fix the exports for the reports and for the receipts (Ishi, COMPLETED)
+
+- Fix datetime conversion between local time and UTC time. (Danat, COMPLETED)
+
+- In the Account page, add a navigation button to go back to self-checkout (Florence, COMPLETED)
+
+- Fix the search in purchase history method. (Danat, COMPLETED)
+
+- Send email when adding a customer through the admin customer page. (Danat, ALREADY IMPLEMENTED)
+
+- Fix fan control not working. (Danat, COMPLETED)
+
+- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, COMPLETED)
+
+- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat, COMPLETED)
+
+- Implement the database for EPC (Danat, COMPLETED)
+
+- In the self-checkout, after you pay, the rewards points won field is not being reset. (Danat, COMPLETED: Field was removed.)
+
+- Adding products by EPC or by range. (Danat, COMPLETED)
+
+- Fix the PDF: the downloaded .pdf file does not show the items the customer bought and the total price (Florence, should work on main branch)   

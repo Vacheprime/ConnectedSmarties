@@ -26,26 +26,26 @@
                 {% if user_role == "admin" %}
                 <ul class="nav-menu">
                     <!-- Updated navigation links to use Flask routes -->
-                    <li><a href="/" data-i18n="navHome">Home</a></li>
-                    <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
-                    <li><a href="/products" class="active" data-i18n="navProducts">Products</a></li>
-                    <li><a href="/reports" data-i18n="navReports">Reports</a></li>
+                    <a href="/" data-i18n="navHome">Home</a>
+                    <a href="/customers" data-i18n="navCustomers">Customers</a>
+                    <a href="/products" class="active" data-i18n="navProducts">Products</a>
+                    <a href="/reports" data-i18n="navReports">Reports</a>
                     <!-- Added self-checkout link -->
-                    <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
+                    <a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a>
                     <!-- Added theme and language toggle buttons -->
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% elif user_role == "customer" %}
                 <ul class="nav-menu">
-                    <li><a href="/account" data-i18n="myAccount">My Account</a></li>
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <a href="/account" data-i18n="myAccount">My Account</a>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% else %}
                 <ul class="nav-menu">
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
                 {% endif %}
             </nav>
@@ -61,36 +61,37 @@
                 <!-- Add/Edit Product Form -->
                 <div class="form-section">
                     <h2 id="form-title" data-i18n="addNewProduct">Add New Product</h2>
-                    <form id="product-form" onsubmit="saveProduct(event)">
+                   
+                    <form id="product-form" onsubmit="saveProduct(event)" novalidate>
                         <input type="hidden" id="product_id" name="product_id">
                         
                         <div class="form-group">
                             <label for="name" data-i18n="productName">Product Name *</label>
-                            <input type="text" id="name" name="name" required>
+                            <input type="text" id="name" name="name" required minlength="2" maxlength="100">
                             <span class="error-message" id="name-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="price" data-i18n="price">Price *</label>
-                            <input type="number" id="price" name="price" min="0" step="0.01" required>
+                            <input type="number" id="price" name="price" min="0.01" step="0.01" required placeholder="0.00">
                             <span class="error-message" id="price-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="epc" data-i18n="epc">EPC *</label>
-                            <input type="text" id="epc" name="epc" required>
+                            <input type="text" id="epc" name="epc" required minlength="4" maxlength="64">
                             <span class="error-message" id="epc-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="upc" data-i18n="upc">UPC</label>
-                            <input type="text" id="upc" name="upc">
+                            <input type="text" id="upc" name="upc" pattern="[0-9]{12,13}" title="Enter a 12 or 13 digit UPC">
                             <span class="error-message" id="upc-error"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="category" data-i18n="category">Category</label>
-                            <input type="text" id="category" name="category">
+                            <input type="text" id="category" name="category" maxlength="50">
                             <span class="error-message" id="category-error"></span>
                         </div>
 
@@ -100,9 +101,22 @@
                             <span class="error-message" id="points_worth-error"></span>
                         </div>
 
+                        <!-- New stock threshold fields -->
+                        <div class="form-group">
+                            <label for="low_stock_threshold" data-i18n="lowStockThreshold">Low Stock Threshold</label>
+                            <input type="number" id="low_stock_threshold" name="low_stock_threshold" min="1" value="10">
+                            <span class="error-message" id="low_stock_threshold-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="moderate_stock_threshold" data-i18n="moderateStockThreshold">Moderate Stock Threshold</label>
+                            <input type="number" id="moderate_stock_threshold" name="moderate_stock_threshold" min="1" value="50">
+                            <span class="error-message" id="moderate_stock_threshold-error"></span>
+                        </div>
+                        <!-- ...existing code... -->
+
                         <div class="form-group">
                             <label for="producer_company" data-i18n="producerCompany">Producer Company</label>
-                            <input type="text" id="producer_company" name="producer_company" >
+                            <input type="text" id="producer_company" name="producer_company" maxlength="100">
                             <span class="error-message" id="producer_company-error"></span>
                         </div>
 
@@ -128,7 +142,6 @@
                                     <th data-i18n="id">ID</th>
                                     <th data-i18n="name">Name</th>
                                     <th data-i18n="price">Price</th>
-                                    <th data-i18n="epc">EPC</th>
                                     <th data-i18n="upc">UPC</th>
                                     <th data-i18n="stock">Stock</th>
                                     <th data-i18n="category">Category</th>
@@ -150,7 +163,7 @@
 
         <!-- Inventory Batch Modal -->
         <div class="modal fade" id="inventoryBatchModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Add Inventory Batch</h5>
@@ -158,21 +171,95 @@
                     </div>
                     <div class="modal-body">
                         <form id="inventory-batch-form">
-                            <div class="form-group mb-3">
-                                <label for="batch_quantity" class="form-label">Quantity *</label>
-                                <input type="number" id="batch_quantity" name="batch_quantity" class="form-control" min="1" required>
-                                <span class="error-message" id="batch_quantity-error"></span>
+                            <!-- EPC Range Section -->
+                            <div class="mb-4">
+                                <h6 class="mb-3">Add EPCs by Range</h6>
+                                <div class="form-group mb-3">
+                                    <label for="epc_prefix" class="form-label">Prefix</label>
+                                    <input type="text" id="epc_prefix" name="epc_prefix" class="form-control" placeholder="e.g., A" maxlength="5">
+                                    <small class="form-text text-muted">Up to 5 characters</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="epc_start" class="form-label">Start Number</label>
+                                            <input type="number" id="epc_start" name="epc_start" class="form-control" placeholder="e.g., 1" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="epc_end" class="form-label">End Number</label>
+                                            <input type="number" id="epc_end" name="epc_end" class="form-control" placeholder="e.g., 100" min="0">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="generateEPCsFromRange()">Generate EPCs</button>
+                                <span class="error-message" id="epc_range-error"></span>
                             </div>
+
+                            <hr>
+
+                            <!-- Manual EPC Entry Section -->
+                            <div class="mb-4">
+                                <h6 class="mb-3">Add EPCs Manually</h6>
+                                <div class="form-group mb-3">
+                                    <label for="manual_epc" class="form-label">Enter EPC (24 character hexadecimal)</label>
+                                    <div class="input-group">
+                                        <input type="text" id="manual_epc" name="manual_epc" class="form-control" placeholder="e.g., A00000000000000000000001" maxlength="24">
+                                        <button type="button" class="btn btn-secondary" onclick="addManualEPC()">Add</button>
+                                    </div>
+                                    <span class="error-message" id="manual_epc-error"></span>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <!-- EPC List Section -->
+                            <div class="mb-4">
+                                <h6 class="mb-3">EPCs to Add (<span id="epc_count">0</span>)</h6>
+                                <div id="epc_list_container" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                                    <div id="epc_list" class="list-group"></div>
+                                </div>
+                            </div>
+
                             <div class="form-group mb-3">
-                                <label for="batch_received_date" class="form-label" >Received Date/Time</label>
+                                <label for="batch_received_date" class="form-label">Received Date/Time</label>
                                 <input type="datetime-local" id="batch_received_date" name="batch_received_date" class="form-control">
-                                <small class="form-text text-muted" >Leave empty to use current timestamp</small>
+                                <small class="form-text text-muted">Leave empty to use current timestamp</small>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
                         <button type="button" class="btn btn-primary" onclick="submitInventoryBatch()" data-i18n="addBatch">Add Batch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View EPCs Modal -->
+        <div class="modal fade" id="viewEPCsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Product EPCs - <span id="epc_modal_product_name"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="epcs_loading" class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="epcs_list_container" style="max-height: 400px; overflow-y: auto; display: none;">
+                            <div id="epcs_list" class="list-group"></div>
+                        </div>
+                        <div id="epcs_empty_message" class="text-muted text-center py-3" style="display: none;">
+                            No EPCs found for this product.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>

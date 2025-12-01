@@ -6,6 +6,7 @@ from models.payment_product_model import PaymentProduct
 from .base_model import BaseModel
 from .customer_model import Customer
 from .exceptions.database_insert_exception import DatabaseInsertException
+from .utils.datetime_utils import DateTimeUtils
 from contextlib import closing
 import sqlite3
 
@@ -56,7 +57,7 @@ class Payment(BaseModel):
     def _build_payment_with_products(cls, row: sqlite3.row) -> Payment:
         # Create the payment
         payment = Payment(customer_id=row["customer_id"])
-        payment.date = row["date"]
+        payment.date = DateTimeUtils.utc_to_local(row["date"])
         payment.payment_id = int(row["payment_id"])
         
         # Fetch the associated products
@@ -82,6 +83,14 @@ class Payment(BaseModel):
         
         if end_date is None:
             end_date = start_date
+        
+        # Normalize dates
+        start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+        end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
 
         sql = f"""
         SELECT SUM(total_paid) as total_sales FROM {cls.DB_TABLE}
@@ -161,10 +170,15 @@ class Payment(BaseModel):
         start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
         end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
 
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
+
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
         WHERE customer_id = :customer_id
-        AND date BETWEEN :start_date AND :end_date;
+        AND date BETWEEN :start_date AND :end_date
+        ORDER BY date DESC;
         """
 
         payments = []
@@ -188,6 +202,48 @@ class Payment(BaseModel):
 
 
     @classmethod
+    def get_total_rewards_points_in_date_range(cls, start_date: str, end_date: str = None) -> int:
+        """
+        Calculates the total reward points won in a specified date range.
+
+        Args:
+            start_date (str): The start date in 'YYYY-MM-DD' format.
+            end_date (str, optional): The end date in 'YYYY-MM-DD' format. Defaults to start_date.
+        Returns:
+            int: The total reward points won within the date range.
+        """
+        if start_date is None:
+            raise ValueError("start_date must be provided")
+        if end_date is None:
+            end_date = start_date
+        
+        # Normalize dates
+        start_date = f"{start_date} 00:00:00" if len(start_date) == 10 else start_date
+        end_date = f"{end_date} 23:59:59" if len(end_date) == 10 else end_date
+
+        # Convert to UTC for comparison
+        start_date = DateTimeUtils.local_to_utc(start_date)
+        end_date = DateTimeUtils.local_to_utc(end_date)
+
+        sql = f"""
+        SELECT SUM(reward_points_won) as total_rewards FROM {cls.DB_TABLE}
+        WHERE date BETWEEN :start_date AND :end_date
+        AND customer_id != 0;
+        """
+
+        with BaseModel._connectToDB() as connection, closing(connection.cursor()) as cursor:
+            try:
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(sql, {"start_date": start_date, "end_date": end_date})
+                row = cursor.fetchone()
+                total_rewards = row["total_rewards"] if row["total_rewards"] is not None else 0
+                return int(total_rewards)
+
+            except Exception as e:
+                raise DatabaseReadException(f"An unexpected error occurred while calculating total reward points: {e}")
+
+
+    @classmethod
     def fetch_payment_by_customer_id(cls, customer_id: int) -> list[Payment]:
         """
         Fetches all payments made by a specific customer.
@@ -200,13 +256,8 @@ class Payment(BaseModel):
         """
         sql = f"""
         SELECT * FROM {cls.DB_TABLE}
-        WHERE customer_id = :customer_id;
-        """
-
-        products_sql = f"""
-        SELECT * FROM Products p
-        INNER JOIN PaymentProducts pp ON p.product_id = pp.product_id
-        WHERE pp.payment_id = :payment_id;
+        WHERE customer_id = :customer_id
+        ORDER BY date DESC;
         """
 
         payments = []
@@ -266,7 +317,7 @@ class Payment(BaseModel):
                 cursor.execute(sql_fetch_payment, {"payment_id": payment_id})
                 payment_row = cursor.fetchone()
                 if payment_row:
-                    payment.date = payment_row["date"]
+                    payment.date = DateTimeUtils.utc_to_local(payment_row["date"])
 
                 # Update the customer's reward points
                 Customer._increase_customer_points(payment.customer_id, payment.get_reward_points_won(), cursor)
@@ -278,5 +329,9 @@ class Payment(BaseModel):
         payment._assign_payment_id_to_products(payment.payment_id)
         for payment_product in payment.products:
             PaymentProduct.insert_payment_product(payment_product)
+        
+        # Decrease inventory for each product
+        for payment_product in payment.products:
+            Product.decrease_inventory(payment_product.product_id, payment_product.product_amount)
 
 

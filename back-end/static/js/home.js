@@ -4,6 +4,19 @@ const fanStatus = "off"
 
 let humidityChart = null
 
+/**
+ * A helper function to show or clear an error for a specific field.
+ * @param {string} fieldId - The ID of the input element.
+ * @param {string} message - The error message to show. If empty, clears the error.
+ */
+function setFieldError(fieldId, message) {
+  const errorSpan = document.getElementById(`${fieldId}-error`);
+  if (errorSpan) {
+    errorSpan.textContent = message;
+    errorSpan.style.display = message ? 'block' : 'none';
+  }
+}
+
 function initHumidityChart() {
   const ctx = document.getElementById("humidityParetoChart")
   if (!ctx) return
@@ -92,22 +105,8 @@ async function fetchSensorData() {
       updateThermometer(sensor2Temp, 2)
       updateHumidityGauge(sensor2Humidity, 2)
 
-      updateAmbientContext({
-        motion: { detected: false, device: "e500000001/3", time: new Date().toLocaleTimeString() },
-        temperature: {
-          current: (sensor1Temp + sensor2Temp) / 2,
-          max: Math.max(sensor1Temp, sensor2Temp),
-          min: Math.min(sensor1Temp, sensor2Temp),
-        },
-        humidity: {
-          current: Math.round((sensor1Humidity + sensor2Humidity) / 2),
-          max: Math.max(sensor1Humidity, sensor2Humidity),
-          min: Math.min(sensor1Humidity, sensor2Humidity),
-        },
-        light: { current: 810, max: 896, min: 724 },
-        battery: { current: null, max: null, min: null },
-      })
-
+      // This function is now only responsible for Fridge 1 and Fridge 2
+      
       document.getElementById("sensor1-temp-status").innerHTML = '<span class="status-dot"></span><span>Active</span>'
       document.getElementById("sensor1-humidity-status").innerHTML =
         '<span class="status-dot"></span><span>Active</span>'
@@ -177,6 +176,10 @@ function openThresholdModal() {
   const lowValue = document.getElementById("low-threshold-value").textContent
   document.getElementById("high-threshold-input").value = highValue
   document.getElementById("low-threshold-input").value = lowValue
+  
+  // Clear any old errors
+  setFieldError('high-threshold-input', '');
+  setFieldError('low-threshold-input', '');
 }
 
 function closeThresholdModal() {
@@ -185,18 +188,38 @@ function closeThresholdModal() {
 }
 
 async function saveThreshold() {
-  const highThreshold = Number.parseFloat(document.getElementById("high-threshold-input").value)
-  const lowThreshold = Number.parseFloat(document.getElementById("low-threshold-input").value)
+  const highInput = document.getElementById("high-threshold-input");
+  const lowInput = document.getElementById("low-threshold-input");
+  
+  const highThreshold = Number.parseFloat(highInput.value)
+  const lowThreshold = Number.parseFloat(lowInput.value)
 
-  if (isNaN(highThreshold) || isNaN(lowThreshold)) {
-    showToast("Error", "Please enter valid threshold values", "error")
-    return
+  // --- VALIDATION ---
+  let isValid = true;
+  setFieldError('high-threshold-input', '');
+  setFieldError('low-threshold-input', '');
+
+  if (isNaN(highThreshold)) {
+    setFieldError('high-threshold-input', 'Please enter a valid number.');
+    isValid = false;
+  }
+  
+  if (isNaN(lowThreshold)) {
+    setFieldError('low-threshold-input', 'Please enter a valid number.');
+    isValid = false;
   }
 
-  if (highThreshold <= lowThreshold) {
-    showToast("Error", "High threshold must be greater than low threshold", "error")
-    return
+  if (isValid && highThreshold <= lowThreshold) {
+    setFieldError('high-threshold-input', 'High threshold must be greater than low threshold.');
+    setFieldError('low-threshold-input', 'Low threshold must be less than high threshold.');
+    isValid = false;
   }
+  
+  if (!isValid) {
+     showToast("Validation Error", "Please fix the errors in the form.", "error");
+     return;
+  }
+  // --- END VALIDATION ---
 
   try {
     const response = await fetch("/api/threshold", {
@@ -253,24 +276,24 @@ async function fetchAmbientContext() {
       const contextData = {
         motion: { detected: false, device: data.device_id || "unknown", time: data.timestamp },
         temperature: {
-          current: data.temperature !== null ? data.temperature : 0,
-          max: data.temperature !== null ? data.temperature : 0,
-          min: data.temperature !== null ? data.temperature : 0,
+          current: data.temperature, 
+          max: data.temperature,
+          min: data.temperature,
         },
         humidity: {
-          current: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
-          max: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
-          min: data.humidity !== null ? Math.round(data.humidity * 100) : 0,
+          current: data.humidity, 
+          max: data.humidity,
+          min: data.humidity,
         },
         light: { 
-          current: data.lux !== null ? Math.round(data.lux) : 0, 
-          max: data.lux !== null ? Math.round(data.lux) : 0, 
-          min: data.lux !== null ? Math.round(data.lux) : 0 
+          current: data.lux, 
+          max: data.lux, 
+          min: data.lux 
         },
         battery: { 
-          current: data.battery !== null ? Math.round(data.battery) : null, 
-          max: data.battery !== null ? Math.round(data.battery) : null, 
-          min: data.battery !== null ? Math.round(data.battery) : null 
+          current: data.battery, 
+          max: data.battery, 
+          min: data.battery 
         },
       }
       
@@ -282,18 +305,40 @@ async function fetchAmbientContext() {
     console.error("Error fetching ambient context:", error)
     showToast("Ambient Context Error", "Failed to fetch ambient context from Pareto Anywhere", "error")
     
-    // Use placeholder data on error
+    // UPDATED: Use null placeholder data on error
     updateAmbientContext({
       motion: { detected: false, device: "error", time: new Date().toLocaleTimeString() },
-      temperature: { current: 0, max: 0, min: 0 },
-      humidity: { current: 0, max: 0, min: 0 },
-      light: { current: 0, max: 0, min: 0 },
+      temperature: { current: null, max: null, min: null },
+      humidity: { current: null, max: null, min: null },
+      light: { current: null, max: null, min: null },
       battery: { current: null, max: null, min: null },
     })
   }
 }
 
+// This function now handles null values gracefully
 function updateAmbientContext(data) {
+  // Helper function to update text or show placeholder
+  const updateText = (elementId, value, unit = "") => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      if (value !== null && value !== undefined && !isNaN(value)) {
+        // For temp, show one decimal. For others, round.
+        let displayValue;
+        if (elementId.includes("temp")) {
+            displayValue = value.toFixed(1);
+        } else if (elementId.includes("humidity") || elementId.includes("light") || elementId.includes("battery")) {
+            displayValue = Math.round(value);
+        } else {
+            displayValue = value;
+        }
+        element.textContent = `${displayValue}${unit}`;
+      } else {
+        element.textContent = "—"; // Placeholder for null/invalid data
+      }
+    }
+  };
+
   // Update motion status and time
   const motionStatus = document.getElementById("motion-status")
   if (motionStatus) {
@@ -312,26 +357,24 @@ function updateAmbientContext(data) {
   }
 
   // Update temperature
-  document.getElementById("ambient-temp").textContent = data.temperature.current.toFixed(1)
-  document.getElementById("temp-max").textContent = data.temperature.max.toFixed(1) + "°C"
-  document.getElementById("temp-min").textContent = data.temperature.min.toFixed(1) + "°C"
+  updateText("ambient-temp", data.temperature.current);
+  updateText("temp-max", data.temperature.max, "°C");
+  updateText("temp-min", data.temperature.min, "°C");
 
   // Update humidity
-  document.getElementById("ambient-humidity").textContent = data.humidity.current
-  document.getElementById("humidity-max").textContent = data.humidity.max + "%"
-  document.getElementById("humidity-min").textContent = data.humidity.min + "%"
+  updateText("ambient-humidity", data.humidity.current);
+  updateText("humidity-max", data.humidity.max, "%");
+  updateText("humidity-min", data.humidity.min, "%");
 
   // Update light
-  document.getElementById("ambient-light").textContent = data.light.current
-  document.getElementById("light-max").textContent = data.light.max + " lux"
-  document.getElementById("light-min").textContent = data.light.min + " lux"
+  updateText("ambient-light", data.light.current);
+  updateText("light-max", data.light.max, " lux");
+  updateText("light-min", data.light.min, " lux");
 
   // Update battery (if available)
-  if (data.battery.current !== null) {
-    document.getElementById("ambient-battery").textContent = data.battery.current
-    document.getElementById("battery-max").textContent = data.battery.max + " "
-    document.getElementById("battery-min").textContent = data.battery.min + " "
-  }
+  updateText("ambient-battery", data.battery.current);
+  updateText("battery-max", data.battery.max, " ");
+  updateText("battery-min", data.battery.min, " ");
 }
 
 // Initialize page
@@ -357,6 +400,14 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(fetchSensorData, 5000)
   // Update ambient context every 5 seconds
   setInterval(fetchAmbientContext, 5000)
+
+  // Add real-time validation for modal inputs
+  document.getElementById('high-threshold-input').addEventListener('input', () => {
+    setFieldError('high-threshold-input', '');
+  });
+  document.getElementById('low-threshold-input').addEventListener('input', () => {
+    setFieldError('low-threshold-input', '');
+  });
 })
 
 // Close modal when clicking outside

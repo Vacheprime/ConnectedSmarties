@@ -22,16 +22,13 @@
                     <div class="nav-brand">ConnectedSmarties</div>
                 </div>
                 <ul class="nav-menu">
-                    <!-- Updated navigation links to use Flask routes -->
-                    <li><a href="/" data-i18n="navHome">Home</a></li>
-                    <li><a href="/customers" data-i18n="navCustomers">Customers</a></li>
-                    <li><a href="/products" data-i18n="navProducts">Products</a></li>
-                    <li><a href="/reports" class="active" data-i18n="navReports">Reports</a></li>
-                    <!-- Added self-checkout link -->
-                    <li><a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a></li>
-                    <!-- Added theme toggle and language toggle button -->
-                    <li><button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button></li>
-                    <li><button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button></li>
+                    <a href="/" data-i18n="navHome">Home</a>
+                    <a href="/customers" data-i18n="navCustomers">Customers</a>
+                    <a href="/products" data-i18n="navProducts">Products</a>
+                    <a href="/reports" class="active" data-i18n="navReports">Reports</a>
+                    <a href="/selfcheckout" data-i18n="navSelfCheckout">Self-Checkout</a>
+                    <button id="theme-toggle" class="btn btn-secondary" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+                    <button id="lang-toggle" class="btn btn-secondary" onclick="toggleLanguage()" style="padding: 0.5rem 1rem;">EN</button>
                 </ul>
             </nav>
         </header>
@@ -42,20 +39,6 @@
                 <p class="subtitle" data-i18n="reportsSubtitle">System performance and data insights</p>
             </div>
 
-            <!-- Date Range Filter -->
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label for="start-date" data-i18n="startDate">Start Date</label>
-                    <input type="date" id="start-date" class="form-control">
-                </div>
-                <div class="filter-group">
-                    <label for="end-date" data-i18n="endDate">End Date</label>
-                    <input type="date" id="end-date" class="form-control">
-                </div>
-                <button id="apply-filters" class="btn btn-primary" data-i18n="applyFilters">Apply Filters</button>
-                <button id="reset-filters" class="btn btn-secondary" data-i18n="resetFilters">Reset</button>
-            </div>
-
             <!-- Reports Grid -->
             <div class="reports-grid">
                 <!-- Environmental Data Report -->
@@ -64,28 +47,15 @@
                         <h3 data-i18n="environmentalData">Environmental Data</h3>
                     </div>
                     <p data-i18n="environmentalDataDesc">Temperature and humidity trends over time</p>
-                    <button class="btn btn-primary" onclick="loadEnvironmentalReport()" data-i18n="viewReport">View Report</button>
-                    
-                    <div class="report-detail" id="environmental-detail" style="display: none;">
-                        <div class="report-detail-header">
-                            <button class="btn-collapse" onclick="closeReportDetail('environmental')" title="Close report">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="environmental-chart"></canvas>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="avgTemperature">Avg Temperature</span>
-                                <span class="stat-value" id="avg-temp">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="avgHumidity">Avg Humidity</span>
-                                <span class="stat-value" id="avg-humidity">--</span>
-                            </div>
-                        </div>
+                    <div class="filter-group">
+                        <label for="env-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="env-start-date" class="form-control">
                     </div>
+                    <div class="filter-group">
+                        <label for="env-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="env-end-date" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" onclick="openReportModal('environmental', 'Environmental Data')" data-i18n="viewReport">View Report</button>
                 </div>
 
                 <!-- Customer Analytics Report -->
@@ -94,47 +64,15 @@
                         <h3 data-i18n="customerAnalytics">Customer Analytics</h3>
                     </div>
                     <p data-i18n="customerAnalyticsDesc">Customer registration and rewards statistics</p>
-                    <button class="btn btn-primary" onclick="loadCustomerAnalyticsReport()" data-i18n="viewReport">View Report</button>
-                    
-                    <div class="report-detail" id="customer-detail" style="display: none;">
-                        <div class="report-detail-header">
-                            <button class="btn-collapse" onclick="closeReportDetail('customer')" title="Close report">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="totalCustomers">Total Customers</span>
-                                <span class="stat-value" id="total-customers">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="newCustomers">New Customers</span>
-                                <span class="stat-value" id="new-customers">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="totalRewardsDistributed">Total Rewards</span>
-                                <span class="stat-value" id="total-rewards">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="avgRewards">Avg Rewards</span>
-                                <span class="stat-value" id="avg-rewards">--</span>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <h5 data-i18n="topCustomers">Top Customers</h5>
-                            <canvas id="customer-chart"></canvas>
-                        </div>
-                        <table class="table table-sm" id="top-customers-table">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="name">Name</th>
-                                    <th data-i18n="purchases">Purchases</th>
-                                    <th data-i18n="totalSpent">Total Spent</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="filter-group">
+                        <label for="cust-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="cust-start-date" class="form-control">
                     </div>
+                    <div class="filter-group">
+                        <label for="cust-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="cust-end-date" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" onclick="openReportModal('customer', 'Customer Analytics')" data-i18n="viewReport">View Report</button>
                 </div>
 
                 <!-- Product Sales Report -->
@@ -143,36 +81,15 @@
                         <h3 data-i18n="productSales">Product Sales</h3>
                     </div>
                     <p data-i18n="productSalesDesc">Best-selling products and revenue analysis</p>
-                    <div class="filter-group mb-3">
-                        <label for="category-filter" data-i18n="category">Category</label>
-                        <select id="category-filter" class="form-control">
-                            <option value="" data-i18n="allCategories">All Categories</option>
-                        </select>
+                    <div class="filter-group">
+                        <label for="prod-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="prod-start-date" class="form-control">
                     </div>
-                    <button class="btn btn-primary" onclick="loadProductSalesReport()" data-i18n="viewReport">View Report</button>
-                    
-                    <div class="report-detail" id="products-detail" style="display: none;">
-                        <div class="report-detail-header">
-                            <button class="btn-collapse" onclick="closeReportDetail('products')" title="Close report">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="product-chart"></canvas>
-                        </div>
-                        <table class="table table-sm" id="product-sales-table">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="productName">Product Name</th>
-                                    <th data-i18n="category">Category</th>
-                                    <th data-i18n="quantitySold">Qty Sold</th>
-                                    <th data-i18n="transactions">Transactions</th>
-                                    <th data-i18n="revenue">Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="filter-group">
+                        <label for="prod-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="prod-end-date" class="form-control">
                     </div>
+                    <button class="btn btn-primary" onclick="openReportModal('products', 'Product Sales')" data-i18n="viewReport">View Report</button>
                 </div>
 
                 <!-- System Performance Report -->
@@ -181,33 +98,15 @@
                         <h3 data-i18n="systemPerformance">System Performance</h3>
                     </div>
                     <p data-i18n="systemPerformanceDesc">Device uptime and operational metrics</p>
-                    <button class="btn btn-primary" onclick="loadSystemPerformanceReport()" data-i18n="viewReport">View Report</button>
-                    
-                    <div class="report-detail" id="performance-detail" style="display: none;">
-                        <div class="report-detail-header">
-                            <button class="btn-collapse" onclick="closeReportDetail('performance')" title="Close report">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="totalTransactions">Total Transactions</span>
-                                <span class="stat-value" id="total-transactions">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="totalRevenue">Total Revenue</span>
-                                <span class="stat-value" id="total-revenue">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="avgTransaction">Avg Transaction</span>
-                                <span class="stat-value" id="avg-transaction">--</span>
-                            </div>
-                            <div class="stat-card">
-                                <span class="stat-label" data-i18n="deviceUptime">Device Uptime (days)</span>
-                                <span class="stat-value" id="device-uptime">--</span>
-                            </div>
-                        </div>
+                    <div class="filter-group">
+                        <label for="perf-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="perf-start-date" class="form-control">
                     </div>
+                    <div class="filter-group">
+                        <label for="perf-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="perf-end-date" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" onclick="openReportModal('performance', 'System Performance')" data-i18n="viewReport">View Report</button>
                 </div>
 
                 <!-- Fan Usage Report -->
@@ -216,28 +115,24 @@
                         <h3 data-i18n="fanUsage">Fan Usage</h3>
                     </div>
                     <p data-i18n="fanUsageDesc">Climate control activation history</p>
-                    <button class="btn btn-primary" onclick="loadFanUsageReport()" data-i18n="viewReport">View Report</button>
-                    
-                    <div class="report-detail" id="fan-detail" style="display: none;">
-                        <div class="report-detail-header">
-                            <button class="btn-collapse" onclick="closeReportDetail('fan')" title="Close report">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="fan-chart"></canvas>
-                        </div>
-                        <table class="table table-sm" id="fan-usage-table">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="date">Date</th>
-                                    <th data-i18n="sensorReadings">Sensor Readings</th>
-                                    <th data-i18n="avgTemp">Avg Temperature</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="filter-group">
+                        <label for="fan-start-date" data-i18n="startDate">Start Date</label>
+                        <input type="date" id="fan-start-date" class="form-control">
                     </div>
+                    <div class="filter-group">
+                        <label for="fan-end-date" data-i18n="endDate">End Date</label>
+                        <input type="date" id="fan-end-date" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" onclick="openReportModal('fan', 'Fan Usage')" data-i18n="viewReport">View Report</button>
+                </div>
+
+                <!-- Inventory Reports -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <h3 data-i18n="inventoryReports">Inventory Reports</h3>
+                    </div>
+                    <p data-i18n="inventoryReportsDesc">Current available items per product with real-time updates</p>
+                    <button class="btn btn-primary" onclick="openReportModal('inventory', 'Inventory Reports')" data-i18n="viewReport">View Report</button>
                 </div>
             </div>
         </main>
@@ -247,14 +142,234 @@
         </footer>
     </div>
 
+    <!-- 
+      ============================================
+      MODAL AND REPORT TEMPLATES
+      ============================================
+    -->
+
+    <!-- Generic Modal Structure -->
+    <div id="report-modal-overlay" class="report-modal-overlay">
+        <div class="report-modal">
+            <div class="report-modal-header">
+                <h5 id="report-modal-title" data-i18n="report">Report</h5>
+                <button class="report-modal-close-btn" onclick="closeReportModal()" title="Close">&times;</button>
+            </div>
+            <div class="report-modal-content" id="report-modal-content">
+                <!-- Report content will be injected here -->
+                <div class="modal-loader"></div>
+            </div>
+            <div class="report-modal-footer">
+                <button class="btn btn-secondary" onclick="closeReportModal()" data-i18n="close">Close</button>
+                <button id="save-pdf-btn" class="btn btn-primary" onclick="savePdf()" data-i18n="saveAsPDF">Save as PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <template id="template-environmental">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong data-i18n="reportPeriod">Report Period:</strong>
+                <span id="env-report-start-date">--</span> to <span id="env-report-end-date">--</span>
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="environmental-chart"></canvas>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="avgTemperature">Avg Temperature</span>
+                <span class="stat-value" id="avg-temp">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="avgHumidity">Avg Humidity</span>
+                <span class="stat-value" id="avg-humidity">--</span>
+            </div>
+        </div>
+    </template>
+
+    <template id="template-customer">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong data-i18n="reportPeriod">Report Period:</strong>
+                <span id="cust-report-start-date">--</span> to <span id="cust-report-end-date">--</span>
+            </p>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalCustomers">
+                    Total Customers <small class="text-muted">(includes guest customers)</small>
+                </span>
+                <span class="stat-value" id="total-customers">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="newCustomers">New Customers</span>
+                <span class="stat-value" id="new-customers">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="returningCustomers">Returning Customers</span>
+                <span class="stat-value" id="returning-customers">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalRewardsDistributed">Total Rewards</span>
+                <span class="stat-value" id="total-rewards">--</span>
+            </div>
+            <!-- Removed Avg Rewards card -->
+        </div>
+        <div class="chart-container">
+            <h5 data-i18n="topCustomers">Top Customers (by Total Spent)</h5>
+            <canvas id="customer-chart"></canvas>
+        </div>
+        <div class="table-responsive-container">
+            <table class="table table-sm" id="top-customers-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="name">Name</th>
+                        <th data-i18n="totalSpent">Total Spent</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="template-products">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-button-normal);">
+            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong data-i18n="reportPeriod">Report Period:</strong> <span id="report-start-date">--</span> to <span id="report-end-date">--</span>
+            </p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalSales">Total Sales</span>
+                <span class="stat-value" id="total-sales">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="productsSold">Products Sold</span>
+                <span class="stat-value" id="products-sold-count">--</span>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h5 data-i18n="salesByCategory">Sales by Category</h5>
+            <canvas id="product-chart"></canvas>
+        </div>
+
+        <div class="table-responsive-container">
+            <h5 data-i18n="allProductsSold">All Products Sold</h5>
+            <table class="table table-sm" id="product-sales-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="productName">Product Name</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="quantitySold">Qty Sold</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="table-responsive-container" style="margin-top: 30px;">
+            <h5 data-i18n="mostSoldProducts">Most Sold Products</h5>
+            <table class="table table-sm" id="most-sold-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="productName">Product Name</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="price">Price</th>
+                        <th data-i18n="pointsWorth">Points Worth</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="table-responsive-container" style="margin-top: 30px;">
+            <h5 data-i18n="leastSoldProducts">Least Sold Products</h5>
+            <table class="table table-sm" id="least-sold-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="productName">Product Name</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="price">Price</th>
+                        <th data-i18n="pointsWorth">Points Worth</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="template-performance">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalTransactions">Total Transactions</span>
+                <span class="stat-value" id="total-transactions">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="totalRevenue">Total Revenue</span>
+                <span class="stat-value" id="total-revenue">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="avgTransaction">Avg Transaction</span>
+                <span class="stat-value" id="avg-transaction">--</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label" data-i18n="deviceUptime">Device Uptime (days)</span>
+                <span class="stat-value" id="device-uptime">--</span>
+            </div>
+        </div>
+    </template>
+
+    <template id="template-fan">
+        <div class="chart-container">
+            <canvas id="fan-chart"></canvas>
+        </div>
+        <div class="table-responsive-container">
+            <table class="table table-sm" id="fan-usage-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="date">Date</th>
+                        <th data-i18n="sensorReadings">Sensor Readings</th>
+                        <th data-i18n="avgTemp">Avg Temperature</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="template-inventory">
+        <div class="table-responsive-container">
+            <table class="table table-sm" id="inventory-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="id">ID</th>
+                        <th data-i18n="product">Product</th>
+                        <th data-i18n="category">Category</th>
+                        <th data-i18n="availableStock">Available Stock</th>
+                        <th data-i18n="status">Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
+
+    <!-- END MODAL AND TEMPLATES -->
+
     <div id="toast-container"></div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <!-- Kept html2pdf.js as it's required for "Save as PDF" -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" xintegrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script> 
     <script type="module" src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/logout_module.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/reports.js') }}"></script>
 </body>
 </html>
-
