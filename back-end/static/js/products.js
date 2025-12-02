@@ -107,9 +107,9 @@ function validateProduct(data) {
   // *** Removed the old EPC validation block ***
   
   // UPC (Optional, but validated if present)
-  const upcRegex = /^\d{12,13}$/;
+  const upcRegex = /^\d{12}$/;
   if (data.upc && !upcRegex.test(data.upc)) {
-    setFieldError('upc', 'UPC must be 12 or 13 digits.');
+    setFieldError('upc', 'UPC must be 12 digits.');
     isValid = false;
   }
 
