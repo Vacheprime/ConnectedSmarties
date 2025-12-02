@@ -35,29 +35,22 @@ class ParetoAnywhereService:
     def get_ambient_context(self, device_id: str = None) -> Dict[str, Any]:
         """
         Fetch ambient context data (temperature, humidity, lux, battery) from Pareto Anywhere.
-        If no device_id is provided, attempts to get the first available device.
+        This version is HARDCODED to always check device "c30000455da6/3".
         
         Args:
-            device_id (str): Optional device ID. If not provided, uses the first device.
+            device_id (str): This argument is ignored, as the device is hardcoded.
             
         Returns:
             dict: Ambient context data with temperature, humidity, lux, and battery information
         """
         try:
-            # Get all devices if no specific device is provided
-            if not device_id:
-                devices_data = self.get_devices()
-                devices = devices_data.get('devices', {})
-                
-                if not devices:
-                    print("WARNING: No devices found in Pareto Anywhere")
-                    return self._get_empty_context()
-                
-                # Use the first device found
-                device_id = list(devices.keys())[0]
-                print(f"Using device: {device_id}")
+           
+            # We are now forcing the code to *only* check this specific device ID.
+            device_id_to_use = "c30000455da6/3"
+            print(f"INFO: Hardcoded to fetch data for device: {device_id_to_use}")
+           
             
-            url = f"{self.pareto_url}/devices/{device_id}"
+            url = f"{self.pareto_url}/devices/{device_id_to_use}" # Use the hardcoded ID
             response = requests.get(url, timeout=self.timeout)
             response.raise_for_status()
             device_data = response.json()
@@ -67,10 +60,10 @@ class ParetoAnywhereService:
             return self._parse_ambient_context(device_data)
             
         except requests.exceptions.RequestException as e:
-            print(f"ERROR: Failed to fetch ambient context from Pareto Anywhere: {e}")
+            print(f"ERROR: Failed to fetch ambient context from Pareto Anywhere (Device: {device_id_to_use}): {e}")
             return self._get_empty_context()
         except Exception as e:
-            print(f"ERROR: Failed to parse ambient context: {e}")
+            print(f"ERROR: Failed to parse ambient context (Device: {device_id_to_use}): {e}")
             return self._get_empty_context()
     
     def _parse_ambient_context(self, device_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,6 +76,7 @@ class ParetoAnywhereService:
         Returns:
             dict: Formatted ambient context data
         """
+        # This function correctly handles missing data (ex: sleeping sensor)
         properties = device_data.get('properties', {})
         
         # Extract temperature (in Celsius)
@@ -90,28 +84,28 @@ class ParetoAnywhereService:
         if temperature is not None:
             temperature = float(temperature) / 100 if isinstance(temperature, (int, float)) and temperature > 100 else float(temperature)
         else:
-            temperature = None
+            temperature = None # This will be None if sensor is sleeping
         
         # Extract humidity (as percentage)
         humidity = properties.get('humidity', None)
         if humidity is not None:
             humidity = float(humidity) / 100 if isinstance(humidity, (int, float)) and humidity > 100 else float(humidity)
         else:
-            humidity = None
+            humidity = None # This will be None if sensor is sleeping
         
         # Extract illuminance/lux
         lux = properties.get('illuminance', None)
         if lux is not None:
             lux = float(lux)
         else:
-            lux = None
+            lux = None # This will be None if sensor is sleeping
         
         # Extract battery percentage
         battery = properties.get('battery', None)
         if battery is not None:
             battery = float(battery)
         else:
-            battery = None
+            battery = None # This will be None if sensor is sleeping
         
         # Get current time
         current_time = datetime.now().strftime("%H:%M:%S")
