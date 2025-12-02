@@ -118,12 +118,64 @@ async function addCustomer(event) {
         window.location.href = "/";
       }, 2000);
     } else {
-      // Check for specific server-side errors
-      if (result.error && result.error.includes("email")) {
-        setFieldError('email', 'This email is already registered.');
-      } else {
-        const errorMessage = result.errors ? result.errors.join("<br>") : result.error || "Registration failed";
-        showToast("Error", errorMessage, "error");
+      // Handle specific server-side errors and show user-friendly messages
+      let handled = false;
+
+      // If server returned an array of validation errors, show them and attach field errors
+      if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+        const combined = result.errors.join('<br>');
+        // Attach specific field errors when keywords are present
+        result.errors.forEach(err => {
+          const lower = err.toLowerCase();
+          if (lower.includes('email')) {
+            setFieldError('email', err);
+          }
+          if (lower.includes('phone') || lower.includes('phone_number') || lower.includes('phone number')) {
+            setFieldError('phone_number', err);
+          }
+          if (lower.includes('password')) {
+            setFieldError('password', err);
+          }
+        });
+        showToast('Registration failed', combined, 'error');
+        handled = true;
+      }
+
+      // If a single error string was returned, attempt to parse it for common constraint failures
+      if (!handled && result.error) {
+        const errLower = String(result.error).toLowerCase();
+
+        if (errLower.includes('email')) {
+          setFieldError('email', 'This email is already registered.');
+          showToast('Registration failed', 'This email address is already registered. Please sign in or use a different email.', 'error');
+          handled = true;
+        } else if (errLower.includes('phone') || errLower.includes('phone_number') || errLower.includes('phone number')) {
+          setFieldError('phone_number', 'This phone number is already registered.');
+          showToast('Registration failed', 'This phone number is already registered. Please use a different number.', 'error');
+          handled = true;
+        } else if (errLower.includes('unique constraint failed')) {
+          // Try to extract the failing column name from SQLite message
+          const match = String(result.error).match(/UNIQUE constraint failed:\s*(?:\w+\.)?(\w+)/i);
+          if (match && match[1]) {
+            const col = match[1].toLowerCase();
+            if (col.includes('email')) {
+              setFieldError('email', 'This email is already registered.');
+              showToast('Registration failed', 'This email address is already registered. Please sign in or use a different email.', 'error');
+            } else if (col.includes('phone')) {
+              setFieldError('phone_number', 'This phone number is already registered.');
+              showToast('Registration failed', 'This phone number is already registered. Please use a different number.', 'error');
+            } else {
+              showToast('Registration failed', `A unique constraint failed on ${col}. Please check your input.`, 'error');
+            }
+            handled = true;
+          }
+        }
+      }
+
+      // Fallback: show the error message as returned by the server (or a generic message)
+      if (!handled) {
+        const errorMessage = result.errors ? result.errors.join('<br>') : result.error || 'Registration failed';
+        showToast('Registration failed', errorMessage, 'error');
       }
     }
   } catch (error) {
