@@ -4,7 +4,6 @@ import { showToast } from './notifications.js';
 let environmentalChart = null;
 let customerChart = null;
 let productChart = null;
-let fanChart = null;
 
 // Store current report type for PDF saving
 let currentReportType = '';
@@ -20,9 +19,7 @@ const modalLoader = '<div class="modal-loader"></div>';
 const reportDateInputs = {
     environmental: { start: 'env-start-date', end: 'env-end-date' },
     customer: { start: 'cust-start-date', end: 'cust-end-date' },
-    products: { start: 'prod-start-date', end: 'prod-end-date' },
-    performance: { start: 'perf-start-date', end: 'perf-end-date' },
-    fan: { start: 'fan-start-date', end: 'fan-end-date' }
+    products: { start: 'prod-start-date', end: 'prod-end-date' }
 };
 
 // Polling handle for inventory updates
@@ -102,12 +99,10 @@ function closeReportModal() {
     if (environmentalChart) environmentalChart.destroy();
     if (customerChart) customerChart.destroy();
     if (productChart) productChart.destroy();
-    if (fanChart) fanChart.destroy();
     
     environmentalChart = null;
     customerChart = null;
     productChart = null;
-    fanChart = null;
 
     stopInventoryPolling();
 }
@@ -150,12 +145,6 @@ async function fetchAndRenderReport(reportType) {
                 break;
             case 'products':
                 await loadProductSalesReport();
-                break;
-            case 'performance':
-                await loadSystemPerformanceReport();
-                break;
-            case 'fan':
-                await loadFanUsageReport();
                 break;
             case 'inventory':
                 await loadInventoryReport();
@@ -493,116 +482,6 @@ function createProductCategoryChart(productsSold) {
                         }
                     }
                 }
-            }
-        }
-    });
-}
-
-// ============= SYSTEM PERFORMANCE REPORT =============
-
-async function loadSystemPerformanceReport() {
-    const filters = getDateFiltersForReport('performance');
-    const response = await fetch(`/api/reports/system-performance?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-    const data = await response.json();
-
-    if (!data.success) throw new Error(data.error || 'Failed to load data');
-
-    document.querySelector('#report-modal-content #total-transactions').textContent = data.total_transactions;
-    document.querySelector('#report-modal-content #total-revenue').textContent = `$${data.total_revenue.toFixed(2)}`;
-    document.querySelector('#report-modal-content #avg-transaction').textContent = `$${data.average_transaction_value.toFixed(2)}`;
-    document.querySelector('#report-modal-content #device-uptime').textContent = data.device_uptime_days;
-}
-
-// ============= FAN USAGE REPORT =============
-
-async function loadFanUsageReport() {
-    const filters = getDateFiltersForReport('fan');
-    const response = await fetch(`/api/reports/fan-usage?start_date=${filters.start_date}&end_date=${filters.end_date}`);
-    const data = await response.json();
-
-    if (!data.success) throw new Error(data.error || 'Failed to load data');
-
-    populateFanUsageTable(data.fan_usage_data);
-    createFanChart(data.fan_usage_data);
-}
-
-function populateFanUsageTable(fanData) {
-    const tbody = document.querySelector('#report-modal-content #fan-usage-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    fanData.forEach(data => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${data.date}</td>
-            <td>${data.sensor_readings}</td>
-            <td>${(data.avg_temperature || 0).toFixed(2)}°C</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function createFanChart(fanData) {
-    const ctx = document.querySelector('#report-modal-content #fan-chart')?.getContext('2d');
-    if (!ctx) return;
-
-    const labels = fanData.map(d => d.date);
-    const temps = fanData.map(d => (d.avg_temperature || 0).toFixed(2));
-    const readings = fanData.map(d => d.sensor_readings);
-
-    if (fanChart) fanChart.destroy();
-
-    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
-    const textColor = isDarkMode ? '#e0e7ff' : '#333';
-    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-
-    fanChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: window.i18n?.t('avgTemperature') || 'Avg Temperature (°C)',
-                data: temps,
-                borderColor: '#ff6b6b',
-                backgroundColor: isDarkMode ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
-                tension: 0.4,
-                fill: true,
-                yAxisID: 'y'
-            },
-            {
-                label: window.i18n?.t('sensorReadings') || 'Sensor Readings',
-                data: readings,
-                borderColor: '#4dabf7',
-                backgroundColor: isDarkMode ? 'rgba(77, 171, 247, 0.15)' : 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
-                fill: true,
-                yAxisID: 'y1'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                y: {
-                    type: 'linear', display: true, position: 'left',
-                    title: { display: true, text: window.i18n?.t('temperature') || 'Temperature (°C)', color: textColor },
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
-                },
-                y1: {
-                    type: 'linear', display: true, position: 'right',
-                    title: { display: true, text: window.i18n?.t('sensorReadings') || 'Sensor Readings', color: textColor },
-                    ticks: { color: textColor },
-                    grid: { drawOnChartArea: false },
-                },
-                x: {
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
-                }
-            },
-            plugins: {
-                legend: { display: true, position: 'top', labels: { color: textColor } }
             }
         }
     });

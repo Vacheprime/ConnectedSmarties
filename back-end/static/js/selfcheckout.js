@@ -42,7 +42,7 @@ async function manuallyScanItem() {
   // --- THIS IS THE FIX ---
   // If the code is empty, show an error and stop.
   if (!code) {
-    showToast("Error", "Please enter a UPC or EPC code.", "error");
+    showToast("Error", "Please enter an EPC code.", "error");
     return;
   }
   // --- END OF FIX ---

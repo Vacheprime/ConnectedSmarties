@@ -13,11 +13,11 @@
 DHT dht(DHT11PIN, DHT11);
 
 // Replace the next variables with your SSID/Password combination
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "Pixel_7321";
+const char* password = "Caillou99";
 
 // Add your MQTT Broker IP address, example:
-const char* mqtt_server = "";
+const char* mqtt_server = "172.27.145.245";
 
 // Define the topics for temperature and humidity publish
 const char* tempTopic = "Frig1/temperature";
