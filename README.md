@@ -1,192 +1,74 @@
-# ConnectedSmarties Meeting Notes
+# ConnectedSmarties - Installation and Usage Instructions
 
-## Oct 24 2025
+## Step 1: Set up the Server Environment
 
-Florence:
+### 1. Clone the Repository
 
-- routes for getting the pages dashboard, customers, products, reports
-creating customer, and product (input validation)
+```bash
+git clone https://github.com/Vacheprime/ConnectedSmarties.git
+cd ConnectedSmarties
+```
 
-- notifications when invalid input (conditional HTML in the Templates)
+### 2. Install the Python Dependencies
 
-+ route for fetching sensor data /sensors/1/values
+```bash
+pip install -r requirements.txt
+```
 
-+ sending emails when temperature exceeds the threshold
+(Note: Ensure requirements.txt includes: flask, flask-cors, paho-mqtt, qrcode, pillow, requests, etc.)
 
-Ishi:
-    + possibly adjust UI javascript to refresh the values of the sensors in real time
-    products database implementation (wait for  route for fetching sensor data /sensors/1/values
-    )
-    - client-side validation
-    sending email when threshold exceeded (MUST BE CONNECTED TO MQTT!!!!!!!!!!!!!!!!!!!!)
-        - python code for sending an email and with activated button but no code for threshold yet
-    + code for activating the sensor (button in the email)
+### 3. Set up MQTT Broker
 
-    + route for turning fan on /fan/on and /fan/off
+- Install and start the Mosquitto MQTT Instance on your server
 
-Danat:
-    * microcontroller code with mosquitto
-    * microcontoller -> mosquitto -> mqtt_connector -> database -> webapp
+### 4. Database Initialization
 
+- Run the necessary script to create the initial SQLite3 database schema (Customers, Products, Payments, Inventory, etc.)
 
-Order:
-1) 
+- Run this command in the Command Prompt Terminal:
 
-## Nov 4, 2025 
-#### Danat: 
-- SDK
-- email (receipt and QR for customer)
-- payment simulation
-#### Ishi: 
-- I18LN (bilingual) -> THIS IS A BONUS FEATURE
-- UI
-- design for the self-checkout
-- (fix ui for humidity) + pareto anywhere
-  - In having pareto-anywhere running in the background make another card in the dashboard that shows the same dashboard for humidity but in a small card in the home.html.
-  - For the UI in the home.html, add 1 envelop icon that says that the email is sent, add a threshold indicator and a small card where we can edit the threshold, it must also work with the back end too when lik when the threshold is edited it uses the new value as the threshold.
-  - Have everything in the dashboard in 1 row.
-  - add a "single product delete" functionality in the selfcheckout.html in order to remove a single product on the scanned list.
-#### Florence 
-- product management system
-    - tracking product inventory
-- create account
-- login (to check history and accumulated points)
-- receipts
-  
-## Nov 18, 2025 
-### Danat:
-#### 2.1+ Admin Reports:
-- Inventory
-    - Required Features
-         Current number of available items for each product.
-      
-         Real-time updates if inventory changes due to purchases.
+``` cmd
+sqlite3 sql_connected_smarties.db < sql_connected_smarties.sql
+```
 
-         Optional: Stock-level alerts (e.g., "Low stock: less than 5 units") 
-- Sales (sold items)
-    1. Number of sold items per product within a given time range.
-    2. Most sold items and least sold items during a selected period.
-    3. Total sales value for:
-        o A specific day
-        o A selected date range
-    - Optional Enhancements
-         Sales trends graph (line chart by day/week).
-      
-         Category-based filters.
-- Customer
-  Required Features
-    - Number of customers who made purchases in:
-        o A selected day
-        o A selected date range
-    - Overview of new vs. returning customers (optional) 
-#### 4.2. Notification & Messaging Management
-Examples:
-     Low stock alerts
-    
-     Purchase confirmation messages
-    
-     System updates and error notifications 
-### Ishi
-#### 2.0 Report Generation Module
-Your system must generate multiple types of reports for both administrators and customers.
-The format, style, visualizations, and interaction flow of these reports are flexible and will
-influence `your final grade—more intuitive and visually appealing designs are encouraged`.
-You may use:
-     Tables
-    
-     Bar charts / Pie charts / Line graphs
-    
-     Filters (date range, product category, customer ID, etc.)
-#### 4.1. Finalizing the GUI Style
-     Consistent fonts, colors, spacing
-    
-     Clear hierarchy and intuitive layout
-    
-     Mobile responsiveness (optional but beneficial)
-#### 4.3. Theme Support
- Light and Dark mode
+### 5. Start the Python Flask Web Server
 
- Custom theme settings
-### Florence
-- help Ishi for `exporting options` (e.g. PDF, CSV, or screenshots—optional ) 
-#### 3.2. Total Purchase Amount
-The account page must display:
-     Total amount spent during a selected period.
-    
-     Optional: Summary graph of spending over time.
-#### 3.3. Search in Purchase History
-Customers must be able to search for a specific item and view:
-     How many times it was purchased
-    
-     Dates and times of purchase
-    
-     Price of the item for each purchase instance
-##### Example Search Output
-Item: Smart Plug
-Purchased: 3 times
-Details:
-     2025-02-04 @ 09:22 – $14.99
-    
-     2025-02-10 @ 18:14 – $14.99
-    
-     2025-03-01 @ 11:03 – $12.99
-#### 4.4. Any Additional Features
-Examples:
-     Exportable reports
-    
-     Dashboard widgets 
+```bash
+python app.py
+```
 
-## Nov 30, 2025
+or
 
-     Make the Input Validations more robust (on Register)
+``` bash
+flask run --port=5001 
+```
 
-## Nov 28, 2025
+## Step 2: Hardware and Firmware Setup (ESP32)
 
-Tasks to do:
+### 1. Install Arduino IDE v2
 
-- Implement proper input validation (ISHI, COMPLETED)
+- Ensure you have the IDE and the required board drivers (e.g., CH340 driver) installed
 
-- Fix the weird bug with reports because of Product database change.
+### 2. Inatall the Arduino Libraries:
 
-- (Optional): Fix I18N glitching sometimes (ISHI, COMPLETED)
+- Install the following lobraries required for the ESP32 firmware:
+  - ESP32 boards
+  - Adafruit Unified Sensor
+  - DHT sensor library
+  - PubSubClient
 
-- Do multiple reading of RFID possibly.
+### 3. Wiring
 
-- Fix ParetoAnywhere bug where the data flickers when the backend cannot connect. (ISHI, COMPLETED, JUST NEED ISHI"S PI)
+- Connect the DHT11 Sensor and the DC Motor/Fan (with L293D motor IC) to the ESP32 board
 
-- Setup ParetoAnywhere properly so that it works and we can still send emails
+### 4. Upload the Firmware
 
-- Fix fan control for fan 2 turning on fan for fan 1.
+- Open the C++ code for the microcontroller, update the Wi-fi and MQTT connection credentials, and upload it to the ESP32 board. This will enable it to publish sensor data and receive control signals.
 
-- Fix fan status not being properly updated (Danat, )
+## Step 3: Access the Application
 
-- Check Microcontroller code for connecting to mqtt and for receiving fan controls (Danat, )
-  
-- Reimplement the backend and adjust the front end for environmental report, admin customer reports, personal customer reports,
-  product reports, and real-time inventory report. (Danat, COMPLETED)
+1. Open your Web Browser and navigate to the server address (e.g., <http://127.0.0.1:5001>).
 
-- Add Customer report: List of receipts per day or by time period (Danat, COMPLETED)
+2. Log in as an Admin to access the Mission Control Dashboard for monitoring and management.
 
-- Fix the exports for the reports and for the receipts (Ishi, COMPLETED)
-
-- Fix datetime conversion between local time and UTC time. (Danat, COMPLETED)
-
-- In the Account page, add a navigation button to go back to self-checkout (Florence, COMPLETED)
-
-- Fix the search in purchase history method. (Danat, COMPLETED)
-
-- Send email when adding a customer through the admin customer page. (Danat, ALREADY IMPLEMENTED)
-
-- Fix fan control not working. (Danat, COMPLETED)
-
-- Fix repeated email sending when sensor values goes above or below thresholds. (Danat, COMPLETED)
-
-- Email configuration is disorganized. Sending an email should also run in background so it doesn't look like it freezes. (Danat, COMPLETED)
-
-- Implement the database for EPC (Danat, COMPLETED)
-
-- In the self-checkout, after you pay, the rewards points won field is not being reset. (Danat, COMPLETED: Field was removed.)
-
-- Adding products by EPC or by range. (Danat, COMPLETED)
-
-- Fix the PDF: the downloaded .pdf file does not show the items the customer bought and the total price (Florence, should work on main branch)   
+3. New customers can register and use the Self-Checkout Station
